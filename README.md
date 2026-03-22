@@ -18,19 +18,41 @@ cd backend
 pip install -r requirements.txt
 ```
 
-### 2) Run server
+### 2) Run server (Choose one method)
+
+**Method A: Python (Cross-platform)**
+```bash
+cd backend
+python run.py
+```
+
+**Method B: PowerShell (Windows)**
+```powershell
+cd backend
+.\run.ps1
+```
+
+**Method C: Bash (Linux/Mac)**
+```bash
+cd backend
+bash run.sh
+```
+
+**Method D: Direct Flask app (Development)**
 ```bash
 cd backend
 python app_jwt.py
 ```
 
 ### 3) Open app
-Use:
 ```text
 http://localhost:8000
 ```
 
 The backend serves `frontend/index.html` at `/`.
+
+**Note:** Main entrypoint is `app_jwt.py` (includes JWT auth, tax, network, and admin features).
+Legacy `app.py` is kept for reference only.
 
 ## Main Features (Implemented)
 - Register / Login / Logout

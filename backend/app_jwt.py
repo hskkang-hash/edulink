@@ -89,7 +89,9 @@ def after_request(response):
     return response
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-engine = create_engine('sqlite:///./edulinks.db', echo=False)
+# Use DATABASE_URL from environment or fallback to default
+database_url = os.getenv('DATABASE_URL', 'sqlite:///./edulinks.db')
+engine = create_engine(database_url, echo=False)
 
 # DB init
 with engine.connect() as conn:
@@ -750,6 +752,10 @@ def create_posting():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
+    
+    # RBAC: Only instructors can create postings
+    if user.get('role') != 'instructor':
+        return jsonify({'error': 'Only instructors can create postings'}), 403
 
     data = request.get_json()
     for key in ('title', 'subject', 'region', 'rate'):
@@ -768,7 +774,11 @@ def create_posting():
                 'owner_id': user['user_id']
             }
         )
-    return jsonify({'message': 'Posting created'}), 201
+        # Get last inserted id
+        result = conn.execute(text('SELECT last_insert_rowid() as id'))
+        posting_id = result.scalar()
+    
+    return jsonify({'message': 'Posting created', 'id': posting_id}), 201
 
 
 @app.route('/postings/<int:posting_id>', methods=['GET'])
@@ -839,19 +849,24 @@ def apply_posting():
     if 'posting_id' not in data:
         return jsonify({'error': 'posting_id required'}), 400
 
+    status = data.get('status', 'pending')
     with engine.begin() as conn:
         existing = conn.execute(
             text('SELECT id FROM applications WHERE posting_id = :posting_id AND student_id = :student_id'),
             {'posting_id': data['posting_id'], 'student_id': user['user_id']}
         ).first()
         if existing:
-            return jsonify({'error': 'Already applied'}), 400
+            return jsonify({'error': 'Already applied'}), 409
 
         conn.execute(
             text('INSERT INTO applications (posting_id, student_id, status, created_at) VALUES (:p,:s,:status,:c)'),
-            {'p': data['posting_id'], 's': user['user_id'], 'status': data.get('status', 'pending'), 'c': datetime.now(timezone.utc).isoformat()}
+            {'p': data['posting_id'], 's': user['user_id'], 'status': status, 'c': datetime.now(timezone.utc).isoformat()}
         )
-    return jsonify({'message': 'Applied'}), 201
+        # Get last inserted id
+        result = conn.execute(text('SELECT last_insert_rowid() as id'))
+        app_id = result.scalar()
+    
+    return jsonify({'message': 'Applied', 'id': app_id, 'status': status}), 201
 
 
 @app.route('/applications', methods=['GET'])
@@ -1032,7 +1047,7 @@ def update_application(application_id):
             {'status': status, 'application_id': application_id}
         )
 
-    return jsonify({'message': 'Application updated'})
+    return jsonify({'message': 'Application updated', 'status': status})
 
 
 @app.route('/applications/<int:application_id>', methods=['DELETE'])
