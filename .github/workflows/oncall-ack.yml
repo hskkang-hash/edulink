@@ -1,0 +1,202 @@
+name: Record On-call Acknowledgment
+
+on:
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  ack:
+    if: github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+    steps:
+      - name: Process strict ACKED comment for P0 incidents
+        uses: actions/github-script@v7
+        env:
+          ACK_TIMEOUT_MINUTES: ${{ secrets.PROD_P0_ACK_TIMEOUT_MINUTES || '15' }}
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const comment = context.payload.comment;
+            const body = String(comment?.body || '');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNumber = issue.number;
+
+            const issueData = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber,
+            });
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner,
+                  repo,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  core.warning(`Skipping label check for ${name}: ${error.message}`);
+                  return;
+                }
+
+                try {
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name,
+                    color,
+                    description,
+                  });
+                  core.info(`Created missing label: ${name}`);
+                } catch (createError) {
+                  core.warning(`Failed to create label ${name}: ${createError.message}`);
+                }
+              }
+            }
+
+            await ensureLabel('ack-under-15m', '0e8a16', 'Acknowledged within 15 minutes');
+            await ensureLabel('ack-15-30m', '2da44e', 'Acknowledged between 15 and 30 minutes');
+            await ensureLabel('ack-30-60m', 'fbca04', 'Acknowledged between 30 and 60 minutes');
+            await ensureLabel('ack-over-60m', 'd93f0b', 'Acknowledged after 60 minutes');
+            await ensureLabel('ack-sla-breached', 'b60205', 'Acknowledged after configured SLA timeout');
+
+            const labels = issueData.data.labels.map((label) => (typeof label === 'string' ? label : label.name));
+            const labelSet = new Set(labels);
+
+            const isTargetIncident = labelSet.has('incident') && labelSet.has('production') && labelSet.has('priority-p0');
+            if (!isTargetIncident) {
+              core.info('Issue is not a target production P0 incident. Skipping.');
+              return;
+            }
+
+            if (!labelSet.has('oncall-unacked')) {
+              core.info('Issue does not have oncall-unacked label. Skipping.');
+              return;
+            }
+
+            const strictAckMatch = body.match(/(^|\b)ACKED\s+by\s+@([A-Za-z0-9-]+)(\b|$)/i);
+            const mentionedUser = String(strictAckMatch?.[2] || '').toLowerCase();
+            const commenter = String(comment?.user?.login || '').toLowerCase();
+            const isStrictAckValid = Boolean(strictAckMatch) && Boolean(mentionedUser) && mentionedUser === commenter;
+
+            if (!isStrictAckValid) {
+              const formatGuideMarker = '[ONCALL_ACK_FORMAT_GUIDE]';
+              const existingComments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              });
+
+              const guideAlreadyPosted = existingComments.some((existingComment) =>
+                String(existingComment.body || '').includes(formatGuideMarker)
+              );
+
+              if (!guideAlreadyPosted) {
+                const reason = strictAckMatch
+                  ? 'Mentioned username must match the comment author.'
+                  : 'Comment does not match the strict ACK format.';
+
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  body: [
+                    `## ${formatGuideMarker} P0 ACK Format Guide`,
+                    `- Reason: ${reason}`,
+                    '- Required format: ACKED by @username',
+                    `- Example for current author: ACKED by @${comment.user.login}`,
+                    '- Note: Mentioned username must be identical to the comment author.',
+                  ].join('\n'),
+                });
+              }
+
+              core.info('Strict ACK validation failed. Guidance comment handled.');
+              return;
+            }
+
+            const issueCreatedAtMs = new Date(issueData.data.created_at).getTime();
+            const ackCommentAtMs = new Date(comment.created_at).getTime();
+            const ackDelayMinutes = Number.isFinite(issueCreatedAtMs) && Number.isFinite(ackCommentAtMs)
+              ? Math.max(0, Math.floor((ackCommentAtMs - issueCreatedAtMs) / 60000))
+              : null;
+            const parsedAckTimeout = Number(process.env.ACK_TIMEOUT_MINUTES || '15');
+            const ackTimeoutMinutes = Number.isFinite(parsedAckTimeout)
+              ? Math.min(240, Math.max(5, Math.floor(parsedAckTimeout)))
+              : 15;
+            const wasEscalated = labelSet.has('oncall-escalated');
+            const ackBucketLabel = ackDelayMinutes === null
+              ? null
+              : (ackDelayMinutes < 15
+                ? 'ack-under-15m'
+                : (ackDelayMinutes < 30
+                  ? 'ack-15-30m'
+                  : (ackDelayMinutes < 60 ? 'ack-30-60m' : 'ack-over-60m')));
+            const isSlaBreached = ackDelayMinutes !== null && ackDelayMinutes > ackTimeoutMinutes;
+            const summarizeCoreLabels = (labelValues) => {
+              const values = Array.from(labelValues);
+              const status = values.find((value) => value === 'deploy-failure' || value === 'gate-blocked' || value === 'oncall-acked') || 'unknown';
+              const priority = values.find((value) => value.startsWith('priority-')) || 'unknown';
+              const severity = values.find((value) => value.startsWith('severity-')) || 'unknown';
+              const reason = values.find((value) => value.startsWith('failure-reason-') || value.startsWith('gate-reason-')) || 'unknown';
+              const bucket = values.find((value) =>
+                value === 'ack-under-15m' ||
+                value === 'ack-15-30m' ||
+                value === 'ack-30-60m' ||
+                value === 'ack-over-60m'
+              ) || 'unknown';
+              const slaBreach = values.includes('ack-sla-breached') ? 'true' : 'false';
+              return `status=${status}, priority=${priority}, severity=${severity}, reason=${reason}, time_to_ack_bucket=${bucket}, ack_sla_breached=${slaBreach}`;
+            };
+
+            labelSet.delete('oncall-unacked');
+            labelSet.delete('oncall-escalated');
+            labelSet.delete('ack-under-15m');
+            labelSet.delete('ack-15-30m');
+            labelSet.delete('ack-30-60m');
+            labelSet.delete('ack-over-60m');
+            labelSet.delete('ack-sla-breached');
+            labelSet.add('oncall-acked');
+            if (ackBucketLabel) {
+              labelSet.add(ackBucketLabel);
+            }
+            if (isSlaBreached) {
+              labelSet.add('ack-sla-breached');
+            }
+            const ackLabelSnapshot = Array.from(labelSet).sort();
+            const ackCoreLabelSummary = summarizeCoreLabels(ackLabelSnapshot);
+
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              labels: Array.from(labelSet),
+            });
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              body: [
+                '## On-call Acknowledgment Recorded',
+                `- Acknowledged by: @${comment.user.login}`,
+                `- Comment URL: ${comment.html_url}`,
+                ...(ackDelayMinutes === null ? [] : [`- Ack delay: ${ackDelayMinutes} minutes from incident creation`]),
+                `- Ack SLA threshold: ${ackTimeoutMinutes} minutes`,
+                `- Ack SLA breached: ${isSlaBreached ? 'yes' : 'no'}`,
+                `- Time-to-ack bucket: ${ackBucketLabel || 'unknown'}`,
+                ...(wasEscalated ? ['- Escalation state cleared: `oncall-escalated` label removed after valid ACK'] : []),
+                `- Core labels: ${ackCoreLabelSummary}`,
+                `- Label snapshot: ${ackLabelSnapshot.length > 0 ? ackLabelSnapshot.map((value) => `\`${value}\``).join(', ') : 'none'}`,
+                `- Recorded at (UTC): ${new Date().toISOString()}`,
+                '- Validation: strict ACK format (`ACKED by @username`) verified',
+              ].join('\n'),
+            });
+
+            core.info(`On-call acknowledgment recorded for issue #${issueNumber}.`);

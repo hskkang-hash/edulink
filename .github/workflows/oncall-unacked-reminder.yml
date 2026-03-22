@@ -1,0 +1,328 @@
+name: Remind Unacknowledged P0 Incidents
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only log candidates without creating comments or sending alerts"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  issues: write
+
+jobs:
+  remind-unacked:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: oncall-unacked-reminder
+      cancel-in-progress: false
+    env:
+      P0_SLACK_WEBHOOK: ${{ secrets.PROD_P0_SLACK_WEBHOOK }}
+      PROD_RUNBOOK_URL: ${{ secrets.PROD_RUNBOOK_URL }}
+      PROD_AUDIT_ASSIGNEES: ${{ secrets.PROD_AUDIT_ASSIGNEES }}
+      PROD_ESCALATION_ASSIGNEE_FALLBACK: ${{ secrets.PROD_ESCALATION_ASSIGNEE_FALLBACK }}
+      PROD_P0_ACK_TIMEOUT_MINUTES: ${{ secrets.PROD_P0_ACK_TIMEOUT_MINUTES }}
+      PROD_P0_ACK_REMINDER_MAX: ${{ secrets.PROD_P0_ACK_REMINDER_MAX }}
+    steps:
+      - name: Remind unacknowledged production P0 incidents
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isDryRun = context.eventName === 'workflow_dispatch' && String(context.payload?.inputs?.dry_run || 'false').toLowerCase() === 'true';
+
+            const timeoutMinutesRaw = parseInt(process.env.PROD_P0_ACK_TIMEOUT_MINUTES || '15', 10);
+            const timeoutMinutes = Number.isFinite(timeoutMinutesRaw)
+              ? Math.min(Math.max(timeoutMinutesRaw, 5), 240)
+              : 15;
+
+            const maxRemindersRaw = parseInt(process.env.PROD_P0_ACK_REMINDER_MAX || '3', 10);
+            const maxReminders = Number.isFinite(maxRemindersRaw)
+              ? Math.min(Math.max(maxRemindersRaw, 1), 10)
+              : 3;
+
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const runbookUrl = process.env.PROD_RUNBOOK_URL || `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/blob/main/docs/deployment-runbook.md`;
+            const now = Date.now();
+            const usernamePattern = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+            function parseAssigneeList(rawValue, secretName) {
+              const raw = String(rawValue || '');
+              const rawTokens = raw.split(',');
+              const hasEmptyToken = raw.trim().length > 0 && rawTokens.some((token) => token.trim().length === 0);
+              if (hasEmptyToken) {
+                core.setFailed(`Invalid ${secretName}: empty token detected. Remove consecutive/trailing commas.`);
+                return null;
+              }
+
+              const normalized = rawTokens
+                .map((value) => value.trim())
+                .filter(Boolean)
+                .map((value) => value.toLowerCase());
+
+              const unique = [...new Set(normalized)];
+              if (normalized.length !== unique.length) {
+                core.setFailed(`Invalid ${secretName}: duplicate usernames detected after normalization.`);
+                return null;
+              }
+
+              if (unique.length > 20) {
+                core.setFailed(`Invalid ${secretName}: maximum 20 usernames allowed.`);
+                return null;
+              }
+
+              const invalid = unique.find((value) => !usernamePattern.test(value));
+              if (invalid) {
+                core.setFailed(`Invalid ${secretName}: invalid GitHub username format (${invalid}).`);
+                return null;
+              }
+
+              return unique;
+            }
+
+            const configuredEscalationAssignees = parseAssigneeList(
+              process.env.PROD_AUDIT_ASSIGNEES,
+              'PROD_AUDIT_ASSIGNEES'
+            );
+            if (configuredEscalationAssignees === null) {
+              return;
+            }
+
+            const explicitFallbackAssignees = parseAssigneeList(
+              process.env.PROD_ESCALATION_ASSIGNEE_FALLBACK,
+              'PROD_ESCALATION_ASSIGNEE_FALLBACK'
+            );
+            if (explicitFallbackAssignees === null) {
+              return;
+            }
+
+            let ownerFallbackAssignees = [];
+            if (configuredEscalationAssignees.length === 0 && explicitFallbackAssignees.length === 0) {
+              try {
+                const repoMeta = await github.rest.repos.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                });
+                const ownerType = String(repoMeta.data?.owner?.type || '').toLowerCase();
+
+                if (ownerType === 'organization') {
+                  core.warning('Repository owner is an organization; skipping owner assignee fallback.');
+                } else {
+                  ownerFallbackAssignees = [context.repo.owner.toLowerCase()];
+                }
+              } catch (repoMetaError) {
+                core.warning(`Failed to inspect repository owner type: ${repoMetaError.message}`);
+                ownerFallbackAssignees = [context.repo.owner.toLowerCase()];
+              }
+            }
+
+            const escalationAssignees = configuredEscalationAssignees.length > 0
+              ? configuredEscalationAssignees
+              : (explicitFallbackAssignees.length > 0 ? explicitFallbackAssignees : ownerFallbackAssignees);
+            const summarizeCoreLabels = (labelValues) => {
+              const values = Array.from(labelValues);
+              const status = values.find((value) => value === 'deploy-failure' || value === 'gate-blocked' || value === 'oncall-unacked' || value === 'oncall-escalated') || 'unknown';
+              const priority = values.find((value) => value.startsWith('priority-')) || 'unknown';
+              const severity = values.find((value) => value.startsWith('severity-')) || 'unknown';
+              const reason = values.find((value) => value.startsWith('failure-reason-') || value.startsWith('gate-reason-')) || 'unknown';
+              return `status=${status}, priority=${priority}, severity=${severity}, reason=${reason}`;
+            };
+
+            core.info(`Scanning unacked P0 incidents (timeout=${timeoutMinutes}m, max_reminders=${maxReminders}, dry_run=${isDryRun})`);
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  core.warning(`Skipping label check for ${name}: ${error.message}`);
+                  return;
+                }
+
+                try {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name,
+                    color,
+                    description,
+                  });
+                  core.info(`Created missing label: ${name}`);
+                } catch (createError) {
+                  core.warning(`Failed to create label ${name}: ${createError.message}`);
+                }
+              }
+            }
+
+            await ensureLabel('oncall-escalated', 'd93f0b', 'P0 incident exceeded on-call acknowledgment reminder threshold');
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'incident,production,priority-p0,oncall-unacked',
+              per_page: 100,
+            });
+
+            if (issues.length === 0) {
+              core.info('No open unacked P0 incidents found.');
+              return;
+            }
+
+            let reminded = 0;
+
+            for (const issue of issues) {
+              const createdAtMs = new Date(issue.created_at).getTime();
+              if (!Number.isFinite(createdAtMs)) {
+                core.warning(`Issue #${issue.number} has invalid created_at; skipping.`);
+                continue;
+              }
+
+              const ageMinutes = Math.floor((now - createdAtMs) / 60000);
+              if (ageMinutes < timeoutMinutes) {
+                core.info(`Issue #${issue.number} is ${ageMinutes}m old (< ${timeoutMinutes}m). Skipping.`);
+                continue;
+              }
+
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                per_page: 100,
+              });
+
+              const marker = '[ONCALL_UNACKED_REMINDER]';
+              const reminderCount = comments.filter((comment) => String(comment.body || '').includes(marker)).length;
+
+              if (reminderCount >= maxReminders) {
+                core.info(`Issue #${issue.number} already reached max reminders (${reminderCount}/${maxReminders}).`);
+                continue;
+              }
+
+              const nextReminderIndex = reminderCount + 1;
+              const body = [
+                `## ${marker} P0 On-call Acknowledgment Reminder`,
+                `- Incident: #${issue.number}`,
+                `- Age: ${ageMinutes} minutes (threshold: ${timeoutMinutes} minutes)`,
+                `- Reminder count: ${nextReminderIndex}/${maxReminders}`,
+                '- Required action: On-call responder should comment with ACKED to record acknowledgment.',
+                `- Runbook: ${runbookUrl}`,
+                `- Workflow run: ${runUrl}`,
+              ].join('\n');
+
+              core.warning(`Unacked P0 issue #${issue.number}: reminder ${nextReminderIndex}/${maxReminders}`);
+
+              if (isDryRun) {
+                core.info(`Dry run enabled. No comment/notification sent for issue #${issue.number}.`);
+                continue;
+              }
+
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body,
+              });
+
+              if (process.env.P0_SLACK_WEBHOOK) {
+                const payload = {
+                  text: `[EduLink][P0][Reminder ${nextReminderIndex}/${maxReminders}] Incident #${issue.number} remains unacked for ${ageMinutes}m. Please comment ACKED. Runbook: ${runbookUrl} | Run: ${runUrl}`,
+                };
+
+                await fetch(process.env.P0_SLACK_WEBHOOK, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(payload),
+                });
+              } else {
+                core.info('PROD_P0_SLACK_WEBHOOK is not set; skipping Slack reminder.');
+              }
+
+              if (nextReminderIndex >= maxReminders) {
+                const escalationMarker = '[ONCALL_UNACKED_ESCALATION]';
+                const escalationAlreadyPosted = comments.some((existingComment) =>
+                  String(existingComment.body || '').includes(escalationMarker)
+                );
+
+                const issueLabelSet = new Set(
+                  (issue.labels || []).map((label) => (typeof label === 'string' ? label : label.name))
+                );
+                const hasEscalationLabel = issueLabelSet.has('oncall-escalated');
+
+                if (!hasEscalationLabel) {
+                  issueLabelSet.add('oncall-escalated');
+                  try {
+                    if (escalationAssignees.length > 0) {
+                      await github.rest.issues.update({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issue.number,
+                        labels: Array.from(issueLabelSet),
+                        assignees: escalationAssignees,
+                      });
+                    } else {
+                      await github.rest.issues.update({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issue.number,
+                        labels: Array.from(issueLabelSet),
+                      });
+                    }
+                  } catch (error) {
+                    core.warning(`Escalation assignee apply failed for #${issue.number}, retrying without assignees: ${error.message}`);
+                    await github.rest.issues.update({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issue.number,
+                      labels: Array.from(issueLabelSet),
+                    });
+                  }
+                }
+
+                const labelSnapshot = Array.from(issueLabelSet).sort();
+                const coreLabelSummary = summarizeCoreLabels(labelSnapshot);
+
+                if (!escalationAlreadyPosted) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: [
+                      `## ${escalationMarker} P0 On-call Escalation`,
+                      `- Incident: #${issue.number}`,
+                      `- Escalation reason: Unacked after ${nextReminderIndex}/${maxReminders} reminders`,
+                      `- Escalation assignee target: ${escalationAssignees.length > 0 ? escalationAssignees.map((name) => `@${name}`).join(', ') : 'none (owner fallback skipped or unavailable)'}`,
+                      `- Core labels: ${coreLabelSummary}`,
+                      `- Label snapshot: ${labelSnapshot.length > 0 ? labelSnapshot.map((value) => `\`${value}\``).join(', ') : 'none'}`,
+                      '- Action: Engage incident commander and backup on-call immediately.',
+                      `- Runbook: ${runbookUrl}`,
+                      `- Workflow run: ${runUrl}`,
+                    ].join('\n'),
+                  });
+                }
+
+                if (process.env.P0_SLACK_WEBHOOK) {
+                  const escalationPayload = {
+                    text: `[EduLink][P0][Escalation] Incident #${issue.number} exceeded reminder threshold (${nextReminderIndex}/${maxReminders}) without ACK. Runbook: ${runbookUrl} | Run: ${runUrl}`,
+                  };
+
+                  await fetch(process.env.P0_SLACK_WEBHOOK, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(escalationPayload),
+                  });
+                }
+
+                core.warning(`P0 incident #${issue.number} escalated after reminder threshold.`);
+              }
+
+              reminded += 1;
+            }
+
+            core.info(`Reminder scan complete. Reminders emitted: ${reminded}`);

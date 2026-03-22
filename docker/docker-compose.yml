@@ -1,21 +1,158 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:13
+  # Nginx 리버스 프록시 (HTTPS 종료)
+  nginx:
+    image: nginx:alpine
+    container_name: edulink_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Flask 백엔드 애플리케이션
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: edulink_backend
+    expose:
+      - "5000"
     environment:
-      POSTGRES_DB: edulink_db
-      POSTGRES_USER: edulink_user
-      POSTGRES_PASSWORD: edulink_password
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY:-super-secret-key-change-in-production}
+      EXPOSE_RESET_TOKEN_IN_RESPONSE: ${EXPOSE_RESET_TOKEN_IN_RESPONSE:-false}
+      EMAIL_ADAPTER_TYPE: ${EMAIL_ADAPTER_TYPE:-mock}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SENDGRID_FROM_EMAIL: ${SENDGRID_FROM_EMAIL:-noreply@edulink.com}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SES_FROM_EMAIL: ${AWS_SES_FROM_EMAIL:-noreply@edulink.com}
+      DATABASE_URL: sqlite:////app/data/edulink.db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - db
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # PostgreSQL 데이터베이스
+  db:
+    image: postgres:13-alpine
+    container_name: edulink_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-edulink_db}
+      POSTGRES_USER: ${POSTGRES_USER:-edulink_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-in-production}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-edulink_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  # Redis 캐시
   redis:
     image: redis:7-alpine
+    container_name: edulink_redis
     ports:
       - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Prometheus 시계열 데이터베이스
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: edulink_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - backend
+      - alertmanager
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--tries=1", "-O", "-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Alertmanager (Prometheus 알림 라우팅)
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: edulink_alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--tries=1", "-O", "-", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Grafana 대시보드
+  grafana:
+    image: grafana/grafana:latest
+    container_name: edulink_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--tries=1", "-O", "-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+
 
 volumes:
   postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

@@ -1,0 +1,16 @@
+target-version = "py311"
+line-length = 100
+
+exclude = [
+  ".git",
+  ".pytest_cache",
+  "backend/__pycache__",
+  "backend/migrations",
+  "backend/main.py",
+  "backend/main_new.py",
+  "backend/main_simple.py",
+  "backend/main_fixed.py",
+]
+
+[lint]
+select = ["E9", "F"]

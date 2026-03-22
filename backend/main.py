@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+﻿from flask import Flask, request, jsonify
 from flask_cors import CORS
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -10,16 +10,16 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'edulink-secret-key')
+SECRET_KEY = os.getenv('SECRET_KEY', 'edulinks-secret-key')
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./edulink.db')
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///./edulinks.db')
 engine = create_engine(DATABASE_URL, connect_args={'check_same_thread': False}, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Database setup
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./edulink.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./edulinks.db")
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -157,9 +157,6 @@ Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 def root():
-    return {"message": "EDULINK API is running"}
-cd "C:\Users\hskka\OneDrive\바탕 화면\EduLink\backend"
-py app.py
-cd "C:\Users\hskka\OneDrive\바탕 화면\EduLink\frontend"
-py -m http.server 8001
+    return {"message": "EDULINKS API is running"}
+
 

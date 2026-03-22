@@ -1,0 +1,81 @@
+# EduLink .gitignore
+# 민감한 파일 및 환경 설정 제외
+
+### 환경 변수
+.env
+.env.local
+.env.*.local
+
+### SSL/TLS 인증서 (자안 서명 또는 프로덕션 키)
+docker/ssl/
+docker/certbot/
+
+### 데이터베이스 및 데이터
+*.db
+*.sqlite
+*.sqlite3
+docker/data/
+edulink.db
+
+### 로그 파일
+*.log
+logs/
+docker/logs/
+
+### Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+### IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+### Docker
+docker-compose.override.yml
+docker/nginx/ssl/
+
+### Node.js (프론트엔드 빌드 도구 사용 시)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+### 시스템 파일
+.DS_Store
+Thumbs.db
+
+### 테스트 커버리지
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+
+### Certs (임시)
+*.pem
+*.csr
+*.crt
+*.key

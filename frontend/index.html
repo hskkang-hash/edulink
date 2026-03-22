@@ -5,84 +5,1520 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDULINK - Instructor Platform</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-        .posting { margin: 10px 0; padding: 10px; background: #f9f9f9; }
-        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
-        input, select { padding: 8px; margin: 5px; width: 200px; }
-        .topbar { display: none; justify-content: space-between; align-items: center; margin-bottom: 14px; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; background: #f7fbff; }
-        .muted { color: #666; font-size: 14px; }
-        .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .actions button { padding: 8px 12px; }
-        .btn-danger { background: #dc3545; }
-        .postings-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .toast { position: fixed; right: 20px; bottom: 20px; background: #1f8f4e; color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; pointer-events: none; }
-        .toast.show { opacity: 1; transform: translateY(0); }
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+        :root {
+            --bg: #06070b;
+            --surface: #171a24;
+            --surface-soft: #121520;
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --text: #f2f4f8;
+            --muted: #8a92a8;
+            --brand: #a58cff;
+            --brand-soft: rgba(165, 140, 255, 0.22);
+            --ok: #5deec0;
+            --warn: #ffb199;
+            --danger: #ff6f87;
+            --motion-modal-overlay: 0.18s;
+            --motion-modal-content: 0.20s;
+            --motion-applicant-item-default: 0.24s;
+            --motion-applicant-item-fast: 0.16s;
+            --motion-applicant-stagger-default: 0.025s;
+            --motion-applicant-stagger-fast: 0.014s;
+            --motion-applicant-stagger-limit-default: 8;
+            --motion-applicant-stagger-limit-fast: 6;
+            --motion-ui-fade: 0.14s;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--text);
+            font-family: 'Manrope', sans-serif;
+            background:
+                radial-gradient(circle at 15% -10%, rgba(165, 140, 255, 0.2) 0%, transparent 42%),
+                radial-gradient(circle at 110% 20%, rgba(96, 212, 255, 0.08) 0%, transparent 32%),
+                var(--bg);
+            min-height: 100vh;
+        }
+
+        .app-shell {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+
+        .side-rail {
+            border-right: 1px solid rgba(255, 255, 255, 0.06);
+            background: linear-gradient(180deg, #070a1a 0%, #04060e 100%);
+            padding: 28px 22px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .rail-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 34px;
+            letter-spacing: -0.02em;
+            color: var(--brand);
+            margin-bottom: 22px;
+        }
+
+        .rail-link {
+            color: #c8cfdf;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            transition: background 0.18s ease, border-color 0.18s ease;
+        }
+
+        .rail-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .rail-link.is-active {
+            background: linear-gradient(135deg, rgba(136, 118, 255, 0.22), rgba(96, 212, 255, 0.09));
+            border-color: rgba(165, 140, 255, 0.35);
+            color: #fff;
+        }
+
+        .rail-cta {
+            margin-top: auto;
+            border: 0;
+            border-radius: 999px;
+            padding: 13px 14px;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(90deg, #7352ff 0%, #b89eff 100%);
+            color: #100b1d;
+        }
+
+        .main-pane {
+            padding: 28px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .masthead {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 6px;
+        }
+
+        .masthead-brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 34px;
+            letter-spacing: -0.02em;
+            color: #b197ff;
+            margin: 0;
+        }
+
+        .masthead-sub {
+            color: #99a4bc;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        .masthead-nav {
+            display: inline-flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .masthead-nav span {
+            color: #a6aec2;
+            border-bottom: 1px solid transparent;
+            padding-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-size: 12px;
+        }
+
+        .masthead-nav span.active {
+            color: #ffffff;
+            border-bottom-color: #fff;
+        }
+
+        h1 {
+            grid-column: 1 / 9;
+            margin: 0;
+            font-size: clamp(40px, 7vw, 72px);
+            line-height: 0.95;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.04em;
+        }
+
+        .hero-copy {
+            grid-column: 1 / 9;
+            margin-top: -4px;
+            margin-bottom: 10px;
+            color: #b7bfd3;
+            font-size: 18px;
+            max-width: 760px;
+        }
+
+        .section {
+            margin: 0;
+            padding: 22px;
+            border-radius: 24px;
+            border: 1px solid var(--surface-border);
+            background: linear-gradient(150deg, rgba(31, 34, 47, 0.92) 0%, rgba(18, 21, 32, 0.96) 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 28px 60px rgba(0, 0, 0, 0.32);
+            animation: reveal 0.45s ease both;
+        }
+
+        #registerSection,
+        #loginSection {
+            grid-column: span 6;
+            min-height: 250px;
+        }
+
+        #dashboardSection,
+        #postingsSection {
+            grid-column: span 8;
+        }
+
+        #taxSection {
+            grid-column: span 8;
+        }
+
+        #createPostingSection,
+        #applicationsSection {
+            grid-column: span 4;
+        }
+
+        #securitySection {
+            grid-column: span 4;
+        }
+
+        #networkSection {
+            grid-column: span 4;
+        }
+
+        #adminInsightsSection {
+            grid-column: span 8;
+        }
+
+        .tax-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .tax-card {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 14px;
+            background: linear-gradient(165deg, rgba(23, 27, 40, 0.95), rgba(13, 16, 25, 0.95));
+        }
+
+        .tax-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(20px, 3vw, 34px);
+            line-height: 1;
+            letter-spacing: -0.03em;
+            margin: 8px 0 0;
+        }
+
+        .tax-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .tax-actions button.is-polling {
+            background: linear-gradient(90deg, #6ff0c7 0%, #a9ffe5 100%);
+            color: #042117;
+        }
+
+        .tax-inline {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tax-status {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 12px;
+            font-size: 13px;
+            color: #c3cadc;
+            min-height: 42px;
+        }
+
+        .tax-history {
+            margin-top: 12px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .tax-history-item {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 13px;
+            color: #d7dced;
+        }
+
+        .network-inline {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .network-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .network-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            color: #c3cadc;
+            min-height: 40px;
+            font-size: 13px;
+        }
+
+        .network-list {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .network-item {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 13px;
+            color: #dce1f0;
+        }
+
+        .admin-inline {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .admin-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .admin-status {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px dashed rgba(255, 255, 255, 0.16);
+            border-radius: 12px;
+            color: #c3cadc;
+            min-height: 40px;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .risk-badge.ok {
+            background: rgba(93, 238, 192, 0.18);
+            color: #8df1d4;
+        }
+
+        .risk-badge.warn {
+            background: rgba(255, 195, 133, 0.2);
+            color: #ffc68a;
+        }
+
+        .risk-badge.danger {
+            background: rgba(255, 111, 135, 0.2);
+            color: #ffafbf;
+        }
+
+        .admin-list {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .admin-item {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            color: #dce1f0;
+            font-size: 13px;
+        }
+
+        .admin-item button {
+            margin-top: 8px;
+            padding: 8px 10px;
+            font-size: 11px;
+        }
+
+        .admin-trend {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .trend-bars {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+            gap: 6px;
+            align-items: end;
+            margin-top: 6px;
+        }
+
+        .trend-bar {
+            height: 86px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .trend-bar-fill {
+            width: 100%;
+            border-radius: 6px;
+            background: linear-gradient(180deg, #a58cff, #63d6ff);
+        }
+
+        .trend-label {
+            margin-top: 4px;
+            text-align: center;
+            font-size: 11px;
+            color: #aeb7cc;
+        }
+
+        .audit-diff {
+            margin-top: 8px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .diff-row {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 12px;
+        }
+
+        .diff-before {
+            color: #ffb0c2;
+        }
+
+        .diff-after {
+            color: #96f2cf;
+        }
+
+        .sim-compare {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .sim-chip {
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .sim-chip.good {
+            color: #8df1d4;
+        }
+
+        .sim-chip.bad {
+            color: #ffafbf;
+        }
+
+        .admin-rule-grid {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .audit-list {
+            margin-top: 10px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .admin-rule-grid input {
+            margin: 0;
+        }
+
+        h2 {
+            margin: 0 0 14px;
+            font-size: clamp(24px, 3vw, 36px);
+            line-height: 1.06;
+            letter-spacing: -0.03em;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        h3 {
+            margin-top: 18px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 12px;
+            color: #a8b0c4;
+            font-weight: 700;
+        }
+
+        input,
+        select {
+            width: 100%;
+            margin: 8px 0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f0f3fb;
+            background: rgba(8, 10, 16, 0.75);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: rgba(165, 140, 255, 0.75);
+            box-shadow: 0 0 0 4px rgba(165, 140, 255, 0.16);
+        }
+
+        button {
+            border: 1px solid transparent;
+            background: linear-gradient(90deg, #ededf7 0%, #ffffff 100%);
+            color: #0f1018;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-radius: 12px;
+            padding: 11px 16px;
+            cursor: pointer;
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 12px;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(255, 255, 255, 0.14);
+        }
+
+        .btn-danger {
+            background: rgba(255, 91, 126, 0.13);
+            border-color: rgba(255, 111, 135, 0.5);
+            color: #ffb7c4;
+            box-shadow: none;
+        }
+
+        .topbar {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding: 14px;
+            border-radius: 16px;
+            background: linear-gradient(130deg, rgba(136, 118, 255, 0.18), rgba(53, 197, 241, 0.09));
+            border: 1px solid rgba(165, 140, 255, 0.28);
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .postings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            margin: 10px 0 14px;
+        }
+
+        .filters input,
+        .filters select,
+        .filters button {
+            margin: 0;
+        }
+
+        .postings {
+            display: grid;
+            gap: 10px;
+        }
+
+        .posting {
+            margin: 0;
+            padding: 16px;
+            border-radius: 16px;
+            background: linear-gradient(160deg, #20232f 0%, #171a23 100%);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .posting h3 {
+            margin: 0 0 6px;
+            color: #fff;
+            letter-spacing: -0.01em;
+            text-transform: none;
+            font-size: 25px;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .actions button {
+            padding: 9px 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-card {
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 16px;
+            background: linear-gradient(165deg, rgba(26, 29, 42, 0.95), rgba(15, 17, 26, 0.95));
+        }
+
+        .stat-title {
+            color: #a8b0c4;
+            font-size: 11px;
+            margin-bottom: 8px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: clamp(24px, 3.5vw, 46px);
+            line-height: 0.96;
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.03em;
+        }
+
+        .empty-state {
+            padding: 12px;
+            border: 1px dashed rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .skeleton {
+            position: relative;
+            overflow: hidden;
+            background: rgba(146, 157, 187, 0.16);
+        }
+
+        .skeleton::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+            animation: shimmer 1.2s infinite;
+        }
+
+        .skeleton-text {
+            height: 12px;
+            border-radius: 6px;
+            margin: 6px 0;
+        }
+
+        .skeleton-title {
+            width: 58%;
+        }
+
+        .skeleton-value {
+            width: 36%;
+            height: 24px;
+        }
+
+        .activity-toolbar,
+        .activity-type-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 8px 0;
+        }
+
+        .applications-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+
+        .applications-querybar {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 8px;
+            margin: 8px 0 12px;
+        }
+
+        .activity-toolbar button,
+        .activity-type-toolbar button,
+        .applications-toolbar button {
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #d6dceb;
+            letter-spacing: 0.08em;
+        }
+
+        .activity-toolbar button.active,
+        .activity-type-toolbar button.active,
+        .applications-toolbar button.active {
+            background: var(--brand-soft);
+            border-color: rgba(165, 140, 255, 0.55);
+            color: #ffffff;
+        }
+
+        .applications-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 10px;
+            margin: 10px 0 16px;
+        }
+
+        .application-item {
+            display: grid;
+            gap: 10px;
+        }
+
+        .application-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            color: #c5cbdb;
+            font-size: 13px;
+        }
+
+        .application-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .applicant-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .applicant-summary-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .applicant-filter-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 6px;
+        }
+
+        .applicant-filter-toolbar button {
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #d6dceb;
+            letter-spacing: 0.08em;
+        }
+
+        .applicant-filter-toolbar button.active {
+            background: var(--brand-soft);
+            border-color: rgba(165, 140, 255, 0.55);
+            color: #ffffff;
+        }
+
+        .applicant-summary-item {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            font-size: 13px;
+            color: #d9dff0;
+            opacity: 0;
+            transform: translateY(6px);
+            animation: applicantItemIn var(--motion-applicant-item-default) ease forwards;
+        }
+
+        .applicant-recent-controls {
+            margin-top: 8px;
+            align-items: center;
+            min-height: 28px;
+        }
+
+        #applicantRecentToggleBtn,
+        #applicantRecentVisibleCount {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity var(--motion-ui-fade) ease, transform var(--motion-ui-fade) ease;
+        }
+
+        #applicantRecentToggleBtn.is-hidden,
+        #applicantRecentVisibleCount.is-hidden {
+            opacity: 0;
+            transform: translateY(-2px);
+            pointer-events: none;
+        }
+
+        .activity-item {
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: transform 0.12s ease, border-color 0.12s ease;
+        }
+
+        .activity-item:hover {
+            transform: translateY(-1px);
+            border-left-color: #a58cff;
+        }
+
+        .activity-item:focus-visible {
+            outline: 2px solid #8eafff;
+            outline-offset: 2px;
+            border-left-color: #8eafff;
+        }
+
+        .activity-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .activity-icon {
+            width: 18px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            margin-left: 8px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-badge.pending {
+            background: rgba(255, 195, 133, 0.15);
+            color: #ffbf86;
+        }
+
+        .status-badge.approved {
+            background: rgba(93, 238, 192, 0.16);
+            color: var(--ok);
+        }
+
+        .status-badge.rejected {
+            background: rgba(255, 111, 135, 0.16);
+            color: #ff9db1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 4, 10, 0.65);
+            backdrop-filter: blur(6px);
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity var(--motion-modal-overlay) ease, visibility var(--motion-modal-overlay) ease;
+        }
+
+        .modal.is-open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: linear-gradient(160deg, #1f2331 0%, #141723 100%);
+            width: min(560px, 92%);
+            margin: 8% auto;
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(8px) scale(0.99);
+            transition: opacity var(--motion-modal-content) ease, transform var(--motion-modal-content) ease;
+        }
+
+        .modal.is-open .modal-content {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            padding: 8px 10px;
+        }
+
+        .modal-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .toast {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            background: linear-gradient(90deg, #4ae8bc 0%, #96f4d7 100%);
+            color: #05211c;
+            padding: 10px 14px;
+            border-radius: 999px;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            pointer-events: none;
+            font-weight: 700;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .mobile-dock {
+            display: none;
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            bottom: 12px;
+            border-radius: 20px;
+            padding: 10px;
+            background: rgba(12, 14, 22, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            z-index: 30;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .mobile-dock span {
+            flex: 1;
+            text-align: center;
+            padding: 10px 6px;
+            border-radius: 12px;
+            color: #9ba3b9;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 10px;
+        }
+
+        .mobile-dock .active {
+            background: linear-gradient(135deg, #7456ff, #ba9eff);
+            color: #130f21;
+            font-weight: 800;
+        }
+
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes reveal {
+            from {
+                opacity: 0;
+                transform: translateY(9px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes applicantItemIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .applicant-summary-item {
+                animation: none !important;
+                opacity: 1;
+                transform: none;
+            }
+
+            .modal,
+            .modal-content {
+                transition: none !important;
+            }
+
+            .modal-content {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @media (max-width: 1120px) {
+            .container {
+                grid-template-columns: repeat(8, minmax(0, 1fr));
+            }
+
+            h1,
+            .hero-copy,
+            #dashboardSection,
+            #postingsSection,
+            #taxSection,
+            #createPostingSection,
+            #applicationsSection,
+            #networkSection,
+            #adminInsightsSection,
+            #registerSection,
+            #loginSection {
+                grid-column: 1 / -1;
+            }
+
+            .filters {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 980px) {
+            .app-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .side-rail {
+                display: none;
+            }
+
+            .main-pane {
+                padding: 16px 14px 88px;
+            }
+
+            .mobile-dock {
+                display: flex;
+            }
+
+            .masthead-nav {
+                display: none;
+            }
+
+            .masthead-brand {
+                font-size: 30px;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .tax-grid,
+            .tax-inline,
+            .network-inline,
+            .admin-inline {
+                grid-template-columns: 1fr;
+            }
+
+            .admin-rule-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .sim-compare {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>EDULINK - Instructor Platform</h1>
+    <div class="app-shell">
+        <aside class="side-rail">
+            <div class="rail-brand">Edulink</div>
+            <a class="rail-link is-active" href="#">Overview</a>
+            <a class="rail-link" href="#">Analytics</a>
+            <a class="rail-link" href="#">Settlements</a>
+            <a class="rail-link" href="#">Applicants</a>
+            <a class="rail-link" href="#">Network</a>
+            <button class="rail-cta" type="button">Create Posting</button>
+        </aside>
 
-        <div class="topbar" id="topbar">
-            <div>
-                <strong id="userEmail"></strong>
-                <span class="muted" id="userRole"></span>
+        <main class="main-pane">
+            <div class="container">
+                <div class="masthead">
+                    <div>
+                        <p class="masthead-brand">Edulink Premium</p>
+                        <div class="masthead-sub">Instructor Command Center</div>
+                    </div>
+                    <div class="masthead-nav">
+                        <span class="active">Dashboard</span>
+                        <span>Applicants</span>
+                        <span>Settlements</span>
+                        <span>Network</span>
+                    </div>
+                </div>
+
+                <h1>Welcome back.</h1>
+                <p class="hero-copy">Manage postings, student applications, and payout activity through one streamlined premium panel.</p>
+
+                <div class="topbar" id="topbar">
+                    <div>
+                        <strong id="userEmail"></strong>
+                        <span class="muted" id="userRole"></span>
+                    </div>
+                    <button id="logoutBtn" class="btn-danger">Logout</button>
+                </div>
+
+                <div class="section" id="registerSection">
+                    <h2>Register</h2>
+                    <input type="email" id="registerEmail" placeholder="Email">
+                    <input type="password" id="registerPassword" placeholder="Password">
+                    <select id="registerRole">
+                        <option value="instructor">Instructor</option>
+                        <option value="student">Student</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button id="registerBtn">Register</button>
+                    <p id="registerStatus" class="muted"></p>
+                </div>
+
+                <div class="section" id="loginSection">
+                    <h2>Login</h2>
+                    <input type="email" id="loginEmail" placeholder="Email" value="demo@example.com">
+                    <input type="password" id="loginPassword" placeholder="Password" value="password">
+                    <button id="loginBtn">Login</button>
+                    <p id="loginStatus" class="muted"></p>
+
+                    <h3>Password Reset</h3>
+                    <input type="email" id="resetEmail" placeholder="Reset account email">
+                    <button id="resetRequestBtn">Request Reset Token</button>
+                    <input type="text" id="resetToken" placeholder="Reset token">
+                    <input type="password" id="resetNewPassword" placeholder="New password">
+                    <button id="resetConfirmBtn">Confirm Reset</button>
+                    <p id="resetStatus" class="muted"></p>
+                </div>
+
+                <div class="section" id="securitySection" style="display: none;">
+                    <h2>Account Security</h2>
+                    <input type="password" id="currentPassword" placeholder="Current password">
+                    <input type="password" id="newPassword" placeholder="New password">
+                    <button id="changePasswordBtn">Change Password</button>
+                    <p id="securityStatus" class="muted"></p>
+                </div>
+
+                <div class="section" id="postingsSection" style="display: none;">
+                    <div class="postings-header">
+                        <h2>Available Postings</h2>
+                        <label id="myPostingsToggleWrap" style="display:none;">
+                            <input type="checkbox" id="myPostingsToggle"> My postings only
+                        </label>
+                    </div>
+                    <div class="filters">
+                        <select id="filterSubject">
+                            <option value="">All Subjects</option>
+                            <option value="math">Math</option>
+                            <option value="english">English</option>
+                            <option value="science">Science</option>
+                        </select>
+                        <input type="text" id="filterRegion" placeholder="Region">
+                        <input type="number" id="filterMinRate" placeholder="Min rate">
+                        <button id="applyFiltersBtn">Search</button>
+                        <button id="resetFiltersBtn">Reset</button>
+                    </div>
+                    <div id="postingsList" class="postings"></div>
+                </div>
+
+                <div class="section" id="dashboardSection" style="display: none;">
+                    <h2>Dashboard</h2>
+                    <div class="stats-grid" id="statsGrid"></div>
+                    <h3 style="margin-top:14px;">Recent Activity</h3>
+                    <div class="activity-toolbar" id="activityToolbar">
+                        <button id="activityTodayBtn" data-period="today">Today</button>
+                        <button id="activity7dBtn" data-period="7d" class="active">7 Days</button>
+                        <button id="activity30dBtn" data-period="30d">30 Days</button>
+                    </div>
+                    <div class="activity-type-toolbar" id="activityTypeToolbar">
+                        <button id="activityTypeAllBtn" data-type="all" class="active">All</button>
+                        <button id="activityTypePostingBtn" data-type="posting_created">Posting</button>
+                        <button id="activityTypeReceivedBtn" data-type="application_received">Received</button>
+                        <button id="activityTypeSubmittedBtn" data-type="application_submitted">Submitted</button>
+                    </div>
+                    <div id="activityList" class="muted">No activity yet.</div>
+                </div>
+
+                <div class="section" id="taxSection" style="display: none;">
+                    <h2>Tax & Refund Center</h2>
+                    <p class="muted">3.3% 원천징수 기반 환급 추정 및 후불 수수료(CMS) 플로우</p>
+                    <div class="tax-inline">
+                        <input type="text" id="taxFullName" placeholder="Full name">
+                        <input type="text" id="taxBusinessNo" placeholder="Business number (optional)">
+                    </div>
+                    <div class="tax-inline">
+                        <input type="text" id="taxBankName" placeholder="Bank name">
+                        <input type="text" id="taxBankAccount" placeholder="Bank account">
+                    </div>
+                    <div class="tax-inline">
+                        <input type="number" id="taxYearInput" placeholder="Year" min="2020" max="2100">
+                        <input type="number" id="taxFeeRateInput" placeholder="Fee rate (0.20~0.25)" min="0.2" max="0.25" step="0.01" value="0.22">
+                    </div>
+                    <div class="tax-actions">
+                        <button id="taxOnboardBtn">Save Tax Profile</button>
+                        <button id="taxEstimateBtn">Estimate Refund</button>
+                        <button id="taxSubmitBtn">Submit Claim</button>
+                        <button id="taxStatusBtn">Check Claim Status</button>
+                        <button id="taxCmsChargeBtn">Charge CMS Fee</button>
+                        <button id="taxEventsBtn">Load Events</button>
+                    </div>
+                    <div class="tax-inline">
+                        <input type="text" id="taxSubmissionIdInput" placeholder="Submission ID (optional)">
+                        <input type="number" id="taxEventLimitInput" placeholder="Event limit" min="1" max="100" value="20">
+                    </div>
+                    <div class="tax-inline">
+                        <select id="taxEventTypeFilter">
+                            <option value="">All events</option>
+                            <option value="tax_onboarded">Onboarded</option>
+                            <option value="tax_estimated">Estimated</option>
+                            <option value="tax_submitted">Submitted</option>
+                            <option value="cms_fee_charged">CMS Charged</option>
+                        </select>
+                        <button id="taxPollingBtn" type="button">Start Auto Poll</button>
+                    </div>
+                    <div class="tax-grid" id="taxGrid">
+                        <div class="tax-card">
+                            <div class="stat-title">Gross Income</div>
+                            <p class="tax-value" id="taxGrossValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Withholding 3.3%</div>
+                            <p class="tax-value" id="taxWithholdingValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Estimated Refund</div>
+                            <p class="tax-value" id="taxRefundValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Expected Fee</div>
+                            <p class="tax-value" id="taxFeeValue">-</p>
+                        </div>
+                    </div>
+                    <div class="tax-status" id="taxStatusBox">Tax workflow is idle.</div>
+                    <div class="tax-history" id="taxEventsList"></div>
+                </div>
+
+                <div class="section" id="createPostingSection" style="display: none;">
+                    <h2>Create New Posting</h2>
+                    <p class="muted" id="createPostingMode">Create mode</p>
+                    <input type="text" id="postingTitle" placeholder="Title">
+                    <select id="postingSubject">
+                        <option value="math">Math</option>
+                        <option value="english">English</option>
+                        <option value="science">Science</option>
+                    </select>
+                    <input type="text" id="postingRegion" placeholder="Region">
+                    <input type="number" id="postingRate" placeholder="Rate per hour">
+                    <button id="createPostingBtn">Create Posting</button>
+                    <button id="cancelEditPostingBtn" class="close-btn" style="display:none;">Cancel Edit</button>
+                </div>
+
+                <div class="section" id="applicationsSection" style="display: none;">
+                    <h2 id="applicationsTitle">My Applications</h2>
+                    <p class="muted" id="applicationsSubtitle">Track application status and next actions.</p>
+                    <div class="applications-querybar" id="applicationsQueryBar" style="display:none;">
+                        <input type="text" id="applicationsSearchInput" placeholder="Search by posting title, student email, or student ID">
+                        <select id="applicationsSortSelect">
+                            <option value="newest" selected>Sort: Newest</option>
+                            <option value="oldest">Sort: Oldest</option>
+                            <option value="status">Sort: Status</option>
+                        </select>
+                    </div>
+                    <div class="applications-toolbar" id="applicationsToolbar">
+                        <button id="applicationsAllBtn" class="active" onclick="setApplicationsFilter('all')">All</button>
+                        <button id="applicationsPendingBtn" onclick="setApplicationsFilter('pending')">Pending</button>
+                        <button id="applicationsApprovedBtn" onclick="setApplicationsFilter('approved')">Approved</button>
+                        <button id="applicationsRejectedBtn" onclick="setApplicationsFilter('rejected')">Rejected</button>
+                    </div>
+                    <div class="applications-summary" id="applicationsSummary"></div>
+                    <div id="applicationsList" class="postings"></div>
+                </div>
+
+                <div class="section" id="networkSection" style="display: none;">
+                    <h2>Network Compliance</h2>
+                    <p class="muted">35% 후원수당 상한 모니터링 및 보너스 내역 조회</p>
+                    <div class="network-inline">
+                        <input type="number" id="networkSponsorIdInput" placeholder="Sponsor user ID">
+                        <input type="text" id="networkSponsorEmailInput" placeholder="or Sponsor email">
+                    </div>
+                    <div class="network-inline">
+                        <input type="number" id="networkSalePriceInput" placeholder="Sale price">
+                        <input type="number" id="networkSalePvInput" placeholder="PV">
+                    </div>
+                    <div class="network-inline">
+                        <input type="number" id="networkSaleBvInput" placeholder="BV">
+                        <input type="text" id="networkPeriodInput" placeholder="Period YYYY-MM">
+                    </div>
+                    <div class="network-actions">
+                        <button id="networkLinkBtn">Save Sponsor</button>
+                        <button id="networkSaleBtn">Record Sale</button>
+                        <button id="networkComplianceBtn">Load Compliance</button>
+                        <button id="networkBonusesBtn">Load My Bonuses</button>
+                    </div>
+                    <div class="tax-grid">
+                        <div class="tax-card">
+                            <div class="stat-title">Gamma (sales)</div>
+                            <p class="tax-value" id="networkGammaValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">C total (bonuses)</div>
+                            <p class="tax-value" id="networkCValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">35% Limit</div>
+                            <p class="tax-value" id="networkLimitValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Ratio</div>
+                            <p class="tax-value" id="networkRatioValue">-</p>
+                        </div>
+                    </div>
+                    <div class="network-status" id="networkStatusBox">Network engine is idle.</div>
+                    <div class="network-list" id="networkBonusList"></div>
+                </div>
+
+                <div class="section" id="adminInsightsSection" style="display: none;">
+                    <h2>Admin Compliance Insights</h2>
+                    <p class="muted">기간별 전체 네트워크 후원수당 규제 현황 및 상위 스폰서 랭킹</p>
+                    <div class="admin-inline">
+                        <input type="text" id="adminPeriodInput" placeholder="Period YYYY-MM">
+                        <input type="number" id="adminTopLimitInput" placeholder="Top limit" min="1" max="50" value="10">
+                    </div>
+                    <div class="admin-actions">
+                        <button id="adminSummaryBtn">Load Summary</button>
+                        <button id="adminTopSponsorsBtn">Load Top Sponsors</button>
+                    </div>
+                    <div class="tax-grid">
+                        <div class="tax-card">
+                            <div class="stat-title">Global Gamma</div>
+                            <p class="tax-value" id="adminGammaValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Global C</div>
+                            <p class="tax-value" id="adminCValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Compliance Ratio</div>
+                            <p class="tax-value" id="adminRatioValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Capped Sales</div>
+                            <p class="tax-value" id="adminCappedValue">-</p>
+                        </div>
+                    </div>
+                    <div class="admin-status" id="adminStatusBox">Admin insights are idle.</div>
+                    <div class="risk-badge ok" id="adminRiskBadge">Low Risk</div>
+                    <div class="admin-list" id="adminTopSponsorsList"></div>
+                    <h3>Selected Sponsor Trend</h3>
+                    <div class="admin-inline">
+                        <select id="adminTrendMonthsSelect">
+                            <option value="3">3 months</option>
+                            <option value="6" selected>6 months</option>
+                            <option value="12">12 months</option>
+                        </select>
+                        <button id="adminRefreshTrendBtn">Refresh Last Sponsor Trend</button>
+                    </div>
+                    <div class="admin-trend" id="adminSponsorTrendList"></div>
+                    <h3>Bonus Rules</h3>
+                    <div class="admin-rule-grid">
+                        <input type="text" id="rule1LabelInput" placeholder="Rule1 label" value="L3">
+                        <input type="number" id="rule1MinPvInput" placeholder="Rule1 min PV" value="10000000">
+                        <input type="number" id="rule1RateInput" placeholder="Rule1 rate" step="0.01" value="0.21">
+                        <input type="text" id="rule2LabelInput" placeholder="Rule2 label" value="L2">
+                        <input type="number" id="rule2MinPvInput" placeholder="Rule2 min PV" value="5000000">
+                        <input type="number" id="rule2RateInput" placeholder="Rule2 rate" step="0.01" value="0.06">
+                        <input type="text" id="rule3LabelInput" placeholder="Rule3 label" value="L1">
+                        <input type="number" id="rule3MinPvInput" placeholder="Rule3 min PV" value="200000">
+                        <input type="number" id="rule3RateInput" placeholder="Rule3 rate" step="0.01" value="0.03">
+                    </div>
+                    <div class="admin-actions">
+                        <button id="adminLoadRulesBtn">Load Rules</button>
+                        <button id="adminSaveRulesBtn">Save Rules</button>
+                    </div>
+                    <div class="admin-inline">
+                        <input type="text" id="adminSimPeriodInput" placeholder="Sim period YYYY-MM (optional)">
+                        <button id="adminPreviewRulesBtn">Preview Rule Impact</button>
+                    </div>
+                    <div class="admin-actions">
+                        <button id="adminExportSimCsvBtn">Export Simulation CSV</button>
+                    </div>
+                    <div class="sim-compare" id="adminRuleSimGrid">
+                        <div class="tax-card">
+                            <div class="stat-title">Current Ratio</div>
+                            <p class="tax-value" id="simCurrentRatioValue">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Simulated Ratio</div>
+                            <p class="tax-value" id="simPreviewRatioValue">-</p>
+                            <div class="sim-chip" id="simRatioDeltaChip">-</div>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Delta C Total</div>
+                            <p class="tax-value" id="simDeltaCValue">-</p>
+                            <div class="sim-chip" id="simLimitChip">-</div>
+                        </div>
+                    </div>
+                    <h3>Simulation Sponsor Impact (Top 10)</h3>
+                    <div class="admin-inline">
+                        <select id="simImpactSortSelect">
+                            <option value="abs_desc" selected>Sort: Absolute change</option>
+                            <option value="gain_desc">Sort: Largest gains</option>
+                            <option value="loss_asc">Sort: Largest losses</option>
+                        </select>
+                        <input type="number" id="simImpactTopNInput" min="1" max="100" value="10" placeholder="Top N">
+                    </div>
+                    <div class="admin-inline">
+                        <input type="number" id="simImpactMinDeltaInput" min="0" value="0" placeholder="Min |delta| (KRW)">
+                        <div class="muted">Sort/filter applies to both screen and CSV.</div>
+                    </div>
+                    <div class="admin-list" id="simSponsorImpactList">
+                        <div class="admin-item">Run preview to see sponsor-level impact.</div>
+                    </div>
+                    <div class="admin-inline">
+                        <input type="number" id="adminAuditLimitInput" placeholder="Audit limit" min="1" max="100" value="20">
+                        <button id="adminLoadAuditsBtn">Load Rule Audits</button>
+                    </div>
+                    <div class="audit-list" id="adminRuleAuditList"></div>
+                </div>
             </div>
-            <button id="logoutBtn" class="btn-danger">Logout</button>
-        </div>
+        </main>
+    </div>
 
-        <div class="section" id="registerSection">
-            <h2>Register</h2>
-            <input type="email" id="registerEmail" placeholder="Email">
-            <input type="password" id="registerPassword" placeholder="Password">
-            <select id="registerRole">
-                <option value="instructor">Instructor</option>
-                <option value="student">Student</option>
-            </select>
-            <button id="registerBtn">Register</button>
-            <p id="registerStatus"></p>
-        </div>
-
-        <div class="section" id="loginSection">
-            <h2>Login</h2>
-            <input type="email" id="loginEmail" placeholder="Email" value="demo@example.com">
-            <input type="password" id="loginPassword" placeholder="Password" value="password">
-            <button id="loginBtn">Login</button>
-            <p id="loginStatus"></p>
-        </div>
-
-        <div class="section" id="postingsSection" style="display: none;">
-            <div class="postings-header">
-                <h2>Available Postings</h2>
-                <label id="myPostingsToggleWrap" style="display:none;">
-                    <input type="checkbox" id="myPostingsToggle"> My postings only
-                </label>
-            </div>
-            <div id="postingsList"></div>
-        </div>
-
-        <div class="section" id="createPostingSection" style="display: none;">
-            <h2>Create New Posting</h2>
-            <input type="text" id="postingTitle" placeholder="Title">
-            <select id="postingSubject">
-                <option value="math">Math</option>
-                <option value="english">English</option>
-                <option value="science">Science</option>
-            </select>
-            <input type="text" id="postingRegion" placeholder="Region">
-            <input type="number" id="postingRate" placeholder="Rate per hour">
-            <button id="createPostingBtn">Create Posting</button>
-        </div>
-
-        <div class="section" id="applicationsSection" style="display: none;">
-            <h2>My Applications</h2>
-            <div id="applicationsList"></div>
-        </div>
+    <div class="mobile-dock">
+        <span class="active">Home</span>
+        <span>Postings</span>
+        <span>Finance</span>
+        <span>Profile</span>
     </div>
 
     <div class="toast" id="toast"></div>
+    <div class="modal" id="postingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Posting Detail</h3>
+                <button class="close-btn" id="closeModalBtn">Close</button>
+            </div>
+            <p id="modalBody"></p>
+            <div class="modal-actions">
+                <button id="modalBackApplicantBtn" style="display:none;">Back to Applicant</button>
+                <button id="modalApplyBtn" style="display:none;">Apply Now</button>
+                <button id="modalEditBtn" style="display:none;">Edit in Form</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="applicantModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="applicantModalTitle">Applicant Summary</h3>
+                <button class="close-btn" id="closeApplicantModalBtn">Close</button>
+            </div>
+            <p id="applicantModalMeta" class="muted">Loading...</p>
+            <div class="applicant-summary-grid" id="applicantSummaryGrid"></div>
+            <div class="applicant-filter-toolbar" id="applicantFilterToolbar">
+                <button id="applicantRecentAllBtn" class="active" onclick="setApplicantRecentFilter('all')">All</button>
+                <button id="applicantRecentPendingBtn" onclick="setApplicantRecentFilter('pending')">Pending</button>
+                <button id="applicantRecentApprovedBtn" onclick="setApplicantRecentFilter('approved')">Approved</button>
+                <button id="applicantRecentRejectedBtn" onclick="setApplicantRecentFilter('rejected')">Rejected</button>
+            </div>
+            <p id="applicantFilterSummary" class="muted">Recent applications: 0 shown / 0 total</p>
+            <div class="actions applicant-recent-controls">
+                <button id="applicantRecentToggleBtn" class="is-hidden" aria-hidden="true" disabled>Show more</button>
+                <span id="applicantRecentVisibleCount" class="muted is-hidden" aria-hidden="true"></span>
+            </div>
+            <div class="applicant-summary-list" id="applicantRecentList"></div>
+        </div>
+    </div>
 
     <script>
         if (location.protocol === 'https:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
@@ -96,7 +1532,822 @@
         ].filter(Boolean);
         let token = localStorage.getItem('token') || null;
         let currentUser = null;
+        const modalCloseTimers = {};
+        let activeModalId = null;
+        let lastFocusedElement = null;
+        let modalPostingId = null;
+        let modalPostingData = null;
+        let modalApplicantId = null;
+        let applicantSummaryContext = null;
+        let returnToApplicantContext = null;
+        let applicantRecentFilter = 'all';
+        let applicantRecentExpanded = false;
+        let applicantRecentAnimationMode = 'expand';
+        let applicantRecentCache = [];
+        let editingPostingId = null;
+        let activityPeriod = '7d';
+        let activityType = 'all';
+        let activityCacheByPeriod = {};
+        let applicationsFilter = 'all';
+        let applicationsCache = [];
+        let applicationsSearchQuery = '';
+        let applicationsSort = 'newest';
+        let applicationsSearchDebounceTimer = null;
         let showOnlyMine = false;
+        let latestTaxSubmissionId = null;
+        let taxPollingTimer = null;
+        let lastPolledTaxStatus = null;
+        let lastAdminTrendUserId = null;
+        let lastAdminSimulationResult = null;
+        let simImpactSortMode = 'abs_desc';
+        let simImpactTopN = 10;
+        let simImpactMinDelta = 0;
+        const postingFilters = {
+            subject: '',
+            region: '',
+            minRate: ''
+        };
+
+        function getCssSeconds(variableName, fallbackSeconds) {
+            const rootStyle = getComputedStyle(document.documentElement);
+            const raw = rootStyle.getPropertyValue(variableName).trim();
+            if (!raw) {
+                return fallbackSeconds;
+            }
+            const parsed = parseFloat(raw);
+            if (Number.isNaN(parsed)) {
+                return fallbackSeconds;
+            }
+            return raw.endsWith('ms') ? parsed / 1000 : parsed;
+        }
+
+        function getCssNumber(variableName, fallbackValue) {
+            const rootStyle = getComputedStyle(document.documentElement);
+            const raw = rootStyle.getPropertyValue(variableName).trim();
+            if (!raw) {
+                return fallbackValue;
+            }
+            const parsed = parseFloat(raw);
+            return Number.isNaN(parsed) ? fallbackValue : parsed;
+        }
+
+        function formatWon(value) {
+            if (typeof value !== 'number' || Number.isNaN(value)) {
+                return '-';
+            }
+            return `${value.toLocaleString('ko-KR')} KRW`;
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatRelativeTime(value) {
+            if (!value) {
+                return '-';
+            }
+            const parsed = value.includes('T') ? value : value.replace(' ', 'T');
+            const date = new Date(parsed);
+            if (Number.isNaN(date.getTime())) {
+                return value;
+            }
+            const sec = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
+            if (sec < 60) return `${sec}s ago`;
+            const min = Math.floor(sec / 60);
+            if (min < 60) return `${min}m ago`;
+            const hour = Math.floor(min / 60);
+            if (hour < 24) return `${hour}h ago`;
+            const day = Math.floor(hour / 24);
+            return `${day}d ago`;
+        }
+
+        function statusBadge(status) {
+            if (!status) {
+                return '';
+            }
+            const safe = escapeHtml(status);
+            return `<span class="status-badge ${safe}">${safe}</span>`;
+        }
+
+        function formatApplicantStatusSummary(statusCounts) {
+            const counts = statusCounts || {};
+            const pending = Number(counts.pending || 0);
+            const approved = Number(counts.approved || 0);
+            const rejected = Number(counts.rejected || 0);
+            return `P${pending}/A${approved}/R${rejected}`;
+        }
+
+        function getFocusableElements(modal) {
+            if (!modal) {
+                return [];
+            }
+            const selector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+            return Array.from(modal.querySelectorAll(selector)).filter((el) => !el.disabled && el.offsetParent !== null);
+        }
+
+        function openModalById(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) {
+                return;
+            }
+
+            if (modalCloseTimers[modalId]) {
+                clearTimeout(modalCloseTimers[modalId]);
+                modalCloseTimers[modalId] = null;
+            }
+
+            if (activeModalId !== modalId) {
+                lastFocusedElement = document.activeElement;
+            }
+
+            modal.style.display = 'block';
+            modal.setAttribute('aria-hidden', 'false');
+            requestAnimationFrame(() => {
+                modal.classList.add('is-open');
+            });
+            activeModalId = modalId;
+
+            const focusable = getFocusableElements(modal);
+            if (focusable.length > 0) {
+                focusable[0].focus();
+            }
+        }
+
+        function closeModalById(modalId) {
+            const modal = document.getElementById(modalId);
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('is-open');
+            modal.setAttribute('aria-hidden', 'true');
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const closeDelay = reduceMotion ? 0 : Math.round(getCssSeconds('--motion-modal-content', 0.2) * 1000);
+            modalCloseTimers[modalId] = setTimeout(() => {
+                modal.style.display = 'none';
+                modalCloseTimers[modalId] = null;
+            }, closeDelay);
+            if (activeModalId === modalId) {
+                activeModalId = null;
+                if (lastFocusedElement && typeof lastFocusedElement.focus === 'function') {
+                    lastFocusedElement.focus();
+                }
+                lastFocusedElement = null;
+            }
+        }
+
+        function handleGlobalModalKeydown(event) {
+            if (!activeModalId) {
+                return;
+            }
+
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                if (activeModalId === 'postingModal') {
+                    closePostingModal();
+                } else if (activeModalId === 'applicantModal') {
+                    closeApplicantModal();
+                }
+                return;
+            }
+
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            const modal = document.getElementById(activeModalId);
+            const focusable = getFocusableElements(modal);
+            if (!focusable.length) {
+                event.preventDefault();
+                return;
+            }
+
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const current = document.activeElement;
+
+            if (event.shiftKey && current === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && current === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        }
+
+        function updateApplicantRecentFilterControls() {
+            const counts = {
+                all: applicantRecentCache.length,
+                pending: 0,
+                approved: 0,
+                rejected: 0
+            };
+
+            applicantRecentCache.forEach((item) => {
+                if (item && item.status in counts) {
+                    counts[item.status] += 1;
+                }
+            });
+
+            const mapping = {
+                all: 'applicantRecentAllBtn',
+                pending: 'applicantRecentPendingBtn',
+                approved: 'applicantRecentApprovedBtn',
+                rejected: 'applicantRecentRejectedBtn'
+            };
+
+            const labels = {
+                all: 'All',
+                pending: 'Pending',
+                approved: 'Approved',
+                rejected: 'Rejected'
+            };
+
+            Object.entries(mapping).forEach(([filter, id]) => {
+                const button = document.getElementById(id);
+                if (!button) {
+                    return;
+                }
+                button.textContent = `${labels[filter]} (${counts[filter] || 0})`;
+                if (applicantRecentFilter === filter) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        function renderApplicantRecentList() {
+            const list = document.getElementById('applicantRecentList');
+            const summary = document.getElementById('applicantFilterSummary');
+            const toggleBtn = document.getElementById('applicantRecentToggleBtn');
+            const visibleCountLabel = document.getElementById('applicantRecentVisibleCount');
+            if (!list) {
+                return;
+            }
+
+            updateApplicantRecentFilterControls();
+
+            const filtered = applicantRecentFilter === 'all'
+                ? applicantRecentCache
+                : applicantRecentCache.filter((item) => item.status === applicantRecentFilter);
+
+            const visibleItems = applicantRecentExpanded ? filtered : filtered.slice(0, 5);
+
+            if (summary) {
+                const shown = visibleItems.length;
+                const total = applicantRecentCache.length;
+                summary.textContent = `Recent applications: ${shown} shown / ${total} total`;
+            }
+            if (toggleBtn) {
+                if (filtered.length > 5) {
+                    toggleBtn.classList.remove('is-hidden');
+                    toggleBtn.disabled = false;
+                    toggleBtn.setAttribute('aria-hidden', 'false');
+                    toggleBtn.textContent = applicantRecentExpanded ? 'Show less' : `Show more (${filtered.length - 5})`;
+                } else {
+                    toggleBtn.classList.add('is-hidden');
+                    toggleBtn.disabled = true;
+                    toggleBtn.setAttribute('aria-hidden', 'true');
+                    toggleBtn.textContent = 'Show more';
+                }
+            }
+            if (visibleCountLabel) {
+                if (filtered.length > 0) {
+                    visibleCountLabel.classList.remove('is-hidden');
+                    visibleCountLabel.setAttribute('aria-hidden', 'false');
+                    visibleCountLabel.textContent = `${visibleItems.length}/${filtered.length}`;
+                } else {
+                    visibleCountLabel.classList.add('is-hidden');
+                    visibleCountLabel.setAttribute('aria-hidden', 'true');
+                    visibleCountLabel.textContent = '';
+                }
+            }
+
+            if (!filtered.length) {
+                const scope = applicantRecentFilter === 'all'
+                    ? 'recent applications'
+                    : `${applicantRecentFilter} applications`;
+                list.innerHTML = `<div class="empty-state muted">No ${scope}.</div>`;
+                return;
+            }
+
+            const isFilterAnimation = applicantRecentAnimationMode === 'filter';
+            const itemDelayStep = isFilterAnimation
+                ? getCssSeconds('--motion-applicant-stagger-fast', 0.014)
+                : getCssSeconds('--motion-applicant-stagger-default', 0.025);
+            const itemDuration = isFilterAnimation
+                ? getCssSeconds('--motion-applicant-item-fast', 0.16)
+                : getCssSeconds('--motion-applicant-item-default', 0.24);
+            const staggerLimit = Math.max(1, Math.floor(isFilterAnimation
+                ? getCssNumber('--motion-applicant-stagger-limit-fast', 6)
+                : getCssNumber('--motion-applicant-stagger-limit-default', 8)));
+
+            list.innerHTML = visibleItems.map((item, index) => `
+                <div class="applicant-summary-item" style="animation-duration:${itemDuration}s; animation-delay:${Math.min(index, staggerLimit) * itemDelayStep}s;">
+                    <strong>${escapeHtml(item.posting_title || `Posting #${item.posting_id}`)}</strong>
+                    ${statusBadge(item.status)}
+                    <div class="muted">Application ID: ${item.application_id} | ${formatRelativeTime(item.created_at)}</div>
+                    <div class="actions">
+                        <button onclick="openPostingFromApplicant(${item.posting_id}, ${item.student_id})">Open Posting</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setApplicantRecentFilter(filter) {
+            applicantRecentFilter = filter;
+            applicantRecentExpanded = false;
+            applicantRecentAnimationMode = 'filter';
+            renderApplicantRecentList();
+        }
+
+        function toggleApplicantRecentExpanded() {
+            applicantRecentExpanded = !applicantRecentExpanded;
+            applicantRecentAnimationMode = 'expand';
+            renderApplicantRecentList();
+        }
+
+        async function openPostingFromApplicant(postingId, studentId) {
+            if (!postingId) {
+                return;
+            }
+            returnToApplicantContext = {
+                studentId: studentId || modalApplicantId || null,
+                email: applicantSummaryContext && applicantSummaryContext.email
+                    ? applicantSummaryContext.email
+                    : null,
+                statusSummary: applicantSummaryContext && applicantSummaryContext.statusSummary
+                    ? applicantSummaryContext.statusSummary
+                    : null
+            };
+            closeApplicantModal();
+            await viewPostingDetail(postingId);
+        }
+
+        async function backToApplicantFromPosting() {
+            if (!returnToApplicantContext || !returnToApplicantContext.studentId) {
+                return;
+            }
+            const nextStudentId = returnToApplicantContext.studentId;
+            closePostingModal();
+            await openApplicantSummary(nextStudentId);
+        }
+
+        async function openApplicantSummary(studentId) {
+            if (!token) {
+                return;
+            }
+
+            modalApplicantId = studentId;
+            applicantSummaryContext = { studentId, email: null };
+            applicantRecentFilter = 'all';
+            applicantRecentExpanded = false;
+            applicantRecentAnimationMode = 'filter';
+            applicantRecentCache = [];
+            document.getElementById('applicantModalTitle').textContent = `Applicant #${studentId}`;
+            document.getElementById('applicantModalMeta').textContent = 'Loading applicant summary...';
+            document.getElementById('applicantFilterSummary').textContent = 'Recent applications: loading...';
+            document.getElementById('applicantSummaryGrid').innerHTML = '';
+            document.getElementById('applicantRecentList').innerHTML = '';
+            openModalById('applicantModal');
+            updateApplicantRecentFilterControls();
+
+            const response = await apiFetch(`/applications/applicants/${studentId}/summary`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const payload = await parseJsonSafe(response);
+
+            if (!response.ok) {
+                document.getElementById('applicantModalMeta').textContent = payload.error || 'Failed to load applicant summary.';
+                return;
+            }
+
+            const applicantEmail = payload.student_email || `student-${studentId}@unknown`;
+            const applicantOrg = payload.student_organization || 'N/A';
+            const total = payload.total_applications_to_you || 0;
+            const statusCounts = payload.status_counts || {};
+            applicantSummaryContext = {
+                studentId,
+                email: applicantEmail,
+                statusSummary: formatApplicantStatusSummary(statusCounts)
+            };
+
+            document.getElementById('applicantModalTitle').textContent = `Applicant: ${applicantEmail}`;
+            document.getElementById('applicantModalMeta').textContent = `Organization: ${applicantOrg} | Student ID: ${studentId}`;
+
+            document.getElementById('applicantSummaryGrid').innerHTML = [
+                { title: 'Total to You', value: total },
+                { title: 'Pending', value: statusCounts.pending || 0 },
+                { title: 'Approved', value: statusCounts.approved || 0 },
+                { title: 'Rejected', value: statusCounts.rejected || 0 }
+            ].map((item) => `
+                <div class="stat-card">
+                    <div class="stat-title">${item.title}</div>
+                    <div class="stat-value">${item.value}</div>
+                </div>
+            `).join('');
+
+            applicantRecentCache = Array.isArray(payload.recent_applications) ? payload.recent_applications : [];
+            renderApplicantRecentList();
+        }
+
+        function closeApplicantModal() {
+            closeModalById('applicantModal');
+            modalApplicantId = null;
+            applicantSummaryContext = null;
+            applicantRecentFilter = 'all';
+            applicantRecentExpanded = false;
+            applicantRecentAnimationMode = 'expand';
+            applicantRecentCache = [];
+            document.getElementById('applicantFilterSummary').textContent = 'Recent applications: 0 shown / 0 total';
+            document.getElementById('applicantRecentToggleBtn').classList.add('is-hidden');
+            document.getElementById('applicantRecentToggleBtn').disabled = true;
+            document.getElementById('applicantRecentToggleBtn').setAttribute('aria-hidden', 'true');
+            document.getElementById('applicantRecentVisibleCount').classList.add('is-hidden');
+            document.getElementById('applicantRecentVisibleCount').setAttribute('aria-hidden', 'true');
+            document.getElementById('applicantRecentVisibleCount').textContent = '';
+        }
+
+        function setTaxStatus(message) {
+            const box = document.getElementById('taxStatusBox');
+            if (box) {
+                box.textContent = message;
+            }
+        }
+
+        function setTaxValues({ gross_income, withholding_amount, estimated_refund, service_fee_amount }) {
+            document.getElementById('taxGrossValue').textContent = formatWon(gross_income);
+            document.getElementById('taxWithholdingValue').textContent = formatWon(withholding_amount);
+            document.getElementById('taxRefundValue').textContent = formatWon(estimated_refund);
+            document.getElementById('taxFeeValue').textContent = formatWon(service_fee_amount);
+        }
+
+        function setNetworkStatus(message) {
+            const box = document.getElementById('networkStatusBox');
+            if (box) {
+                box.textContent = message;
+            }
+        }
+
+        function setAdminStatus(message) {
+            const box = document.getElementById('adminStatusBox');
+            if (box) {
+                box.textContent = message;
+            }
+        }
+
+        function setAdminRiskBadge(ratio) {
+            const badge = document.getElementById('adminRiskBadge');
+            if (!badge) {
+                return;
+            }
+            badge.classList.remove('ok', 'warn', 'danger');
+            if ((ratio || 0) > 0.35) {
+                badge.classList.add('danger');
+                badge.textContent = 'High Risk';
+                return;
+            }
+            if ((ratio || 0) >= 0.30) {
+                badge.classList.add('warn');
+                badge.textContent = 'Warning';
+                return;
+            }
+            badge.classList.add('ok');
+            badge.textContent = 'Low Risk';
+        }
+
+        function setNetworkValues({ gamma, c_total, limit, ratio }) {
+            document.getElementById('networkGammaValue').textContent = formatWon(Math.round(gamma || 0));
+            document.getElementById('networkCValue').textContent = formatWon(Math.round(c_total || 0));
+            document.getElementById('networkLimitValue').textContent = formatWon(Math.round(limit || 0));
+            document.getElementById('networkRatioValue').textContent = `${(((ratio || 0) * 100).toFixed(2))}%`;
+        }
+
+        function renderNetworkBonuses(items) {
+            const container = document.getElementById('networkBonusList');
+            if (!Array.isArray(items) || items.length === 0) {
+                container.innerHTML = '<div class="network-item">No bonus records found.</div>';
+                return;
+            }
+
+            container.innerHTML = items.map((item) => `
+                <div class="network-item">
+                    Sale #${item.sale_id} | Level ${item.referral_level}<br>
+                    Rate: ${((item.applied_rate || 0) * 100).toFixed(2)}% | Paid: ${formatWon(item.amount_paid || 0)}<br>
+                    <span class="muted">${item.created_at || '-'}</span>
+                </div>
+            `).join('');
+        }
+
+        function setAdminValues({ gamma, c_total, ratio, capped_sales }) {
+            document.getElementById('adminGammaValue').textContent = formatWon(Math.round(gamma || 0));
+            document.getElementById('adminCValue').textContent = formatWon(Math.round(c_total || 0));
+            document.getElementById('adminRatioValue').textContent = `${(((ratio || 0) * 100).toFixed(2))}%`;
+            document.getElementById('adminCappedValue').textContent = String(capped_sales || 0);
+        }
+
+        function renderAdminTopSponsors(items) {
+            const container = document.getElementById('adminTopSponsorsList');
+            if (!Array.isArray(items) || items.length === 0) {
+                container.innerHTML = '<div class="admin-item">No sponsor payouts in selected period.</div>';
+                return;
+            }
+
+            container.innerHTML = items.map((item, index) => `
+                <div class="admin-item">
+                    #${index + 1} ${item.email || `user-${item.user_id}`}<br>
+                    Paid: ${formatWon(item.total_paid || 0)} | Count: ${item.allocation_count || 0}<br>
+                    Avg Rate: ${((item.avg_rate || 0) * 100).toFixed(2)}%
+                    <br><button type="button" data-user-id="${item.user_id}" class="admin-trend-btn">Trend</button>
+                </div>
+            `).join('');
+
+            Array.from(container.querySelectorAll('.admin-trend-btn')).forEach((btn) => {
+                btn.addEventListener('click', async () => {
+                    const userId = parseInt(btn.getAttribute('data-user-id'), 10);
+                    if (!userId) {
+                        return;
+                    }
+                    await loadAdminSponsorTrend(userId);
+                });
+            });
+        }
+
+        function renderAdminSponsorTrend(data) {
+            const container = document.getElementById('adminSponsorTrendList');
+            const trend = (data && Array.isArray(data.trend)) ? data.trend : [];
+            if (trend.length === 0) {
+                container.innerHTML = '<div class="admin-item">No trend data for selected sponsor.</div>';
+                return;
+            }
+
+            const maxPaid = Math.max(...trend.map((row) => Number(row.total_paid || 0)), 1);
+            const barsHtml = trend.map((row) => {
+                const paid = Number(row.total_paid || 0);
+                const pct = Math.max(6, Math.round((paid / maxPaid) * 100));
+                return `
+                    <div>
+                        <div class="trend-bar">
+                            <div class="trend-bar-fill" style="height:${pct}%;"></div>
+                        </div>
+                        <div class="trend-label">${(row.month || '-').slice(5)}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="admin-item">
+                    <strong>${data.email || `user-${data.user_id}`}</strong>
+                    <div class="muted">Window: last ${data.months || trend.length || 6} months</div>
+                    <div class="trend-bars">${barsHtml}</div>
+                </div>
+            ` + trend.map((row) => `
+                <div class="admin-item">
+                    ${row.month}<br>
+                    Paid: ${formatWon(row.total_paid || 0)} | Count: ${row.allocation_count || 0}<br>
+                    Avg Rate: ${((row.avg_rate || 0) * 100).toFixed(2)}%
+                </div>
+            `).join('');
+        }
+
+        function formatRuleSnapshot(rule) {
+            if (!rule) {
+                return '-';
+            }
+            return `${rule.label}:${Number(rule.min_pv || 0).toLocaleString()}/${Number(rule.rate || 0).toFixed(2)}`;
+        }
+
+        function renderRuleDiff(beforeRules, afterRules) {
+            const rows = [];
+            const max = Math.max(beforeRules.length, afterRules.length);
+            for (let i = 0; i < max; i += 1) {
+                const before = beforeRules[i] || null;
+                const after = afterRules[i] || null;
+                if (JSON.stringify(before || {}) === JSON.stringify(after || {})) {
+                    continue;
+                }
+                rows.push(`
+                    <div class="diff-row">
+                        <div class="diff-before">Before: ${formatRuleSnapshot(before)}</div>
+                        <div class="diff-after">After: ${formatRuleSnapshot(after)}</div>
+                    </div>
+                `);
+            }
+
+            if (rows.length === 0) {
+                return '<div class="muted">No effective field changes.</div>';
+            }
+            return rows.join('');
+        }
+
+        function renderRuleAudits(items) {
+            const container = document.getElementById('adminRuleAuditList');
+            if (!Array.isArray(items) || items.length === 0) {
+                container.innerHTML = '<div class="admin-item">No rule audits found.</div>';
+                return;
+            }
+
+            container.innerHTML = items.map((item) => {
+                let parsed = null;
+                try {
+                    parsed = JSON.parse(item.rules_json || '{}');
+                } catch (error) {
+                    parsed = null;
+                }
+
+                const beforeRules = parsed && Array.isArray(parsed.before) ? parsed.before : [];
+                const afterRules = parsed && Array.isArray(parsed.after) ? parsed.after : [];
+                const compact = afterRules.map((rule) => `${rule.label}:${rule.min_pv}/${rule.rate}`).join(', ');
+                const diffHtml = renderRuleDiff(beforeRules, afterRules);
+
+                return `
+                    <div class="admin-item">
+                        #${item.id} by ${item.actor_email || `user-${item.actor_user_id}`}<br>
+                        ${item.created_at || '-'}<br>
+                        <span class="muted">${compact || 'No parsed rule payload'}</span>
+                        <div class="audit-diff">${diffHtml}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSimulationSponsorImpact(items) {
+            const container = document.getElementById('simSponsorImpactList');
+            if (!Array.isArray(items) || items.length === 0) {
+                container.innerHTML = '<div class="admin-item">No sponsor impact data in selected period.</div>';
+                return;
+            }
+
+            const processed = getProcessedSponsorDeltas(items);
+            if (processed.length === 0) {
+                container.innerHTML = '<div class="admin-item">No sponsors match current filters.</div>';
+                return;
+            }
+
+            container.innerHTML = processed.map((item, index) => {
+                const delta = Number(item.delta_paid || 0);
+                const deltaPrefix = delta >= 0 ? '+' : '';
+                const deltaClass = delta >= 0 ? 'good' : 'bad';
+                return `
+                    <div class="admin-item">
+                        #${index + 1} ${item.email || `user-${item.user_id}`}<br>
+                        Current: ${formatWon(item.current_paid || 0)} | Simulated: ${formatWon(item.simulated_paid || 0)}<br>
+                        <span class="sim-chip ${deltaClass}">Delta: ${deltaPrefix}${formatWon(Math.round(delta))}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getProcessedSponsorDeltas(items) {
+            if (!Array.isArray(items)) {
+                return [];
+            }
+
+            const filtered = items.filter((item) => {
+                const delta = Math.abs(Number(item.delta_paid || 0));
+                return delta >= simImpactMinDelta;
+            });
+
+            const sorted = filtered.sort((a, b) => {
+                const aDelta = Number(a.delta_paid || 0);
+                const bDelta = Number(b.delta_paid || 0);
+                if (simImpactSortMode === 'gain_desc') {
+                    return bDelta - aDelta;
+                }
+                if (simImpactSortMode === 'loss_asc') {
+                    return aDelta - bDelta;
+                }
+                return Math.abs(bDelta) - Math.abs(aDelta);
+            });
+
+            return sorted.slice(0, simImpactTopN);
+        }
+
+        function toCsvField(value) {
+            const raw = String(value == null ? '' : value);
+            return `"${raw.replace(/"/g, '""')}"`;
+        }
+
+        function exportAdminSimulationCsv() {
+            if (!lastAdminSimulationResult) {
+                setAdminStatus('Run Preview Rule Impact first, then export CSV.');
+                return;
+            }
+
+            const data = lastAdminSimulationResult;
+            const rows = [];
+            rows.push(['metric', 'value']);
+            rows.push(['period', data.period || '']);
+            rows.push(['sales_count', data.sales_count || 0]);
+            rows.push(['gamma', Math.round(data.gamma || 0)]);
+            rows.push(['current_c_total', Math.round(data.current_c_total || 0)]);
+            rows.push(['simulated_c_total', Math.round(data.simulated_c_total || 0)]);
+            rows.push(['delta_c_total', Math.round(data.delta_c_total || 0)]);
+            rows.push(['current_ratio_pct', ((data.current_ratio || 0) * 100).toFixed(4)]);
+            rows.push(['simulated_ratio_pct', ((data.simulated_ratio || 0) * 100).toFixed(4)]);
+            rows.push(['delta_ratio_pctp', ((data.delta_ratio || 0) * 100).toFixed(4)]);
+            rows.push(['simulated_capped_sales', data.simulated_capped_sales || 0]);
+            rows.push(['within_limit', data.within_limit ? 'true' : 'false']);
+            rows.push([]);
+            rows.push(['rule_index', 'label', 'min_pv', 'rate']);
+            const currentRules = collectAdminRulesFromInputs();
+            currentRules.forEach((rule, idx) => {
+                rows.push([
+                    idx + 1,
+                    rule.label || '',
+                    rule.min_pv || 0,
+                    rule.rate || 0
+                ]);
+            });
+            rows.push([]);
+            rows.push(['user_id', 'email', 'current_paid', 'simulated_paid', 'delta_paid']);
+
+            const deltas = getProcessedSponsorDeltas(Array.isArray(data.sponsor_deltas) ? [...data.sponsor_deltas] : []);
+            deltas.forEach((item) => {
+                rows.push([
+                    item.user_id || '',
+                    item.email || '',
+                    Math.round(item.current_paid || 0),
+                    Math.round(item.simulated_paid || 0),
+                    Math.round(item.delta_paid || 0)
+                ]);
+            });
+
+            const csvText = rows.map((line) => line.map(toCsvField).join(',')).join('\n');
+            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            const safePeriod = (data.period || 'period').replace(/[^0-9\-]/g, '_');
+            const stamp = new Date().toISOString().slice(0, 10);
+            const filename = `simulation_${safePeriod}_${stamp}.csv`;
+
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            setAdminStatus(`Simulation CSV exported: ${filename}`);
+            showToast('Simulation CSV exported');
+        }
+
+        function setAdminRuleInputs(rules) {
+            const safe = Array.isArray(rules) ? rules : [];
+            const fallback = [
+                { label: 'L3', min_pv: 10000000, rate: 0.21 },
+                { label: 'L2', min_pv: 5000000, rate: 0.06 },
+                { label: 'L1', min_pv: 200000, rate: 0.03 }
+            ];
+            const src = safe.length ? safe : fallback;
+            for (let i = 0; i < 3; i += 1) {
+                const rule = src[i] || fallback[i];
+                document.getElementById(`rule${i + 1}LabelInput`).value = rule.label || `R${i + 1}`;
+                document.getElementById(`rule${i + 1}MinPvInput`).value = String(rule.min_pv || 0);
+                document.getElementById(`rule${i + 1}RateInput`).value = String(rule.rate || 0);
+            }
+        }
+
+        function collectAdminRulesFromInputs() {
+            const rules = [];
+            for (let i = 0; i < 3; i += 1) {
+                rules.push({
+                    label: document.getElementById(`rule${i + 1}LabelInput`).value.trim() || `R${i + 1}`,
+                    min_pv: parseInt(document.getElementById(`rule${i + 1}MinPvInput`).value, 10) || 0,
+                    rate: parseFloat(document.getElementById(`rule${i + 1}RateInput`).value) || 0
+                });
+            }
+            return rules;
+        }
+
+        function renderTaxEvents(items) {
+            const container = document.getElementById('taxEventsList');
+            if (!Array.isArray(items) || items.length === 0) {
+                container.innerHTML = '<div class="tax-history-item">No tax events yet.</div>';
+                return;
+            }
+
+            container.innerHTML = items.map((item) => {
+                const claim = item.claim_code || '-';
+                const type = item.event_type || '-';
+                const payload = item.event_payload || '-';
+                const created = item.created_at || '-';
+                return `
+                    <div class="tax-history-item">
+                        <strong>${type}</strong><br>
+                        Claim: ${claim}<br>
+                        ${payload}<br>
+                        <span class="muted">${created}</span>
+                    </div>
+                `;
+            }).join('');
+        }
 
         async function apiFetch(path, options = {}) {
             let lastError = null;
@@ -138,6 +2389,14 @@
         function showSections() {
             document.getElementById('postingsSection').style.display = 'block';
             document.getElementById('applicationsSection').style.display = 'block';
+            document.getElementById('dashboardSection').style.display = 'block';
+            document.getElementById('securitySection').style.display = 'block';
+            document.getElementById('taxSection').style.display =
+                currentUser && currentUser.role === 'instructor' ? 'block' : 'none';
+            document.getElementById('networkSection').style.display =
+                currentUser && currentUser.role === 'instructor' ? 'block' : 'none';
+            document.getElementById('adminInsightsSection').style.display =
+                currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin') ? 'block' : 'none';
             document.getElementById('createPostingSection').style.display =
                 currentUser && currentUser.role === 'instructor' ? 'block' : 'none';
             document.getElementById('registerSection').style.display = 'none';
@@ -147,11 +2406,17 @@
             document.getElementById('userRole').textContent = currentUser ? `(${currentUser.role})` : '';
             document.getElementById('myPostingsToggleWrap').style.display =
                 currentUser && currentUser.role === 'instructor' ? 'inline-flex' : 'none';
+            updateApplicationsViewMeta();
         }
 
         function hideSections() {
             document.getElementById('postingsSection').style.display = 'none';
             document.getElementById('applicationsSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'none';
+            document.getElementById('securitySection').style.display = 'none';
+            document.getElementById('taxSection').style.display = 'none';
+            document.getElementById('networkSection').style.display = 'none';
+            document.getElementById('adminInsightsSection').style.display = 'none';
             document.getElementById('createPostingSection').style.display = 'none';
             document.getElementById('registerSection').style.display = 'block';
             document.getElementById('loginSection').style.display = 'block';
@@ -163,10 +2428,101 @@
             token = null;
             currentUser = null;
             showOnlyMine = false;
+            activityType = 'all';
+            activityPeriod = '7d';
+            activityCacheByPeriod = {};
+            applicationsFilter = 'all';
+            applicationsCache = [];
+            applicationsSearchQuery = '';
+            applicationsSort = 'newest';
+            if (applicationsSearchDebounceTimer) {
+                clearTimeout(applicationsSearchDebounceTimer);
+                applicationsSearchDebounceTimer = null;
+            }
+            latestTaxSubmissionId = null;
+            lastPolledTaxStatus = null;
+            stopTaxPolling();
             localStorage.removeItem('token');
             document.getElementById('myPostingsToggle').checked = false;
             setStatus('loginStatus', 'Logged out.');
             hideSections();
+        }
+
+        function updateApplicationsViewMeta() {
+            const title = document.getElementById('applicationsTitle');
+            const subtitle = document.getElementById('applicationsSubtitle');
+            const queryBar = document.getElementById('applicationsQueryBar');
+            const searchInput = document.getElementById('applicationsSearchInput');
+            const sortSelect = document.getElementById('applicationsSortSelect');
+            if (!title || !subtitle) {
+                return;
+            }
+
+            const isInstructor = currentUser && currentUser.role === 'instructor';
+            title.textContent = isInstructor ? 'Received Applications' : 'My Applications';
+            subtitle.textContent = isInstructor
+                ? 'Review incoming applicants by status and act on pending decisions.'
+                : 'Track your submissions by status and cancel only pending requests.';
+
+            if (queryBar) {
+                queryBar.style.display = isInstructor ? 'grid' : 'none';
+            }
+            if (searchInput) {
+                searchInput.placeholder = isInstructor
+                    ? 'Search by posting title, student email, or student ID'
+                    : 'Search by posting title';
+                searchInput.value = applicationsSearchQuery;
+            }
+            if (sortSelect) {
+                sortSelect.value = applicationsSort;
+            }
+        }
+
+        function updateApplicationsFilterControls() {
+            const mapping = {
+                all: 'applicationsAllBtn',
+                pending: 'applicationsPendingBtn',
+                approved: 'applicationsApprovedBtn',
+                rejected: 'applicationsRejectedBtn'
+            };
+
+            Object.entries(mapping).forEach(([filter, id]) => {
+                const button = document.getElementById(id);
+                if (!button) {
+                    return;
+                }
+                if (applicationsFilter === filter) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        function updateActivityTypeControls() {
+            const postingBtn = document.getElementById('activityTypePostingBtn');
+            const receivedBtn = document.getElementById('activityTypeReceivedBtn');
+            const submittedBtn = document.getElementById('activityTypeSubmittedBtn');
+
+            const isInstructor = currentUser && currentUser.role === 'instructor';
+            postingBtn.style.display = isInstructor ? 'inline-block' : 'none';
+            receivedBtn.style.display = isInstructor ? 'inline-block' : 'none';
+            submittedBtn.style.display = isInstructor ? 'none' : 'inline-block';
+
+            if (!isInstructor && (activityType === 'posting_created' || activityType === 'application_received')) {
+                activityType = 'all';
+            }
+            if (isInstructor && activityType === 'application_submitted') {
+                activityType = 'all';
+            }
+
+            Array.from(document.querySelectorAll('#activityTypeToolbar button')).forEach((button) => {
+                if (button.getAttribute('data-type') === activityType) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
         }
 
         async function loadUserInfo() {
@@ -186,7 +2542,770 @@
 
             currentUser = data;
             showSections();
-            await Promise.all([loadPostings(), loadApplications()]);
+            updateActivityTypeControls();
+            await Promise.all([loadPostings(), loadApplications(), loadDashboardStats(), loadDashboardActivity()]);
+            if (currentUser && currentUser.role === 'instructor') {
+                await loadTaxEstimate();
+                await loadNetworkCompliance();
+                await loadNetworkBonuses();
+            }
+            if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
+                await loadAdminComplianceSummary();
+                await loadAdminTopSponsors();
+                await loadAdminRules();
+                await loadAdminRuleAudits();
+            }
+        }
+
+        function resolveTaxInputs() {
+            const nowYear = new Date().getFullYear();
+            const year = parseInt(document.getElementById('taxYearInput').value, 10) || nowYear;
+            const feeRate = parseFloat(document.getElementById('taxFeeRateInput').value || '0.22');
+            return { year, feeRate };
+        }
+
+        async function onboardTaxProfile() {
+            if (!token) {
+                return;
+            }
+
+            const payload = {
+                full_name: document.getElementById('taxFullName').value.trim(),
+                business_number: document.getElementById('taxBusinessNo').value.trim(),
+                bank_name: document.getElementById('taxBankName').value.trim(),
+                bank_account: document.getElementById('taxBankAccount').value.trim(),
+                consent_withholding: true
+            };
+
+            const response = await apiFetch('/api/tax/onboard', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setTaxStatus(data.error || 'Failed to save tax profile.');
+                return;
+            }
+
+            setTaxStatus('Tax profile saved successfully.');
+            showToast('Tax profile saved');
+        }
+
+        async function loadTaxEstimate() {
+            if (!token) {
+                return;
+            }
+            const { year, feeRate } = resolveTaxInputs();
+            const response = await apiFetch(`/api/tax/estimate?year=${encodeURIComponent(year)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+
+            if (!response.ok) {
+                setTaxStatus(data.error || 'Failed to estimate tax.');
+                return;
+            }
+
+            setTaxValues({
+                gross_income: data.gross_income || 0,
+                withholding_amount: data.withholding_amount || 0,
+                estimated_refund: data.estimated_refund || 0,
+                service_fee_amount: Math.round((data.estimated_refund || 0) * feeRate)
+            });
+            setTaxStatus(`Tax estimate loaded for ${year}.`);
+        }
+
+        async function submitTaxClaim() {
+            if (!token) {
+                return;
+            }
+
+            const { year, feeRate } = resolveTaxInputs();
+            const response = await apiFetch('/api/tax/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ year, service_fee_rate: feeRate })
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setTaxStatus(data.error || 'Failed to submit tax claim.');
+                return;
+            }
+
+            latestTaxSubmissionId = data.submission_id;
+            document.getElementById('taxSubmissionIdInput').value = latestTaxSubmissionId;
+            document.getElementById('taxFeeValue').textContent = formatWon(data.service_fee_amount || 0);
+            setTaxStatus(`Claim submitted: ${latestTaxSubmissionId}`);
+            showToast('Tax claim submitted');
+            await loadTaxEvents();
+        }
+
+        async function checkTaxClaimStatus(options = {}) {
+            if (!token) {
+                return;
+            }
+
+            const silent = !!options.silent;
+
+            const fromInput = document.getElementById('taxSubmissionIdInput').value.trim();
+            const submissionId = fromInput || latestTaxSubmissionId;
+            if (!submissionId) {
+                if (!silent) {
+                    setTaxStatus('Enter a submission ID or submit a claim first.');
+                }
+                return;
+            }
+
+            const response = await apiFetch(`/api/tax/status/${encodeURIComponent(submissionId)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                if (!silent) {
+                    setTaxStatus(data.error || 'Failed to load claim status.');
+                }
+                return;
+            }
+
+            latestTaxSubmissionId = data.claim_code || submissionId;
+            setTaxValues({
+                gross_income: data.gross_income || 0,
+                withholding_amount: data.withholding_amount || 0,
+                estimated_refund: data.estimated_refund || 0,
+                service_fee_amount: data.service_fee_amount || 0
+            });
+            if (!silent) {
+                setTaxStatus(`Claim ${latestTaxSubmissionId} status: ${data.status}`);
+            }
+
+            if (data.status && lastPolledTaxStatus && data.status !== lastPolledTaxStatus) {
+                showToast(`Tax status changed: ${lastPolledTaxStatus} -> ${data.status}`);
+            }
+            if (data.status) {
+                lastPolledTaxStatus = data.status;
+            }
+        }
+
+        async function loadTaxEvents() {
+            if (!token) {
+                return;
+            }
+
+            const limit = parseInt(document.getElementById('taxEventLimitInput').value, 10) || 20;
+            const eventType = document.getElementById('taxEventTypeFilter').value;
+            const fromInput = document.getElementById('taxSubmissionIdInput').value.trim();
+            const claimCode = fromInput || latestTaxSubmissionId || '';
+
+            const params = new URLSearchParams();
+            params.set('limit', String(limit));
+            if (eventType) {
+                params.set('event_type', eventType);
+            }
+            if (claimCode) {
+                params.set('claim_code', claimCode);
+            }
+
+            const response = await apiFetch(`/api/tax/events?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setTaxStatus(data.error || 'Failed to load tax events.');
+                return;
+            }
+
+            renderTaxEvents(data);
+        }
+
+        async function chargeCmsFee() {
+            if (!token) {
+                return;
+            }
+            if (!latestTaxSubmissionId) {
+                setTaxStatus('Submit a tax claim before CMS charge.');
+                return;
+            }
+
+            const response = await apiFetch('/api/cms/charge', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ submission_id: latestTaxSubmissionId })
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setTaxStatus(data.error || 'CMS charge failed.');
+                return;
+            }
+
+            setTaxStatus(`CMS charged: ${formatWon(data.amount || 0)} (code: ${data.charge_code})`);
+            showToast('CMS fee charged');
+            await loadTaxEvents();
+        }
+
+        async function pollTaxStatusOnce() {
+            await checkTaxClaimStatus({ silent: true });
+            await loadTaxEvents();
+        }
+
+        function stopTaxPolling() {
+            if (taxPollingTimer) {
+                clearInterval(taxPollingTimer);
+                taxPollingTimer = null;
+            }
+            const btn = document.getElementById('taxPollingBtn');
+            if (btn) {
+                btn.textContent = 'Start Auto Poll';
+                btn.classList.remove('is-polling');
+            }
+        }
+
+        async function toggleTaxPolling() {
+            if (taxPollingTimer) {
+                stopTaxPolling();
+                setTaxStatus('Auto polling stopped.');
+                return;
+            }
+
+            const fromInput = document.getElementById('taxSubmissionIdInput').value.trim();
+            if (!fromInput && !latestTaxSubmissionId) {
+                setTaxStatus('Set submission ID first to start polling.');
+                return;
+            }
+
+            const btn = document.getElementById('taxPollingBtn');
+            btn.textContent = 'Stop Auto Poll';
+            btn.classList.add('is-polling');
+            setTaxStatus('Auto polling every 5s started.');
+
+            await pollTaxStatusOnce();
+            taxPollingTimer = setInterval(() => {
+                pollTaxStatusOnce().catch(() => {
+                    stopTaxPolling();
+                    setTaxStatus('Polling stopped due to request error.');
+                });
+            }, 5000);
+        }
+
+        async function saveNetworkLink() {
+            if (!token) {
+                return;
+            }
+
+            const sponsorUserIdRaw = document.getElementById('networkSponsorIdInput').value.trim();
+            const sponsorEmail = document.getElementById('networkSponsorEmailInput').value.trim();
+            const payload = {};
+            if (sponsorUserIdRaw) {
+                payload.sponsor_user_id = parseInt(sponsorUserIdRaw, 10);
+            }
+            if (sponsorEmail) {
+                payload.sponsor_email = sponsorEmail;
+            }
+
+            const response = await apiFetch('/api/network/link', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setNetworkStatus(data.error || 'Failed to save sponsor link.');
+                return;
+            }
+
+            setNetworkStatus(`Sponsor link saved: user ${data.sponsor_user_id}`);
+            showToast('Sponsor link saved');
+        }
+
+        async function recordNetworkSale() {
+            if (!token) {
+                return;
+            }
+
+            const basePrice = parseInt(document.getElementById('networkSalePriceInput').value, 10) || 0;
+            const pv = parseInt(document.getElementById('networkSalePvInput').value, 10) || 0;
+            const bv = parseInt(document.getElementById('networkSaleBvInput').value, 10) || 0;
+
+            const response = await apiFetch('/api/network/sales', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ base_price: basePrice, pv, bv })
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setNetworkStatus(data.error || 'Failed to record network sale.');
+                return;
+            }
+
+            setNetworkValues({
+                gamma: data.gamma,
+                c_total: data.bonus_total_paid,
+                limit: data.cap_35_percent,
+                ratio: data.ratio
+            });
+            setNetworkStatus(
+                `Sale #${data.sale_id} recorded. ${data.capped ? '35% cap applied.' : 'Within 35% limit.'}`
+            );
+            showToast('Network sale recorded');
+            await loadNetworkBonuses();
+        }
+
+        async function loadNetworkCompliance() {
+            if (!token) {
+                return;
+            }
+
+            const period = document.getElementById('networkPeriodInput').value.trim();
+            const query = period
+                ? `/api/network/compliance?period=${encodeURIComponent(period)}`
+                : '/api/network/compliance';
+
+            const response = await apiFetch(query, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setNetworkStatus(data.error || 'Failed to load compliance data.');
+                return;
+            }
+
+            setNetworkValues(data);
+            setNetworkStatus(`Compliance loaded for ${data.period}. ${data.within_limit ? 'Within' : 'Over'} 35%`);
+        }
+
+        async function loadNetworkBonuses() {
+            if (!token) {
+                return;
+            }
+
+            const period = document.getElementById('networkPeriodInput').value.trim();
+            const query = period
+                ? `/api/network/bonuses?period=${encodeURIComponent(period)}`
+                : '/api/network/bonuses';
+
+            const response = await apiFetch(query, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setNetworkStatus(data.error || 'Failed to load bonus list.');
+                return;
+            }
+
+            renderNetworkBonuses(data);
+        }
+
+        async function loadAdminComplianceSummary() {
+            if (!token) {
+                return;
+            }
+
+            const period = document.getElementById('adminPeriodInput').value.trim();
+            const query = period
+                ? `/api/network/admin/summary?period=${encodeURIComponent(period)}`
+                : '/api/network/admin/summary';
+
+            const response = await apiFetch(query, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to load admin summary.');
+                return;
+            }
+
+            setAdminValues(data);
+            setAdminRiskBadge(data.ratio || 0);
+            setAdminStatus(`Summary loaded for ${data.period}. ${data.within_limit ? 'Within' : 'Over'} limit.`);
+        }
+
+        async function loadAdminTopSponsors() {
+            if (!token) {
+                return;
+            }
+
+            const period = document.getElementById('adminPeriodInput').value.trim();
+            const topLimit = parseInt(document.getElementById('adminTopLimitInput').value, 10) || 10;
+            const params = new URLSearchParams();
+            params.set('limit', String(topLimit));
+            if (period) {
+                params.set('period', period);
+            }
+
+            const response = await apiFetch(`/api/network/admin/top-sponsors?${params.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to load top sponsors.');
+                return;
+            }
+
+            renderAdminTopSponsors(data);
+            setAdminStatus('Top sponsor ranking refreshed.');
+        }
+
+        async function loadAdminSponsorTrend(userId) {
+            if (!token) {
+                return;
+            }
+
+            const months = parseInt(document.getElementById('adminTrendMonthsSelect').value, 10) || 6;
+            lastAdminTrendUserId = userId;
+
+            const response = await apiFetch(`/api/network/admin/sponsor-trend?user_id=${encodeURIComponent(userId)}&months=${encodeURIComponent(months)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to load sponsor trend.');
+                return;
+            }
+
+            data.months = months;
+            renderAdminSponsorTrend(data);
+            setAdminStatus(`Trend loaded for ${data.email || `user-${data.user_id}`} (${months}m).`);
+        }
+
+        async function loadAdminRules() {
+            if (!token) {
+                return;
+            }
+
+            const response = await apiFetch('/api/network/admin/rules', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to load bonus rules.');
+                return;
+            }
+
+            setAdminRuleInputs(data);
+            setAdminStatus('Bonus rules loaded.');
+        }
+
+        async function saveAdminRules() {
+            if (!token) {
+                return;
+            }
+
+            const rules = collectAdminRulesFromInputs();
+            const response = await apiFetch('/api/network/admin/rules', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ rules })
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to save bonus rules.');
+                return;
+            }
+
+            setAdminRuleInputs(data.rules || rules);
+            setAdminStatus('Bonus rules updated.');
+            showToast('Rules saved');
+            await loadAdminRuleAudits();
+        }
+
+        async function loadAdminRuleAudits() {
+            if (!token) {
+                return;
+            }
+
+            const limit = parseInt(document.getElementById('adminAuditLimitInput').value, 10) || 20;
+            const response = await apiFetch(`/api/network/admin/rules/audits?limit=${encodeURIComponent(limit)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to load rule audits.');
+                return;
+            }
+
+            renderRuleAudits(data);
+        }
+
+        async function previewAdminRules() {
+            if (!token) {
+                return;
+            }
+
+            const rules = collectAdminRulesFromInputs();
+            const period = (document.getElementById('adminSimPeriodInput').value || document.getElementById('adminPeriodInput').value || '').trim();
+            const response = await apiFetch('/api/network/admin/rules/simulate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ rules, period })
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                setAdminStatus(data.error || 'Failed to preview rule impact.');
+                return;
+            }
+
+            lastAdminSimulationResult = data;
+
+            document.getElementById('simCurrentRatioValue').textContent = `${((data.current_ratio || 0) * 100).toFixed(2)}%`;
+            document.getElementById('simPreviewRatioValue').textContent = `${((data.simulated_ratio || 0) * 100).toFixed(2)}%`;
+            document.getElementById('simDeltaCValue').textContent = formatWon(data.delta_c_total || 0);
+
+            const ratioDeltaChip = document.getElementById('simRatioDeltaChip');
+            const ratioDeltaPct = (data.delta_ratio || 0) * 100;
+            ratioDeltaChip.className = `sim-chip ${(ratioDeltaPct <= 0 ? 'good' : 'bad')}`;
+            ratioDeltaChip.textContent = `Delta ratio: ${ratioDeltaPct >= 0 ? '+' : ''}${ratioDeltaPct.toFixed(2)}%p`;
+
+            const limitChip = document.getElementById('simLimitChip');
+            limitChip.className = `sim-chip ${(data.within_limit ? 'good' : 'bad')}`;
+            limitChip.textContent = data.within_limit
+                ? `Within 35% limit (${data.simulated_capped_sales || 0} capped sales)`
+                : `Over 35% limit (${data.simulated_capped_sales || 0} capped sales)`;
+
+            renderSimulationSponsorImpact(data.sponsor_deltas || []);
+
+            setAdminStatus(`Rule simulation ready for ${data.period || period || 'selected period'} (${data.sales_count || 0} sales).`);
+        }
+
+        async function loadDashboardStats() {
+            if (!token) {
+                return;
+            }
+
+            const statsGrid = document.getElementById('statsGrid');
+            statsGrid.innerHTML = Array.from({ length: 4 }).map(() => `
+                <div class="stat-card skeleton">
+                    <div class="skeleton-text skeleton-title"></div>
+                    <div class="skeleton-text skeleton-value"></div>
+                </div>
+            `).join('');
+
+            const response = await apiFetch('/dashboard/stats', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const stats = await parseJsonSafe(response);
+            if (!response.ok) {
+                statsGrid.innerHTML = '<div class="empty-state muted">Failed to load stats. Please retry.</div>';
+                return;
+            }
+
+            const common = [
+                { title: 'Applications', value: stats.applications_total || 0 },
+                { title: 'Pending', value: stats.pending_count || 0 },
+                { title: 'Approved', value: stats.approved_count || 0 },
+                { title: 'Rejected', value: stats.rejected_count || 0 }
+            ];
+            const cards = stats.role === 'instructor'
+                ? [{ title: 'My Postings', value: stats.postings_count || 0 }, ...common]
+                : common;
+
+            statsGrid.innerHTML = cards.map((card) => `
+                <div class="stat-card">
+                    <div class="stat-title">${card.title}</div>
+                    <div class="stat-value">${card.value}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderDashboardActivity(items) {
+            const list = document.getElementById('activityList');
+
+            const filteredItems = items.filter((item) => {
+                if (activityType === 'all') {
+                    return true;
+                }
+                return item.type === activityType;
+            });
+
+            if (filteredItems.length === 0) {
+                const label = activityType === 'all' ? 'No recent activity in this period.' : 'No activity for selected type in this period.';
+                list.innerHTML = `<div class="empty-state muted">${label}</div>`;
+                return;
+            }
+
+            function escapeHtml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function formatRelativeTime(value) {
+                if (!value) {
+                    return '-';
+                }
+                const parsed = value.includes('T') ? value : value.replace(' ', 'T');
+                const date = new Date(parsed);
+                if (Number.isNaN(date.getTime())) {
+                    return value;
+                }
+                const sec = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
+                if (sec < 60) return `${sec}s ago`;
+                const min = Math.floor(sec / 60);
+                if (min < 60) return `${min}m ago`;
+                const hour = Math.floor(min / 60);
+                if (hour < 24) return `${hour}h ago`;
+                const day = Math.floor(hour / 24);
+                return `${day}d ago`;
+            }
+
+            function statusBadge(status) {
+                if (!status) {
+                    return '';
+                }
+                const safe = escapeHtml(status);
+                return `<span class="status-badge ${safe}">${safe}</span>`;
+            }
+
+            function activityIcon(type) {
+                if (type === 'posting_created') {
+                    return '📌';
+                }
+                if (type === 'application_received') {
+                    return '📥';
+                }
+                return '📝';
+            }
+
+            list.innerHTML = filteredItems.map((item) => {
+                const safeTitle = escapeHtml(item.title || '-');
+                const statusText = statusBadge(item.status);
+                const when = formatRelativeTime(item.created_at);
+                const postingId = item.posting_id || '';
+                const icon = activityIcon(item.type);
+                if (item.type === 'posting_created') {
+                    return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>Created posting: <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
+                }
+                if (item.type === 'application_received') {
+                    return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>Received application for <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
+                }
+                return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>Applied to <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
+            }).join('');
+
+            Array.from(list.querySelectorAll('.activity-item')).forEach((el) => {
+                const openDetail = async () => {
+                    const postingId = parseInt(el.getAttribute('data-posting-id'), 10);
+                    if (!postingId) {
+                        return;
+                    }
+                    await viewPostingDetail(postingId);
+                };
+
+                el.addEventListener('click', openDetail);
+                el.addEventListener('keydown', async (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        await openDetail();
+                    }
+                });
+            });
+        }
+
+        async function loadDashboardActivity(forceRefresh = false) {
+            if (!token) {
+                return;
+            }
+            const list = document.getElementById('activityList');
+            if (!forceRefresh && Array.isArray(activityCacheByPeriod[activityPeriod])) {
+                renderDashboardActivity(activityCacheByPeriod[activityPeriod]);
+                return;
+            }
+
+            list.innerHTML = Array.from({ length: 3 }).map(() => `
+                <div class="posting skeleton">
+                    <div class="skeleton-text" style="width:70%;"></div>
+                    <div class="skeleton-text" style="width:40%;"></div>
+                </div>
+            `).join('');
+
+            const response = await apiFetch(`/dashboard/activity?period=${encodeURIComponent(activityPeriod)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const items = await parseJsonSafe(response);
+
+            if (!response.ok || !Array.isArray(items)) {
+                list.innerHTML = '<div class="empty-state muted">Failed to load recent activity. Please retry.</div>';
+                return;
+            }
+
+            activityCacheByPeriod[activityPeriod] = items;
+            renderDashboardActivity(items);
+        }
+
+        function setActivityPeriod(period) {
+            activityPeriod = period;
+            Array.from(document.querySelectorAll('#activityToolbar button')).forEach((button) => {
+                if (button.getAttribute('data-period') === period) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+            loadDashboardActivity();
+        }
+
+        function setActivityType(type) {
+            activityType = type;
+            Array.from(document.querySelectorAll('#activityTypeToolbar button')).forEach((button) => {
+                if (button.getAttribute('data-type') === type) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+            if (Array.isArray(activityCacheByPeriod[activityPeriod])) {
+                renderDashboardActivity(activityCacheByPeriod[activityPeriod]);
+                return;
+            }
+            loadDashboardActivity();
+        }
+
+        function resetCreateFormMode() {
+            editingPostingId = null;
+            document.getElementById('createPostingBtn').textContent = 'Create Posting';
+            document.getElementById('createPostingMode').textContent = 'Create mode';
+            document.getElementById('cancelEditPostingBtn').style.display = 'none';
+            document.getElementById('postingTitle').value = '';
+            document.getElementById('postingRegion').value = '';
+            document.getElementById('postingRate').value = '';
+            document.getElementById('postingSubject').value = 'math';
+        }
+
+        function startEditPostingInForm(posting) {
+            if (!posting) {
+                return;
+            }
+            editingPostingId = posting.id;
+            document.getElementById('createPostingBtn').textContent = 'Update Posting';
+            document.getElementById('createPostingMode').textContent = `Edit mode (ID: ${posting.id})`;
+            document.getElementById('cancelEditPostingBtn').style.display = 'inline-block';
+            document.getElementById('postingTitle').value = posting.title || '';
+            document.getElementById('postingSubject').value = posting.subject || 'math';
+            document.getElementById('postingRegion').value = posting.region || '';
+            document.getElementById('postingRate').value = posting.rate || '';
+            document.getElementById('createPostingSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         async function register() {
@@ -251,8 +3370,114 @@
             }
         }
 
+        async function changePassword() {
+            if (!token) {
+                setStatus('securityStatus', 'Login required.');
+                return;
+            }
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            if (!currentPassword || !newPassword) {
+                setStatus('securityStatus', 'Current and new password are required.');
+                return;
+            }
+
+            try {
+                const response = await apiFetch('/auth/password/change', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                const data = await parseJsonSafe(response);
+                if (!response.ok) {
+                    setStatus('securityStatus', data.error || 'Failed to change password.');
+                    return;
+                }
+
+                setStatus('securityStatus', 'Password changed successfully.');
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                showToast('Password changed');
+            } catch (error) {
+                setStatus('securityStatus', `Error: ${error.message}`);
+            }
+        }
+
+        async function requestResetToken() {
+            const email = document.getElementById('resetEmail').value.trim();
+            if (!email) {
+                setStatus('resetStatus', 'Reset email is required.');
+                return;
+            }
+
+            try {
+                const response = await apiFetch('/auth/password/reset/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await parseJsonSafe(response);
+                if (!response.ok) {
+                    setStatus('resetStatus', data.error || 'Failed to request reset token.');
+                    return;
+                }
+
+                if (data.reset_token) {
+                    document.getElementById('resetToken').value = data.reset_token;
+                    setStatus('resetStatus', data.message || 'Reset request completed.');
+                } else {
+                    setStatus('resetStatus', 'Reset requested. Check mock delivery log for token in this MVP.');
+                }
+                showToast('Reset request completed');
+            } catch (error) {
+                setStatus('resetStatus', `Error: ${error.message}`);
+            }
+        }
+
+        async function confirmResetPassword() {
+            const resetToken = document.getElementById('resetToken').value.trim();
+            const newPassword = document.getElementById('resetNewPassword').value;
+            if (!resetToken || !newPassword) {
+                setStatus('resetStatus', 'Reset token and new password are required.');
+                return;
+            }
+
+            try {
+                const response = await apiFetch('/auth/password/reset/confirm', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: resetToken, new_password: newPassword })
+                });
+                const data = await parseJsonSafe(response);
+                if (!response.ok) {
+                    setStatus('resetStatus', data.error || 'Failed to reset password.');
+                    return;
+                }
+
+                setStatus('resetStatus', 'Password reset completed. You can login now.');
+                document.getElementById('resetNewPassword').value = '';
+                showToast('Password reset complete');
+            } catch (error) {
+                setStatus('resetStatus', `Error: ${error.message}`);
+            }
+        }
+
         async function loadPostings() {
-            const response = await apiFetch('/postings');
+            const params = new URLSearchParams();
+            if (postingFilters.subject) params.set('subject', postingFilters.subject);
+            if (postingFilters.region) params.set('region', postingFilters.region);
+            if (postingFilters.minRate) params.set('min_rate', postingFilters.minRate);
+            if (showOnlyMine && currentUser && currentUser.role === 'instructor') params.set('owner_only', 'true');
+
+            const query = params.toString() ? `/postings?${params.toString()}` : '/postings';
+            const response = await apiFetch(query);
             const postings = await parseJsonSafe(response);
             const list = document.getElementById('postingsList');
 
@@ -266,16 +3491,7 @@
                 return;
             }
 
-            const visiblePostings = showOnlyMine && currentUser
-                ? postings.filter((p) => p.owner_id === currentUser.id)
-                : postings;
-
-            if (visiblePostings.length === 0) {
-                list.innerHTML = '<p>No postings match this filter.</p>';
-                return;
-            }
-
-            list.innerHTML = visiblePostings.map((p) => {
+            list.innerHTML = postings.map((p) => {
                 const safeTitle = String(p.title || '').replace(/'/g, "\\'");
                 const safeSubject = String(p.subject || '').replace(/'/g, "\\'");
                 const safeRegion = String(p.region || '').replace(/'/g, "\\'");
@@ -288,6 +3504,7 @@
                     buttons += ` <button onclick="editPosting(${p.id}, '${safeTitle}', '${safeSubject}', '${safeRegion}', ${p.rate})">Edit</button>`;
                     buttons += ` <button class="btn-danger" onclick="deletePosting(${p.id})">Delete</button>`;
                 }
+                buttons += ` <button onclick="viewPostingDetail(${p.id})">Detail</button>`;
 
                 return `
                     <div class="posting">
@@ -310,8 +3527,12 @@
                 return;
             }
 
-            const response = await apiFetch('/postings', {
-                method: 'POST',
+            const isEditMode = !!editingPostingId;
+            const path = isEditMode ? `/postings/${editingPostingId}` : '/postings';
+            const method = isEditMode ? 'PUT' : 'POST';
+
+            const response = await apiFetch(path, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -321,16 +3542,16 @@
 
             if (!response.ok) {
                 const data = await parseJsonSafe(response);
-                alert(data.error || 'Failed to create posting');
+                alert(data.error || (isEditMode ? 'Failed to update posting' : 'Failed to create posting'));
                 return;
             }
 
-            document.getElementById('postingTitle').value = '';
-            document.getElementById('postingRegion').value = '';
-            document.getElementById('postingRate').value = '';
+            resetCreateFormMode();
             await loadPostings();
+            await loadDashboardStats();
+            await loadDashboardActivity(true);
             document.getElementById('postingsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-            showToast('Posting created successfully.');
+            showToast(isEditMode ? 'Posting updated successfully.' : 'Posting created successfully.');
         }
 
         async function applyToPosting(postingId) {
@@ -351,6 +3572,8 @@
 
             alert('Application submitted!');
             await loadApplications();
+            await loadDashboardStats();
+            await loadDashboardActivity(true);
         }
 
         async function editPosting(id, title, subject, region, rate) {
@@ -378,6 +3601,8 @@
 
             if (response.ok) {
                 await loadPostings();
+                await loadDashboardStats();
+                await loadDashboardActivity(true);
             }
         }
 
@@ -392,6 +3617,8 @@
             });
             if (response.ok) {
                 await loadPostings();
+                await loadDashboardStats();
+                await loadDashboardActivity(true);
             }
         }
 
@@ -400,36 +3627,128 @@
                 return;
             }
 
-            const response = await apiFetch('/applications', {
+            const params = new URLSearchParams();
+            if (applicationsSearchQuery) {
+                params.set('q', applicationsSearchQuery);
+            }
+            if (applicationsSort) {
+                params.set('sort', applicationsSort);
+            }
+
+            const query = params.toString() ? `/applications?${params.toString()}` : '/applications';
+
+            const response = await apiFetch(query, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const applications = await parseJsonSafe(response);
-            const list = document.getElementById('applicationsList');
 
             if (!response.ok) {
+                const list = document.getElementById('applicationsList');
                 list.innerHTML = `<p>${applications.error || 'Failed to load applications.'}</p>`;
                 return;
             }
 
-            if (!Array.isArray(applications) || applications.length === 0) {
-                list.innerHTML = '<p>No applications yet.</p>';
+            applicationsCache = Array.isArray(applications) ? applications : [];
+            renderApplications(applicationsCache);
+        }
+
+        function renderApplications(applications) {
+            const list = document.getElementById('applicationsList');
+            const summary = document.getElementById('applicationsSummary');
+
+            const counts = {
+                all: applications.length,
+                pending: 0,
+                approved: 0,
+                rejected: 0
+            };
+
+            applications.forEach((item) => {
+                if (item.status in counts) {
+                    counts[item.status] += 1;
+                }
+            });
+
+            summary.innerHTML = [
+                { title: 'All', value: counts.all },
+                { title: 'Pending', value: counts.pending },
+                { title: 'Approved', value: counts.approved },
+                { title: 'Rejected', value: counts.rejected }
+            ].map((card) => `
+                <div class="stat-card">
+                    <div class="stat-title">${card.title}</div>
+                    <div class="stat-value">${card.value}</div>
+                </div>
+            `).join('');
+
+            updateApplicationsFilterControls();
+
+            if (!applications.length) {
+                list.innerHTML = '<div class="empty-state muted">No applications yet.</div>';
                 return;
             }
 
-            list.innerHTML = applications.map((a) => {
+            const filteredApplications = applicationsFilter === 'all'
+                ? applications
+                : applications.filter((item) => item.status === applicationsFilter);
+
+            if (!filteredApplications.length) {
+                list.innerHTML = `<div class="empty-state muted">No ${applicationsFilter} applications in this view.</div>`;
+                return;
+            }
+
+            list.innerHTML = filteredApplications.map((a) => {
                 let buttons = '';
                 if (currentUser && currentUser.role === 'instructor') {
-                    buttons = ` <button onclick="updateApplication(${a.id}, 'approved')">Approve</button>` +
-                        ` <button onclick="updateApplication(${a.id}, 'rejected')">Reject</button>`;
+                    buttons = ` <button onclick="openApplicantSummary(${a.student_id})">Applicant Profile</button>`;
+                    if (a.status === 'pending') {
+                        buttons += ` <button onclick="updateApplication(${a.id}, 'approved')">Approve</button>` +
+                            ` <button onclick="updateApplication(${a.id}, 'rejected')">Reject</button>`;
+                    }
+                } else if (currentUser && currentUser.role === 'student' && a.status === 'pending') {
+                    buttons = ` <button class="btn-danger" onclick="cancelApplication(${a.id})">Cancel</button>`;
                 }
 
+                const applicantEmail = a.student_email ? escapeHtml(a.student_email) : `Student #${a.student_id}`;
+                const applicantOrg = a.student_organization ? escapeHtml(a.student_organization) : '';
+
                 return `
-                    <div class="posting">
-                        <p>Application ID: ${a.id} | Posting ID: ${a.posting_id} | Status: ${a.status}</p>
-                        ${buttons}
+                    <div class="posting application-item">
+                        <div>
+                            <strong>${escapeHtml(a.posting_title || `Posting #${a.posting_id}`)}</strong>
+                            ${statusBadge(a.status)}
+                        </div>
+                        <div class="application-meta">
+                            <span>Application ID: ${a.id}</span>
+                            ${currentUser && currentUser.role === 'instructor' ? `<span>Applicant: ${applicantEmail}</span>` : ''}
+                            ${currentUser && currentUser.role === 'instructor' && applicantOrg ? `<span>Org: ${applicantOrg}</span>` : ''}
+                            ${currentUser && currentUser.role === 'instructor' ? `<span>Student ID: ${a.student_id}</span>` : ''}
+                            <span>Submitted ${formatRelativeTime(a.created_at)}</span>
+                        </div>
+                        <div class="application-actions">${buttons}</div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function setApplicationsFilter(filter) {
+            applicationsFilter = filter;
+            renderApplications(applicationsCache);
+        }
+
+        function setApplicationsSort(sort) {
+            applicationsSort = sort;
+            loadApplications();
+        }
+
+        function setApplicationsSearchQuery(value) {
+            applicationsSearchQuery = String(value || '').trim().toLowerCase();
+            if (applicationsSearchDebounceTimer) {
+                clearTimeout(applicationsSearchDebounceTimer);
+            }
+            applicationsSearchDebounceTimer = setTimeout(() => {
+                loadApplications();
+            }, 220);
         }
 
         async function updateApplication(id, status) {
@@ -444,7 +3763,98 @@
 
             if (response.ok) {
                 await loadApplications();
+                await loadDashboardStats();
+                await loadDashboardActivity(true);
             }
+        }
+
+        async function cancelApplication(id) {
+            if (!confirm('Cancel this application?')) {
+                return;
+            }
+
+            const response = await apiFetch(`/applications/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const data = await parseJsonSafe(response);
+                alert(data.error || 'Failed to cancel application');
+                return;
+            }
+
+            showToast('Application cancelled.');
+            await loadApplications();
+            await loadDashboardStats();
+            await loadDashboardActivity(true);
+        }
+
+        async function viewPostingDetail(id) {
+            const response = await apiFetch(`/postings/${id}`);
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                alert(data.error || 'Failed to load posting detail');
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = data.title || 'Posting Detail';
+            modalPostingId = data.id;
+            modalPostingData = data;
+            document.getElementById('modalBody').innerHTML =
+                `Subject: ${data.subject}<br>` +
+                `Region: ${data.region}<br>` +
+                `Rate: $${data.rate}/hr<br>` +
+                `Owner ID: ${data.owner_id}<br>` +
+                `Created: ${data.created_at || '-'} `;
+
+            const modalApplyBtn = document.getElementById('modalApplyBtn');
+            const modalEditBtn = document.getElementById('modalEditBtn');
+            const modalBackApplicantBtn = document.getElementById('modalBackApplicantBtn');
+            if (currentUser && currentUser.role === 'student') {
+                modalApplyBtn.style.display = 'inline-block';
+            } else {
+                modalApplyBtn.style.display = 'none';
+            }
+            if (currentUser && currentUser.role === 'instructor' && data.owner_id === currentUser.id) {
+                modalEditBtn.style.display = 'inline-block';
+            } else {
+                modalEditBtn.style.display = 'none';
+            }
+            if (returnToApplicantContext && returnToApplicantContext.studentId) {
+                modalBackApplicantBtn.style.display = 'inline-block';
+                const labelEmail = returnToApplicantContext.email || `#${returnToApplicantContext.studentId}`;
+                const statusSummary = returnToApplicantContext.statusSummary || 'P0/A0/R0';
+                modalBackApplicantBtn.textContent = `Back to ${labelEmail} (${statusSummary})`;
+            } else {
+                modalBackApplicantBtn.style.display = 'none';
+                modalBackApplicantBtn.textContent = 'Back to Applicant';
+            }
+            openModalById('postingModal');
+        }
+
+        function closePostingModal() {
+            closeModalById('postingModal');
+            modalPostingId = null;
+            modalPostingData = null;
+            returnToApplicantContext = null;
+            document.getElementById('modalBackApplicantBtn').textContent = 'Back to Applicant';
+        }
+
+        async function applyFromModal() {
+            if (!modalPostingId) {
+                return;
+            }
+            await applyToPosting(modalPostingId);
+            closePostingModal();
+        }
+
+        function editFromModal() {
+            if (!modalPostingData) {
+                return;
+            }
+            startEditPostingInForm(modalPostingData);
+            closePostingModal();
         }
 
         // Keep handlers accessible for inline dynamic buttons.
@@ -452,14 +3862,149 @@
         window.editPosting = editPosting;
         window.deletePosting = deletePosting;
         window.updateApplication = updateApplication;
+        window.cancelApplication = cancelApplication;
+        window.openApplicantSummary = openApplicantSummary;
+        window.openPostingFromApplicant = openPostingFromApplicant;
+        window.backToApplicantFromPosting = backToApplicantFromPosting;
+        window.setApplicantRecentFilter = setApplicantRecentFilter;
+        window.toggleApplicantRecentExpanded = toggleApplicantRecentExpanded;
+        window.viewPostingDetail = viewPostingDetail;
+        window.applyFromModal = applyFromModal;
+        window.editFromModal = editFromModal;
+        window.setActivityPeriod = setActivityPeriod;
+        window.setActivityType = setActivityType;
+        window.setApplicationsFilter = setApplicationsFilter;
+        window.setApplicationsSort = setApplicationsSort;
+        window.onboardTaxProfile = onboardTaxProfile;
+        window.loadTaxEstimate = loadTaxEstimate;
+        window.submitTaxClaim = submitTaxClaim;
+        window.checkTaxClaimStatus = checkTaxClaimStatus;
+        window.loadTaxEvents = loadTaxEvents;
+        window.toggleTaxPolling = toggleTaxPolling;
+        window.chargeCmsFee = chargeCmsFee;
+        window.saveNetworkLink = saveNetworkLink;
+        window.recordNetworkSale = recordNetworkSale;
+        window.loadNetworkCompliance = loadNetworkCompliance;
+        window.loadNetworkBonuses = loadNetworkBonuses;
+        window.loadAdminComplianceSummary = loadAdminComplianceSummary;
+        window.loadAdminTopSponsors = loadAdminTopSponsors;
+        window.loadAdminSponsorTrend = loadAdminSponsorTrend;
+        window.loadAdminRules = loadAdminRules;
+        window.saveAdminRules = saveAdminRules;
+        window.loadAdminRuleAudits = loadAdminRuleAudits;
+        window.previewAdminRules = previewAdminRules;
+        window.exportAdminSimulationCsv = exportAdminSimulationCsv;
+        window.changePassword = changePassword;
+        window.requestResetToken = requestResetToken;
+        window.confirmResetPassword = confirmResetPassword;
 
         // Bind main buttons explicitly to avoid global scope issues.
         document.getElementById('registerBtn').addEventListener('click', register);
         document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
+        document.getElementById('resetRequestBtn').addEventListener('click', requestResetToken);
+        document.getElementById('resetConfirmBtn').addEventListener('click', confirmResetPassword);
         document.getElementById('createPostingBtn').addEventListener('click', createPosting);
         document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('closeModalBtn').addEventListener('click', closePostingModal);
+        document.getElementById('modalBackApplicantBtn').addEventListener('click', backToApplicantFromPosting);
+        document.getElementById('closeApplicantModalBtn').addEventListener('click', closeApplicantModal);
+        document.getElementById('applicantRecentToggleBtn').addEventListener('click', toggleApplicantRecentExpanded);
+        document.addEventListener('keydown', handleGlobalModalKeydown);
+        document.getElementById('postingModal').addEventListener('click', (event) => {
+            if (event.target.id === 'postingModal') {
+                closePostingModal();
+            }
+        });
+        document.getElementById('applicantModal').addEventListener('click', (event) => {
+            if (event.target.id === 'applicantModal') {
+                closeApplicantModal();
+            }
+        });
+        document.getElementById('modalApplyBtn').addEventListener('click', applyFromModal);
+        document.getElementById('modalEditBtn').addEventListener('click', editFromModal);
+        document.getElementById('cancelEditPostingBtn').addEventListener('click', resetCreateFormMode);
+        document.getElementById('activityTodayBtn').addEventListener('click', () => setActivityPeriod('today'));
+        document.getElementById('activity7dBtn').addEventListener('click', () => setActivityPeriod('7d'));
+        document.getElementById('activity30dBtn').addEventListener('click', () => setActivityPeriod('30d'));
+        document.getElementById('activityTypeAllBtn').addEventListener('click', () => setActivityType('all'));
+        document.getElementById('activityTypePostingBtn').addEventListener('click', () => setActivityType('posting_created'));
+        document.getElementById('activityTypeReceivedBtn').addEventListener('click', () => setActivityType('application_received'));
+        document.getElementById('activityTypeSubmittedBtn').addEventListener('click', () => setActivityType('application_submitted'));
+        document.getElementById('applicationsSortSelect').addEventListener('change', (event) => {
+            setApplicationsSort(event.target.value);
+        });
+        document.getElementById('applicationsSearchInput').addEventListener('input', (event) => {
+            setApplicationsSearchQuery(event.target.value);
+        });
         document.getElementById('myPostingsToggle').addEventListener('change', async (event) => {
             showOnlyMine = event.target.checked;
+            await loadPostings();
+        });
+        document.getElementById('taxOnboardBtn').addEventListener('click', onboardTaxProfile);
+        document.getElementById('taxEstimateBtn').addEventListener('click', loadTaxEstimate);
+        document.getElementById('taxSubmitBtn').addEventListener('click', submitTaxClaim);
+        document.getElementById('taxStatusBtn').addEventListener('click', checkTaxClaimStatus);
+        document.getElementById('taxCmsChargeBtn').addEventListener('click', chargeCmsFee);
+        document.getElementById('taxEventsBtn').addEventListener('click', loadTaxEvents);
+        document.getElementById('taxPollingBtn').addEventListener('click', toggleTaxPolling);
+        document.getElementById('taxEventTypeFilter').addEventListener('change', loadTaxEvents);
+        document.getElementById('networkLinkBtn').addEventListener('click', saveNetworkLink);
+        document.getElementById('networkSaleBtn').addEventListener('click', recordNetworkSale);
+        document.getElementById('networkComplianceBtn').addEventListener('click', loadNetworkCompliance);
+        document.getElementById('networkBonusesBtn').addEventListener('click', loadNetworkBonuses);
+        document.getElementById('adminSummaryBtn').addEventListener('click', loadAdminComplianceSummary);
+        document.getElementById('adminTopSponsorsBtn').addEventListener('click', loadAdminTopSponsors);
+        document.getElementById('adminRefreshTrendBtn').addEventListener('click', async () => {
+            if (!lastAdminTrendUserId) {
+                setAdminStatus('Select a sponsor from Top Sponsors first.');
+                return;
+            }
+            await loadAdminSponsorTrend(lastAdminTrendUserId);
+        });
+        document.getElementById('adminLoadRulesBtn').addEventListener('click', loadAdminRules);
+        document.getElementById('adminSaveRulesBtn').addEventListener('click', saveAdminRules);
+        document.getElementById('adminPreviewRulesBtn').addEventListener('click', previewAdminRules);
+        document.getElementById('adminExportSimCsvBtn').addEventListener('click', exportAdminSimulationCsv);
+        document.getElementById('simImpactSortSelect').addEventListener('change', (event) => {
+            simImpactSortMode = event.target.value || 'abs_desc';
+            const items = lastAdminSimulationResult && Array.isArray(lastAdminSimulationResult.sponsor_deltas)
+                ? lastAdminSimulationResult.sponsor_deltas
+                : [];
+            renderSimulationSponsorImpact(items);
+        });
+        document.getElementById('simImpactTopNInput').addEventListener('change', (event) => {
+            const nextValue = parseInt(event.target.value, 10);
+            simImpactTopN = Number.isNaN(nextValue) ? 10 : Math.max(1, Math.min(nextValue, 100));
+            event.target.value = String(simImpactTopN);
+            const items = lastAdminSimulationResult && Array.isArray(lastAdminSimulationResult.sponsor_deltas)
+                ? lastAdminSimulationResult.sponsor_deltas
+                : [];
+            renderSimulationSponsorImpact(items);
+        });
+        document.getElementById('simImpactMinDeltaInput').addEventListener('change', (event) => {
+            const nextValue = parseInt(event.target.value, 10);
+            simImpactMinDelta = Number.isNaN(nextValue) ? 0 : Math.max(0, nextValue);
+            event.target.value = String(simImpactMinDelta);
+            const items = lastAdminSimulationResult && Array.isArray(lastAdminSimulationResult.sponsor_deltas)
+                ? lastAdminSimulationResult.sponsor_deltas
+                : [];
+            renderSimulationSponsorImpact(items);
+        });
+        document.getElementById('adminLoadAuditsBtn').addEventListener('click', loadAdminRuleAudits);
+        document.getElementById('applyFiltersBtn').addEventListener('click', async () => {
+            postingFilters.subject = document.getElementById('filterSubject').value;
+            postingFilters.region = document.getElementById('filterRegion').value.trim();
+            postingFilters.minRate = document.getElementById('filterMinRate').value.trim();
+            await loadPostings();
+        });
+        document.getElementById('resetFiltersBtn').addEventListener('click', async () => {
+            postingFilters.subject = '';
+            postingFilters.region = '';
+            postingFilters.minRate = '';
+            document.getElementById('filterSubject').value = '';
+            document.getElementById('filterRegion').value = '';
+            document.getElementById('filterMinRate').value = '';
             await loadPostings();
         });
 
@@ -475,6 +4020,15 @@
         document.getElementById('loginPassword').addEventListener('keydown', (event) => {
             if (event.key === 'Enter') login();
         });
+
+        document.getElementById('taxYearInput').value = String(new Date().getFullYear());
+        document.getElementById('taxFeeRateInput').value = '0.22';
+        document.getElementById('taxEventLimitInput').value = '20';
+        document.getElementById('taxEventTypeFilter').value = '';
+        document.getElementById('networkPeriodInput').value = new Date().toISOString().slice(0, 7);
+        document.getElementById('adminPeriodInput').value = new Date().toISOString().slice(0, 7);
+        document.getElementById('adminTopLimitInput').value = '10';
+        document.getElementById('adminAuditLimitInput').value = '20';
 
         if (token) {
             loadUserInfo().catch((error) => {

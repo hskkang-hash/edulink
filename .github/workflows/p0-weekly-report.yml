@@ -1,0 +1,423 @@
+name: Production P0 Weekly Report
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "Number of days to include in the report"
+        required: false
+        default: "7"
+        type: string
+      dry_run:
+        description: "Only generate the workflow summary without posting to Slack"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  issues: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: production-p0-weekly-report
+      cancel-in-progress: false
+    env:
+      PROD_P0_REPORT_SLACK_WEBHOOK: ${{ secrets.PROD_P0_REPORT_SLACK_WEBHOOK }}
+      PROD_P0_REPORT_WARNING_SLACK_WEBHOOK: ${{ secrets.PROD_P0_REPORT_WARNING_SLACK_WEBHOOK }}
+      PROD_P0_REPORT_WARNING_MENTIONS: ${{ secrets.PROD_P0_REPORT_WARNING_MENTIONS }}
+      PROD_P0_ACK_TIMEOUT_MINUTES: ${{ secrets.PROD_P0_ACK_TIMEOUT_MINUTES }}
+      PROD_RUNBOOK_URL: ${{ secrets.PROD_RUNBOOK_URL }}
+      PROD_P0_REPORT_WARN_ESCALATED_DELTA: ${{ secrets.PROD_P0_REPORT_WARN_ESCALATED_DELTA }}
+      PROD_P0_REPORT_WARN_SLA_BREACH_DELTA: ${{ secrets.PROD_P0_REPORT_WARN_SLA_BREACH_DELTA }}
+      PROD_P0_REPORT_WARN_UNACKED_PAST_SLA: ${{ secrets.PROD_P0_REPORT_WARN_UNACKED_PAST_SLA }}
+      PROD_P0_REPORT_ARCHIVE_ISSUE: ${{ secrets.PROD_P0_REPORT_ARCHIVE_ISSUE }}
+    steps:
+      - name: Build production P0 weekly report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const lookbackDaysRaw = context.eventName === 'workflow_dispatch'
+              ? String(context.payload?.inputs?.lookback_days || '7')
+              : '7';
+            const parsedLookbackDays = parseInt(lookbackDaysRaw, 10);
+            const lookbackDays = Number.isFinite(parsedLookbackDays)
+              ? Math.min(30, Math.max(1, parsedLookbackDays))
+              : 7;
+
+            const parsedAckTimeout = parseInt(process.env.PROD_P0_ACK_TIMEOUT_MINUTES || '15', 10);
+            const ackTimeoutMinutes = Number.isFinite(parsedAckTimeout)
+              ? Math.min(240, Math.max(5, parsedAckTimeout))
+              : 15;
+            const parsedEscalatedWarnDelta = parseInt(process.env.PROD_P0_REPORT_WARN_ESCALATED_DELTA || '1', 10);
+            const warnEscalatedDelta = Number.isFinite(parsedEscalatedWarnDelta)
+              ? Math.min(50, Math.max(0, parsedEscalatedWarnDelta))
+              : 1;
+            const parsedSlaBreachWarnDelta = parseInt(process.env.PROD_P0_REPORT_WARN_SLA_BREACH_DELTA || '1', 10);
+            const warnSlaBreachDelta = Number.isFinite(parsedSlaBreachWarnDelta)
+              ? Math.min(50, Math.max(0, parsedSlaBreachWarnDelta))
+              : 1;
+            const parsedUnackedPastSlaWarn = parseInt(process.env.PROD_P0_REPORT_WARN_UNACKED_PAST_SLA || '1', 10);
+            const warnUnackedPastSla = Number.isFinite(parsedUnackedPastSlaWarn)
+              ? Math.min(50, Math.max(0, parsedUnackedPastSlaWarn))
+              : 1;
+            const archiveIssueToggle = String(process.env.PROD_P0_REPORT_ARCHIVE_ISSUE || 'true').toLowerCase();
+            const archiveIssueEnabled = archiveIssueToggle !== 'false';
+            const warningMentionText = String(process.env.PROD_P0_REPORT_WARNING_MENTIONS || '').trim();
+
+            const isDryRun = context.eventName === 'workflow_dispatch'
+              && String(context.payload?.inputs?.dry_run || 'false').toLowerCase() === 'true';
+
+            const now = Date.now();
+            const lookbackStartMs = now - (lookbackDays * 24 * 60 * 60 * 1000);
+            const previousWindowStartMs = lookbackStartMs - (lookbackDays * 24 * 60 * 60 * 1000);
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const runbookUrl = process.env.PROD_RUNBOOK_URL || `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/blob/main/docs/deployment-runbook.md`;
+            const repoUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`;
+            const reportWindowEndIso = new Date(now).toISOString().slice(0, 10);
+            const archiveMarker = '[P0_WEEKLY_REPORT_ARCHIVE]';
+            const archiveTitle = `[Report] Production P0 Weekly Report - ${reportWindowEndIso}`;
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              labels: 'incident,production,priority-p0',
+              sort: 'created',
+              direction: 'desc',
+              per_page: 100,
+            });
+
+            const inWindowIssues = issues.filter((issue) => {
+              const createdAtMs = new Date(issue.created_at).getTime();
+              return Number.isFinite(createdAtMs) && createdAtMs >= lookbackStartMs;
+            });
+            const previousWindowIssues = issues.filter((issue) => {
+              const createdAtMs = new Date(issue.created_at).getTime();
+              return Number.isFinite(createdAtMs) && createdAtMs >= previousWindowStartMs && createdAtMs < lookbackStartMs;
+            });
+
+            function buildMetrics(targetIssues) {
+              const ackBuckets = {
+                'ack-under-15m': 0,
+                'ack-15-30m': 0,
+                'ack-30-60m': 0,
+                'ack-over-60m': 0,
+              };
+
+              const metrics = {
+                total: targetIssues.length,
+                open: 0,
+                closed: 0,
+                unackedOpen: 0,
+                escalated: 0,
+                acked: 0,
+                slaBreached: 0,
+                unackedPastSla: 0,
+              };
+
+              const oldestOutstanding = [];
+
+              for (const issue of targetIssues) {
+                const labels = (issue.labels || []).map((label) => (typeof label === 'string' ? label : label.name));
+                const labelSet = new Set(labels);
+                const createdAtMs = new Date(issue.created_at).getTime();
+                const ageMinutes = Number.isFinite(createdAtMs)
+                  ? Math.max(0, Math.floor((now - createdAtMs) / 60000))
+                  : null;
+
+                if (issue.state === 'open') {
+                  metrics.open += 1;
+                } else {
+                  metrics.closed += 1;
+                }
+
+                if (labelSet.has('oncall-unacked') && issue.state === 'open') {
+                  metrics.unackedOpen += 1;
+                  if (ageMinutes !== null && ageMinutes > ackTimeoutMinutes) {
+                    metrics.unackedPastSla += 1;
+                    oldestOutstanding.push({
+                      number: issue.number,
+                      title: issue.title,
+                      ageMinutes,
+                      htmlUrl: issue.html_url,
+                    });
+                  }
+                }
+
+                if (labelSet.has('oncall-escalated')) {
+                  metrics.escalated += 1;
+                }
+
+                if (labelSet.has('oncall-acked')) {
+                  metrics.acked += 1;
+                }
+
+                if (labelSet.has('ack-sla-breached')) {
+                  metrics.slaBreached += 1;
+                }
+
+                for (const bucket of Object.keys(ackBuckets)) {
+                  if (labelSet.has(bucket)) {
+                    ackBuckets[bucket] += 1;
+                  }
+                }
+              }
+
+              oldestOutstanding.sort((left, right) => right.ageMinutes - left.ageMinutes);
+
+              return {
+                metrics,
+                ackBuckets,
+                oldestOutstanding,
+              };
+            }
+
+            function formatDelta(current, previous) {
+              const delta = current - previous;
+              if (delta > 0) {
+                return `+${delta}`;
+              }
+              return String(delta);
+            }
+
+            const currentWindow = buildMetrics(inWindowIssues);
+            const previousWindow = buildMetrics(previousWindowIssues);
+            const metrics = currentWindow.metrics;
+            const ackBuckets = currentWindow.ackBuckets;
+            const previousMetrics = previousWindow.metrics;
+            const previousAckBuckets = previousWindow.ackBuckets;
+            const topOutstanding = currentWindow.oldestOutstanding.slice(0, 5);
+            const escalatedDelta = metrics.escalated - previousMetrics.escalated;
+            const slaBreachDelta = metrics.slaBreached - previousMetrics.slaBreached;
+            const unackedPastSlaCurrent = metrics.unackedPastSla;
+            const warningReasons = [];
+
+            if (escalatedDelta >= warnEscalatedDelta && warnEscalatedDelta > 0) {
+              warningReasons.push(`escalated delta ${formatDelta(metrics.escalated, previousMetrics.escalated)} >= threshold ${warnEscalatedDelta}`);
+            }
+
+            if (slaBreachDelta >= warnSlaBreachDelta && warnSlaBreachDelta > 0) {
+              warningReasons.push(`ack SLA breach delta ${formatDelta(metrics.slaBreached, previousMetrics.slaBreached)} >= threshold ${warnSlaBreachDelta}`);
+            }
+
+            if (unackedPastSlaCurrent >= warnUnackedPastSla && warnUnackedPastSla > 0) {
+              warningReasons.push(`open unacked past SLA ${unackedPastSlaCurrent} >= threshold ${warnUnackedPastSla}`);
+            }
+
+            const reportStatus = warningReasons.length > 0 ? 'warning' : 'ok';
+
+            const summaryLines = [
+              `# Production P0 Weekly Report`,
+              '',
+              `- Repository: ${context.repo.owner}/${context.repo.repo}`,
+              `- Lookback window: last ${lookbackDays} day(s)`,
+              `- Comparison window: previous ${lookbackDays} day(s) immediately before the lookback window`,
+              `- ACK SLA threshold: ${ackTimeoutMinutes} minutes`,
+              `- Report status: ${reportStatus}`,
+              `- Generated at (UTC): ${new Date(now).toISOString()}`,
+              `- Workflow run: ${runUrl}`,
+              '',
+              `## Report Alerts`,
+              ...(warningReasons.length > 0 ? warningReasons.map((reason) => `- ${reason}`) : ['- none']),
+              '',
+              `## Incident Totals`,
+              `- Total P0 production incidents created: ${metrics.total}`,
+              `- Total delta vs previous window: ${formatDelta(metrics.total, previousMetrics.total)} (previous=${previousMetrics.total})`,
+              `- Open: ${metrics.open}`,
+              `- Closed: ${metrics.closed}`,
+              `- Acked: ${metrics.acked}`,
+              `- Escalated: ${metrics.escalated}`,
+              `- ACK SLA breached: ${metrics.slaBreached}`,
+              `- Open and still unacked: ${metrics.unackedOpen}`,
+              `- Open, unacked, and past SLA: ${metrics.unackedPastSla}`,
+              '',
+              `## Trend vs Previous Window`,
+              `- Acked delta: ${formatDelta(metrics.acked, previousMetrics.acked)} (previous=${previousMetrics.acked})`,
+              `- Escalated delta: ${formatDelta(metrics.escalated, previousMetrics.escalated)} (previous=${previousMetrics.escalated})`,
+              `- ACK SLA breached delta: ${formatDelta(metrics.slaBreached, previousMetrics.slaBreached)} (previous=${previousMetrics.slaBreached})`,
+              `- Open unacked delta: ${formatDelta(metrics.unackedOpen, previousMetrics.unackedOpen)} (previous=${previousMetrics.unackedOpen})`,
+              `- Open unacked past SLA delta: ${formatDelta(metrics.unackedPastSla, previousMetrics.unackedPastSla)} (previous=${previousMetrics.unackedPastSla})`,
+              '',
+              `## ACK Bucket Distribution`,
+              `- ack-under-15m: ${ackBuckets['ack-under-15m']} (delta ${formatDelta(ackBuckets['ack-under-15m'], previousAckBuckets['ack-under-15m'])}, previous=${previousAckBuckets['ack-under-15m']})`,
+              `- ack-15-30m: ${ackBuckets['ack-15-30m']} (delta ${formatDelta(ackBuckets['ack-15-30m'], previousAckBuckets['ack-15-30m'])}, previous=${previousAckBuckets['ack-15-30m']})`,
+              `- ack-30-60m: ${ackBuckets['ack-30-60m']} (delta ${formatDelta(ackBuckets['ack-30-60m'], previousAckBuckets['ack-30-60m'])}, previous=${previousAckBuckets['ack-30-60m']})`,
+              `- ack-over-60m: ${ackBuckets['ack-over-60m']} (delta ${formatDelta(ackBuckets['ack-over-60m'], previousAckBuckets['ack-over-60m'])}, previous=${previousAckBuckets['ack-over-60m']})`,
+              '',
+              `## Oldest Open Unacked Past SLA`,
+              ...(topOutstanding.length > 0
+                ? topOutstanding.map((item) => `- #${item.number} (${item.ageMinutes}m): ${item.title} - ${item.htmlUrl}`)
+                : ['- none']),
+              '',
+              `## References`,
+              `- Incident list: ${repoUrl}/issues?q=is%3Aissue+label%3Aincident+label%3Aproduction+label%3Apriority-p0`,
+              `- Runbook: ${runbookUrl}`,
+            ];
+
+            const summaryBody = summaryLines.join('\n');
+            await core.summary.addRaw(summaryBody).write();
+
+            core.info(summaryBody);
+
+            if (!isDryRun && archiveIssueEnabled) {
+              await (async () => {
+                async function ensureLabel(name, color, description) {
+                  try {
+                    await github.rest.issues.getLabel({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      name,
+                    });
+                  } catch (error) {
+                    if (error.status !== 404) {
+                      core.warning(`Skipping label check for ${name}: ${error.message}`);
+                      return;
+                    }
+
+                    try {
+                      await github.rest.issues.createLabel({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        name,
+                        color,
+                        description,
+                      });
+                      core.info(`Created missing label: ${name}`);
+                    } catch (createError) {
+                      core.warning(`Failed to create label ${name}: ${createError.message}`);
+                    }
+                  }
+                }
+
+                await ensureLabel('report', '1d76db', 'Operational report and summary artifacts');
+                await ensureLabel('needs-attention', 'b60205', 'Operational artifact requiring follow-up');
+
+                const archiveLabels = reportStatus === 'warning'
+                  ? ['report', 'production', 'needs-attention']
+                  : ['report', 'production'];
+                const warningActionChecklist = reportStatus === 'warning'
+                  ? [
+                    '## Follow-up Actions',
+                    '- [ ] Review warning reasons and confirm incident trend interpretation',
+                    '- [ ] Assign owner for remediation or runbook follow-up',
+                    '- [ ] Verify open unacked and escalated incidents have current responders',
+                    '- [ ] Record mitigation or policy changes if thresholds need tuning',
+                    '',
+                  ]
+                  : [];
+
+                const archiveBody = [
+                  `## ${archiveMarker} Production P0 Weekly Report`,
+                  `- Report status: ${reportStatus}`,
+                  `- Lookback window: last ${lookbackDays} day(s)` ,
+                  `- Generated at (UTC): ${new Date(now).toISOString()}`,
+                  `- Workflow run: ${runUrl}`,
+                  '',
+                  ...warningActionChecklist,
+                  summaryBody,
+                ].join('\n');
+
+                const existingIssues = await github.paginate(github.rest.issues.listForRepo, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'all',
+                  per_page: 100,
+                });
+
+                const existingArchiveIssue = existingIssues.find((issue) =>
+                  issue.title === archiveTitle && String(issue.body || '').includes(archiveMarker)
+                );
+
+                if (existingArchiveIssue) {
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: existingArchiveIssue.number,
+                    title: archiveTitle,
+                    body: archiveBody,
+                    labels: archiveLabels,
+                  });
+                  core.info(`Updated weekly archive issue #${existingArchiveIssue.number}.`);
+                } else {
+                  await github.rest.issues.create({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    title: archiveTitle,
+                    body: archiveBody,
+                    labels: archiveLabels,
+                  });
+                  core.info('Created weekly archive issue.');
+                }
+              })();
+            } else if (isDryRun) {
+              core.info('Dry run enabled. Archive issue skipped.');
+            } else {
+              core.info('Archive issue disabled by PROD_P0_REPORT_ARCHIVE_ISSUE=false.');
+            }
+
+            if (isDryRun) {
+              core.info('Dry run enabled. Slack notification skipped.');
+              return;
+            }
+
+            if (!process.env.PROD_P0_REPORT_SLACK_WEBHOOK) {
+              core.info('PROD_P0_REPORT_SLACK_WEBHOOK is not set; Slack notification skipped.');
+              return;
+            }
+
+            const slackLines = [
+              `[EduLink][P0 Weekly Report][${reportStatus.toUpperCase()}] last ${lookbackDays}d`,
+              `total=${metrics.total}`,
+              `open=${metrics.open}`,
+              `closed=${metrics.closed}`,
+              `delta_total=${formatDelta(metrics.total, previousMetrics.total)}`,
+              `acked=${metrics.acked}`,
+              `delta_acked=${formatDelta(metrics.acked, previousMetrics.acked)}`,
+              `escalated=${metrics.escalated}`,
+              `delta_escalated=${formatDelta(metrics.escalated, previousMetrics.escalated)}`,
+              `sla_breached=${metrics.slaBreached}`,
+              `delta_sla_breached=${formatDelta(metrics.slaBreached, previousMetrics.slaBreached)}`,
+              `unacked_open=${metrics.unackedOpen}`,
+              `unacked_past_sla=${metrics.unackedPastSla}`,
+              `alerts=${warningReasons.length > 0 ? warningReasons.join('; ') : 'none'}`,
+              `buckets={under15:${ackBuckets['ack-under-15m']},15to30:${ackBuckets['ack-15-30m']},30to60:${ackBuckets['ack-30-60m']},over60:${ackBuckets['ack-over-60m']}}`,
+              `run=${runUrl}`,
+            ];
+
+            await fetch(process.env.PROD_P0_REPORT_SLACK_WEBHOOK, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: slackLines.join(' | ') }),
+            });
+
+            core.info('Slack weekly report notification sent.');
+
+            if (reportStatus === 'warning') {
+              if (!process.env.PROD_P0_REPORT_WARNING_SLACK_WEBHOOK) {
+                core.info('PROD_P0_REPORT_WARNING_SLACK_WEBHOOK is not set; dedicated warning notification skipped.');
+                return;
+              }
+
+              const warningSlackLines = [
+                `[EduLink][P0 Weekly Report Warning] last ${lookbackDays}d`,
+                ...(warningMentionText ? [`mentions=${warningMentionText}`] : []),
+                `alerts=${warningReasons.join('; ')}`,
+                `escalated_delta=${formatDelta(metrics.escalated, previousMetrics.escalated)}`,
+                `sla_breach_delta=${formatDelta(metrics.slaBreached, previousMetrics.slaBreached)}`,
+                `unacked_past_sla=${metrics.unackedPastSla}`,
+                `archive=${repoUrl}/issues?q=is%3Aissue+is%3Aopen+label%3Areport+label%3Aneeds-attention`,
+                `run=${runUrl}`,
+              ];
+
+              await fetch(process.env.PROD_P0_REPORT_WARNING_SLACK_WEBHOOK, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: warningSlackLines.join(' | ') }),
+              });
+
+              core.info('Dedicated weekly warning Slack notification sent.');
+            }

@@ -1,0 +1,692 @@
+name: Deploy Production
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: "Bypass staging incident gate"
+        required: false
+        default: false
+        type: boolean
+      force_reason:
+        description: "Reason for force deployment (required when force_deploy=true)"
+        required: false
+        default: ""
+        type: string
+      force_evidence:
+        description: "Approval evidence (ticket/link, required when force_deploy=true)"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    environment:
+      name: production
+    env:
+      SLACK_WEBHOOK: ${{ secrets.PROD_SLACK_WEBHOOK }}
+      P0_SLACK_WEBHOOK: ${{ secrets.PROD_P0_SLACK_WEBHOOK }}
+      PAGERDUTY_ROUTING_KEY: ${{ secrets.PROD_PAGERDUTY_ROUTING_KEY }}
+      PROD_AUDIT_ASSIGNEES: ${{ secrets.PROD_AUDIT_ASSIGNEES }}
+      PROD_RUNBOOK_URL: ${{ secrets.PROD_RUNBOOK_URL }}
+      PROD_REASON_LABEL_WHITELIST: ${{ secrets.PROD_REASON_LABEL_WHITELIST }}
+      PROD_INCIDENT_MILESTONE_P0: ${{ secrets.PROD_INCIDENT_MILESTONE_P0 }}
+      PROD_INCIDENT_MILESTONE_P1: ${{ secrets.PROD_INCIDENT_MILESTONE_P1 }}
+      PROD_INCIDENT_MILESTONE_P2: ${{ secrets.PROD_INCIDENT_MILESTONE_P2 }}
+      PROD_AUTO_CREATE_INCIDENT_MILESTONES: ${{ secrets.PROD_AUTO_CREATE_INCIDENT_MILESTONES }}
+      PROD_BLOCK_ON_STAGING_INCIDENTS: ${{ secrets.PROD_BLOCK_ON_STAGING_INCIDENTS }}
+      PROD_STAGING_INCIDENT_THRESHOLD: ${{ secrets.PROD_STAGING_INCIDENT_THRESHOLD }}
+      PROD_STAGING_INCIDENT_LOOKBACK_HOURS: ${{ secrets.PROD_STAGING_INCIDENT_LOOKBACK_HOURS }}
+
+    steps:
+      - name: Check staging incident gate
+        id: staging_gate
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const blockToggle = (process.env.PROD_BLOCK_ON_STAGING_INCIDENTS || 'false').toLowerCase();
+            const threshold = parseInt(process.env.PROD_STAGING_INCIDENT_THRESHOLD || '3', 10);
+            const lookbackHours = parseInt(process.env.PROD_STAGING_INCIDENT_LOOKBACK_HOURS || '24', 10);
+            const forceDeploy = context.eventName === 'workflow_dispatch' && String(context.payload?.inputs?.force_deploy || 'false').toLowerCase() === 'true';
+            const forceReason = String(context.payload?.inputs?.force_reason || '').trim();
+            const forceEvidence = String(context.payload?.inputs?.force_evidence || '').trim();
+            const evidencePattern = /^(https?:\/\/\S+|#\d+|[A-Za-z][A-Za-z0-9]+-\d+)$/;
+
+            core.setOutput('blocked', 'false');
+            core.setOutput('open_count', '0');
+            core.setOutput('threshold', String(threshold));
+            core.setOutput('lookback_hours', String(lookbackHours));
+            core.setOutput('reason', '');
+            core.setOutput('force_deploy', forceDeploy ? 'true' : 'false');
+            core.setOutput('force_reason', forceReason);
+            core.setOutput('force_evidence', forceEvidence);
+
+            if (blockToggle !== 'true') {
+              core.info('Staging incident gate disabled (PROD_BLOCK_ON_STAGING_INCIDENTS != true).');
+              core.setOutput('reason', 'gate-disabled');
+              return;
+            }
+
+            if (forceDeploy) {
+              if (forceReason.length < 10) {
+                core.setOutput('blocked', 'true');
+                core.setOutput('reason', 'force-reason-required');
+                core.setFailed('Production deploy blocked: force_deploy=true requires force_reason with at least 10 characters.');
+                return;
+              }
+
+              if (!evidencePattern.test(forceEvidence)) {
+                core.setOutput('blocked', 'true');
+                core.setOutput('reason', 'force-evidence-required');
+                core.setFailed('Production deploy blocked: force_deploy=true requires force_evidence as URL, issue reference (#123), or ticket key (ABC-123).');
+                return;
+              }
+
+              core.warning('Staging incident gate bypassed by manual force_deploy input.');
+              core.info(`Force deploy reason: ${forceReason}`);
+              core.info(`Force deploy evidence: ${forceEvidence}`);
+              core.setOutput('reason', 'force-bypass');
+              return;
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'incident,staging',
+              per_page: 100,
+            });
+
+            const now = Date.now();
+            const lookbackMs = lookbackHours * 60 * 60 * 1000;
+            const recentIssues = issues.filter((issue) => {
+              const createdAt = new Date(issue.created_at).getTime();
+              return Number.isFinite(createdAt) && (now - createdAt) <= lookbackMs;
+            });
+
+            const openCount = recentIssues.length;
+            core.info(`Open staging incidents within ${lookbackHours}h: ${openCount}, threshold: ${threshold}`);
+            core.setOutput('open_count', String(openCount));
+
+            if (openCount >= threshold) {
+              core.setOutput('blocked', 'true');
+              core.setOutput('reason', 'staging-incident-threshold-exceeded');
+              core.setFailed(
+                `Production deploy blocked: recent staging incidents (${openCount}) >= threshold (${threshold}) in ${lookbackHours}h.`
+              );
+            }
+
+      - name: Create GitHub Release (auto notes)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+
+      - name: Validate production tag format
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid production tag: $TAG"
+            echo "Expected semantic version format: vX.Y.Z (example: v1.2.3)"
+            exit 1
+          fi
+
+      - name: Deploy to production server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            cd "${{ secrets.PROD_APP_DIR }}"
+
+            echo "[CHECKLIST] 1/4 Fetch target revision"
+
+            PREV_COMMIT=$(git rev-parse HEAD)
+            HEALTH_URL="${{ secrets.PROD_HEALTHCHECK_URL || 'http://localhost/health' }}"
+            METRICS_URL="${{ secrets.PROD_METRICS_URL || 'http://localhost/metrics' }}"
+            APP_BASE_URL="${{ secrets.PROD_APP_BASE_URL || 'http://localhost:8000' }}"
+            ENABLE_ROLE_SMOKE="${{ secrets.PROD_ENABLE_ROLE_SMOKE || 'false' }}"
+
+            git fetch --tags origin
+            if [ -n "${{ github.ref_name }}" ]; then
+              git checkout "${{ github.ref_name }}"
+            else
+              git checkout main
+              git pull --ff-only origin main
+            fi
+
+            echo "[CHECKLIST] 2/4 Build and start containers"
+            docker compose -f docker/docker-compose.yml up -d --build
+
+            echo "[CHECKLIST] 3/4 Health and metrics smoke checks"
+            for i in $(seq 1 15); do
+              if curl -fsS "$HEALTH_URL" > /dev/null; then
+                echo "Health check passed: $HEALTH_URL"
+
+                if curl -fsS "$METRICS_URL" > /dev/null; then
+                  echo "Smoke check passed: $METRICS_URL"
+                else
+                  echo "Smoke check failed: $METRICS_URL"
+                  break
+                fi
+
+                if [ "$ENABLE_ROLE_SMOKE" = "true" ]; then
+                  echo "[CHECKLIST] Optional role smoke enabled"
+                  docker compose -f docker/docker-compose.yml exec -T backend python seed_ui_users.py
+                  docker compose -f docker/docker-compose.yml exec -T \
+                    -e EDULINK_BASE_URL="$APP_BASE_URL" \
+                    backend python role_api_smoke.py
+                else
+                  echo "[CHECKLIST] Optional role smoke skipped (PROD_ENABLE_ROLE_SMOKE=false)"
+                fi
+
+                docker compose -f docker/docker-compose.yml ps
+                echo "[CHECKLIST] 4/4 Deployment completed"
+                exit 0
+              fi
+              echo "Health check retry ($i/15): $HEALTH_URL"
+              sleep 10
+            done
+
+            echo "Health check failed. Rolling back to $PREV_COMMIT"
+            git checkout "$PREV_COMMIT"
+            docker compose -f docker/docker-compose.yml up -d --build
+
+            echo "[ROLLBACK] Verifying service health after rollback"
+            for i in $(seq 1 12); do
+              if curl -fsS "$HEALTH_URL" > /dev/null; then
+                echo "[ROLLBACK] Health check passed after rollback"
+                exit 1
+              fi
+              echo "[ROLLBACK] Health check retry ($i/12): $HEALTH_URL"
+              sleep 10
+            done
+
+            echo "[ROLLBACK] Rollback completed but health check still failing"
+            exit 1
+
+      - name: Build deployment report timestamp
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        id: deploy_report
+        run: |
+          echo "deployed_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+      - name: Append deployment validation to release notes
+        if: success() && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          append_body: true
+          body: |
+            ## Deployment Validation
+            - Status: Success
+            - Commit: `${{ github.sha }}`
+            - Deployed at (UTC): `${{ steps.deploy_report.outputs.deployed_at }}`
+            - Workflow run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+            - Checks:
+              - Health endpoint check
+              - Metrics endpoint check
+              - Optional role smoke check (`PROD_ENABLE_ROLE_SMOKE=true`)
+
+      - name: Notify Slack on success
+        if: success()
+        run: |
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -X POST -H "Content-type: application/json" \
+              --data "{\"text\":\"[EduLink] Production deploy succeeded: ${{ github.ref_name }} (${{ github.sha }})\"}" \
+              "$SLACK_WEBHOOK"
+          else
+            echo "PROD_SLACK_WEBHOOK is not set; skip success notification."
+          fi
+
+      - name: Create force deploy audit issue
+        if: success() && steps.staging_gate.outputs.force_deploy == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = process.env.GITHUB_REF_NAME || 'manual-dispatch';
+            const sha = process.env.GITHUB_SHA;
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const reason = `${{ steps.staging_gate.outputs.force_reason }}`;
+            const evidence = `${{ steps.staging_gate.outputs.force_evidence }}`;
+            const assignees = (process.env.PROD_AUDIT_ASSIGNEES || '')
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean);
+
+            const title = `[Audit] Force production deploy used - ${tag}`;
+            const body = [
+              '## Force Deploy Audit',
+              '- Environment: production',
+              `- Tag: ${tag}`,
+              `- Commit: ${sha}`,
+              `- Workflow run: ${runUrl}`,
+              `- Reason: ${reason}`,
+              `- Evidence: ${evidence}`,
+              '',
+              '## Follow-up',
+              '- [ ] Review whether gate thresholds should be adjusted',
+              '- [ ] Confirm incident triage rationale was valid',
+            ].join('\n');
+
+            try {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['audit', 'production'],
+                assignees,
+              });
+            } catch (error) {
+              core.warning(`Audit issue assignee apply failed, retry without assignees: ${error.message}`);
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['audit', 'production'],
+              });
+            }
+
+      - name: Notify Slack when gate blocks deployment
+        if: failure() && steps.staging_gate.outputs.blocked == 'true'
+        run: |
+          OPEN_COUNT="${{ steps.staging_gate.outputs.open_count }}"
+          THRESHOLD="${{ steps.staging_gate.outputs.threshold }}"
+          LOOKBACK_HOURS="${{ steps.staging_gate.outputs.lookback_hours }}"
+          BLOCK_REASON="${{ steps.staging_gate.outputs.reason }}"
+          RUNBOOK_URL="${PROD_RUNBOOK_URL:-${{ github.server_url }}/${{ github.repository }}/blob/main/docs/deployment-runbook.md}"
+
+          case "$BLOCK_REASON" in
+            staging-incident-threshold-exceeded)
+              RESPONSE_ACTION="Triage open staging incidents first and verify gate threshold appropriateness."
+              ;;
+            force-reason-required)
+              RESPONSE_ACTION="Re-run manual dispatch with a valid force_reason of at least 10 characters."
+              ;;
+            force-evidence-required)
+              RESPONSE_ACTION="Re-run manual dispatch with a valid force_evidence (URL, #issue, or ticket key)."
+              ;;
+            force-bypass)
+              RESPONSE_ACTION="Confirm force deploy justification with on-call and record sign-off in audit issue."
+              ;;
+            gate-disabled)
+              RESPONSE_ACTION="Verify temporary gate-disable decision and restore gate policy after emergency handling."
+              ;;
+            *)
+              RESPONSE_ACTION="Review gate conditions and staging incident status before retrying production deploy."
+              ;;
+          esac
+
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -X POST -H "Content-type: application/json" \
+              --data "{\"text\":\"[EduLink] Production deploy blocked by gate: reason=$BLOCK_REASON | open_incidents=$OPEN_COUNT | threshold=$THRESHOLD | lookback_h=$LOOKBACK_HOURS | action=$RESPONSE_ACTION | runbook=$RUNBOOK_URL | Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+              "$SLACK_WEBHOOK"
+          else
+            echo "PROD_SLACK_WEBHOOK is not set; skip gate-blocked notification."
+          fi
+
+      - name: Compute failure severity
+        if: failure()
+        id: failure_meta
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const blocked = `${{ steps.staging_gate.outputs.blocked }}` === 'true';
+            const gateReasonRaw = `${{ steps.staging_gate.outputs.reason }}`.trim();
+            const gateReason = gateReasonRaw || 'unknown';
+
+            const severityByReason = {
+              'staging-incident-threshold-exceeded': 'warning',
+              'force-reason-required': 'error',
+              'force-evidence-required': 'error',
+              'gate-disabled': 'critical',
+              'force-bypass': 'critical',
+              'unknown': 'critical',
+              'other': 'critical',
+            };
+
+            const severity = blocked ? 'warning' : (severityByReason[gateReason] || 'critical');
+            const runbookUrl = process.env.PROD_RUNBOOK_URL || `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/blob/main/docs/deployment-runbook.md`;
+
+            const actionByReason = {
+              'staging-incident-threshold-exceeded': 'Triage open staging incidents first and verify gate threshold appropriateness.',
+              'force-reason-required': 'Re-run manual dispatch with a valid force_reason of at least 10 characters.',
+              'force-evidence-required': 'Re-run manual dispatch with a valid force_evidence (URL, #issue, or ticket key).',
+              'force-bypass': 'Confirm force deploy justification with on-call and record sign-off in audit issue.',
+              'gate-disabled': 'Verify temporary gate-disable decision and restore gate policy after emergency handling.',
+            };
+            const responseAction = blocked
+              ? (actionByReason[gateReason] || 'Review gate conditions and staging incident status before retrying production deploy.')
+              : (actionByReason[gateReason] || 'Validate rollback state, then investigate deployment/runtime failure from workflow and service logs.');
+
+            core.setOutput('gate_reason', gateReason);
+            core.setOutput('severity', severity);
+            core.setOutput('runbook_url', runbookUrl);
+            core.setOutput('response_action', responseAction);
+            core.info(`Failure severity computed: ${severity} (reason=${gateReason}, blocked=${blocked})`);
+
+      - name: Notify Slack on failure
+        if: failure() && steps.staging_gate.outputs.blocked != 'true'
+        run: |
+          BLOCKED="${{ steps.staging_gate.outputs.blocked }}"
+          OPEN_COUNT="${{ steps.staging_gate.outputs.open_count }}"
+          THRESHOLD="${{ steps.staging_gate.outputs.threshold }}"
+          LOOKBACK_HOURS="${{ steps.staging_gate.outputs.lookback_hours }}"
+          BLOCK_REASON="${{ steps.failure_meta.outputs.gate_reason }}"
+          SEVERITY="${{ steps.failure_meta.outputs.severity }}"
+          RUNBOOK_URL="${{ steps.failure_meta.outputs.runbook_url }}"
+          RESPONSE_ACTION="${{ steps.failure_meta.outputs.response_action }}"
+
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            curl -X POST -H "Content-type: application/json" \
+              --data "{\"text\":\"[EduLink] Production deploy failed: ${{ github.ref_name }} (${{ github.sha }}) | severity=$SEVERITY | Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} | gate_blocked=$BLOCKED | reason=$BLOCK_REASON | open_incidents=$OPEN_COUNT | threshold=$THRESHOLD | lookback_h=$LOOKBACK_HOURS | action=$RESPONSE_ACTION | runbook=$RUNBOOK_URL\"}" \
+              "$SLACK_WEBHOOK"
+          else
+            echo "PROD_SLACK_WEBHOOK is not set; skip failure notification."
+          fi
+
+      - name: Notify dedicated P0 Slack channel
+        if: failure() && steps.staging_gate.outputs.blocked != 'true' && steps.failure_meta.outputs.severity == 'critical'
+        run: |
+          BLOCK_REASON="${{ steps.failure_meta.outputs.gate_reason }}"
+          RUNBOOK_URL="${{ steps.failure_meta.outputs.runbook_url }}"
+          RESPONSE_ACTION="${{ steps.failure_meta.outputs.response_action }}"
+
+          if [ -n "$P0_SLACK_WEBHOOK" ]; then
+            curl -X POST -H "Content-type: application/json" \
+              --data "{\"text\":\"[EduLink][P0] Critical production deploy failure: ${{ github.ref_name }} (${{ github.sha }}) | reason=$BLOCK_REASON | action=$RESPONSE_ACTION | runbook=$RUNBOOK_URL | Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+              "$P0_SLACK_WEBHOOK"
+          else
+            echo "PROD_P0_SLACK_WEBHOOK is not set; skip dedicated P0 notification."
+          fi
+
+      - name: Notify PagerDuty on failure
+        if: failure() && steps.staging_gate.outputs.blocked != 'true'
+        run: |
+          SEVERITY="${{ steps.failure_meta.outputs.severity }}"
+          BLOCK_REASON="${{ steps.failure_meta.outputs.gate_reason }}"
+          RUNBOOK_URL="${{ steps.failure_meta.outputs.runbook_url }}"
+          RESPONSE_ACTION="${{ steps.failure_meta.outputs.response_action }}"
+          if [ -n "$PAGERDUTY_ROUTING_KEY" ]; then
+            curl -X POST -H "Content-type: application/json" \
+              --data "{\"routing_key\":\"$PAGERDUTY_ROUTING_KEY\",\"event_action\":\"trigger\",\"payload\":{\"summary\":\"EduLink production deploy failed\",\"severity\":\"$SEVERITY\",\"source\":\"github-actions\",\"custom_details\":{\"tag\":\"${{ github.ref_name }}\",\"sha\":\"${{ github.sha }}\",\"reason\":\"$BLOCK_REASON\",\"recommended_action\":\"$RESPONSE_ACTION\",\"runbook\":\"$RUNBOOK_URL\",\"run\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}}}" \
+              "https://events.pagerduty.com/v2/enqueue"
+          else
+            echo "PROD_PAGERDUTY_ROUTING_KEY is not set; skip PagerDuty notification."
+          fi
+
+      - name: Create or update incident issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = process.env.GITHUB_REF_NAME || 'manual-dispatch';
+            const sha = process.env.GITHUB_SHA;
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const blocked = `${{ steps.staging_gate.outputs.blocked }}` === 'true';
+            const gateReasonRaw = `${{ steps.failure_meta.outputs.gate_reason }}`.trim();
+            const gateReason = gateReasonRaw || 'unknown';
+            const failureSeverity = `${{ steps.failure_meta.outputs.severity }}` || 'critical';
+            const runbookUrl = `${{ steps.failure_meta.outputs.runbook_url }}`;
+            const responseAction = `${{ steps.failure_meta.outputs.response_action }}`;
+            const openCount = `${{ steps.staging_gate.outputs.open_count }}`;
+            const threshold = `${{ steps.staging_gate.outputs.threshold }}`;
+            const lookbackHours = `${{ steps.staging_gate.outputs.lookback_hours }}`;
+
+            const defaultReasonKeys = [
+              'gate-disabled',
+              'force-bypass',
+              'force-reason-required',
+              'force-evidence-required',
+              'staging-incident-threshold-exceeded',
+              'unknown',
+            ];
+            const rawConfigured = String(process.env.PROD_REASON_LABEL_WHITELIST || '');
+            const rawTokens = rawConfigured.split(',');
+            const hasEmptyToken = rawConfigured.trim().length > 0 && rawTokens.some((token) => token.trim().length === 0);
+            if (hasEmptyToken) {
+              core.setFailed('Invalid PROD_REASON_LABEL_WHITELIST: empty token detected. Remove consecutive/trailing commas.');
+              return;
+            }
+
+            const configuredReasonKeys = rawTokens
+              .map((key) => key.trim().toLowerCase())
+              .filter(Boolean)
+              .map((key) => key.replace(/[^a-z0-9-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''))
+              .filter(Boolean);
+
+            const uniqueConfiguredReasonKeys = [...new Set(configuredReasonKeys)];
+            if (configuredReasonKeys.length !== uniqueConfiguredReasonKeys.length) {
+              core.setFailed('Invalid PROD_REASON_LABEL_WHITELIST: duplicate reason keys detected after normalization.');
+              return;
+            }
+
+            if (uniqueConfiguredReasonKeys.length > 20) {
+              core.setFailed('Invalid PROD_REASON_LABEL_WHITELIST: maximum 20 reason keys allowed.');
+              return;
+            }
+
+            const configuredReasonSource = uniqueConfiguredReasonKeys.length > 0
+              ? uniqueConfiguredReasonKeys
+              : defaultReasonKeys;
+            const allowedReasonKeys = new Set(configuredReasonSource);
+            const normalizedReasonKey = gateReason
+              .toLowerCase()
+              .replace(/[^a-z0-9-]+/g, '-')
+              .replace(/-+/g, '-')
+              .replace(/^-|-$/g, '') || 'unknown';
+            const reasonCategory = allowedReasonKeys.has(normalizedReasonKey)
+              ? normalizedReasonKey
+              : 'other';
+            const statusLabel = blocked ? 'gate-blocked' : 'deploy-failure';
+            const severityLabel = `severity-${failureSeverity}`;
+            const priorityLabelBySeverity = {
+              critical: 'priority-p0',
+              error: 'priority-p1',
+              warning: 'priority-p2',
+            };
+            const priorityLabel = priorityLabelBySeverity[failureSeverity] || 'priority-p1';
+            const isP0 = priorityLabel === 'priority-p0';
+            const milestoneTitleByPriority = {
+              'priority-p0': String(process.env.PROD_INCIDENT_MILESTONE_P0 || '').trim(),
+              'priority-p1': String(process.env.PROD_INCIDENT_MILESTONE_P1 || '').trim(),
+              'priority-p2': String(process.env.PROD_INCIDENT_MILESTONE_P2 || '').trim(),
+            };
+            const autoCreateMilestones = String(process.env.PROD_AUTO_CREATE_INCIDENT_MILESTONES || 'false').toLowerCase() === 'true';
+            const targetMilestoneTitle = milestoneTitleByPriority[priorityLabel] || '';
+            const reasonScopedLabel = blocked ? `gate-reason-${reasonCategory}` : `failure-reason-${reasonCategory}`;
+            const targetLabels = ['incident', 'production', statusLabel, severityLabel, priorityLabel, reasonScopedLabel];
+            if (isP0) {
+              targetLabels.push('oncall-unacked');
+            }
+
+            const normalizeMilestoneTitle = (value) => value
+              .toLowerCase()
+              .trim()
+              .replace(/\s+/g, ' ');
+
+            let milestoneNumber;
+            if (targetMilestoneTitle) {
+              const milestones = await github.paginate(github.rest.issues.listMilestones, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100,
+              });
+              const normalizedTargetTitle = normalizeMilestoneTitle(targetMilestoneTitle);
+              const matchedMilestones = milestones.filter(
+                (m) => normalizeMilestoneTitle(String(m.title || '')) === normalizedTargetTitle
+              );
+
+              if (matchedMilestones.length === 1) {
+                milestoneNumber = matchedMilestones[0].number;
+                core.info(`Using incident milestone: ${matchedMilestones[0].title} (#${milestoneNumber})`);
+              } else if (matchedMilestones.length > 1) {
+                core.warning(
+                  `Configured milestone is ambiguous for ${priorityLabel}: ${targetMilestoneTitle}. ` +
+                  `Matched multiple open milestones with normalized title; milestone assignment skipped.`
+                );
+              } else {
+                if (autoCreateMilestones) {
+                  try {
+                    const created = await github.rest.issues.createMilestone({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      title: targetMilestoneTitle,
+                      description: `Auto-created by production deploy workflow for ${priorityLabel}`,
+                    });
+                    milestoneNumber = created.data.number;
+                    core.info(`Created and assigned incident milestone: ${targetMilestoneTitle} (#${milestoneNumber})`);
+                  } catch (createMilestoneError) {
+                    core.warning(
+                      `Configured milestone not found for ${priorityLabel} and auto-create failed: ` +
+                      `${targetMilestoneTitle} (${createMilestoneError.message})`
+                    );
+                  }
+                } else {
+                  core.warning(`Configured milestone not found for ${priorityLabel}: ${targetMilestoneTitle}`);
+                }
+              }
+            }
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  core.warning(`Skipping label check for ${name}: ${error.message}`);
+                  return;
+                }
+
+                try {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name,
+                    color,
+                    description,
+                  });
+                  core.info(`Created missing label: ${name}`);
+                } catch (createError) {
+                  core.warning(`Failed to create label ${name}: ${createError.message}`);
+                }
+              }
+            }
+
+            await ensureLabel('incident', 'd73a4a', 'Deployment or runtime incident requiring response');
+            await ensureLabel('production', 'b60205', 'Production environment impact');
+            await ensureLabel('gate-blocked', 'fbca04', 'Deployment blocked by governance gate');
+            await ensureLabel('deploy-failure', '5319e7', 'Deployment execution failed after gate checks');
+            await ensureLabel('severity-critical', 'b60205', 'Critical incident severity');
+            await ensureLabel('severity-error', 'd93f0b', 'Error incident severity');
+            await ensureLabel('severity-warning', 'fbca04', 'Warning incident severity');
+            await ensureLabel('priority-p0', 'b60205', 'Highest incident priority');
+            await ensureLabel('priority-p1', 'd93f0b', 'High incident priority');
+            await ensureLabel('priority-p2', 'fbca04', 'Medium incident priority');
+            await ensureLabel('oncall-unacked', 'b60205', 'P0 incident without on-call acknowledgment recorded');
+            await ensureLabel(reasonScopedLabel, '0052cc', 'Automated failure reason classification');
+
+            const initialActions = [
+              '- [ ] Confirm rollback status from workflow logs',
+              '- [ ] Validate `/health` and `/metrics` endpoints',
+              '- [ ] Notify on-call and stakeholders',
+              '- [ ] Start postmortem using incident template',
+            ];
+            if (isP0) {
+              initialActions.splice(3, 0, '- [ ] Record on-call acknowledgment time and responder (P0)');
+            }
+
+            const title = `[Incident] Production deploy failed - ${tag}`;
+            const body = [
+              '## Incident Summary',
+              '- Environment: production',
+              `- Tag: ${tag}`,
+              `- Commit: ${sha}`,
+              `- Workflow run: ${runUrl}`,
+              `- Gate blocked: ${blocked}`,
+              `- Gate reason: ${gateReason}`,
+              `- Severity: ${failureSeverity}`,
+              `- Priority: ${priorityLabel}`,
+              `- Open incidents (lookback): ${openCount}`,
+              `- Incident threshold: ${threshold}`,
+              `- Lookback hours: ${lookbackHours}`,
+              `- Recommended action: ${responseAction}`,
+              `- Runbook: ${runbookUrl}`,
+              '',
+              '## Initial Actions',
+              ...initialActions,
+            ].join('\n');
+
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'incident,production',
+              per_page: 100,
+            });
+
+            const matched = existing.find((issue) => issue.title === title);
+
+            if (matched) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: matched.number,
+                body: [
+                  '## New Failure Occurrence',
+                  `- Commit: ${sha}`,
+                  `- Workflow run: ${runUrl}`,
+                  `- Gate blocked: ${blocked}`,
+                  `- Gate reason: ${gateReason}`,
+                  `- Severity: ${failureSeverity}`,
+                  `- Priority: ${priorityLabel}`,
+                  `- Open incidents (lookback): ${openCount}`,
+                  `- Incident threshold: ${threshold}`,
+                  `- Lookback hours: ${lookbackHours}`,
+                  `- Recommended action: ${responseAction}`,
+                  `- Runbook: ${runbookUrl}`,
+                  ...(isP0 ? ['- [ ] Update on-call acknowledgment for this P0 occurrence'] : []),
+                ].join('\n'),
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: matched.number,
+                labels: targetLabels,
+                milestone: milestoneNumber,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: targetLabels,
+                milestone: milestoneNumber,
+              });
+            }
