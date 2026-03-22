@@ -49,6 +49,64 @@ python app_jwt.py
 http://localhost:8000
 ```
 
+---
+
+## 🤖 Autonomous Development Mode (New!)
+
+Run 24/7 **unattended automated development** - no user interaction needed!
+
+### Start Background Auto-Dev (15-minute cycles)
+```powershell
+.\start-auto-dev.ps1
+```
+
+### Options
+```powershell
+# Run in console (real-time output)
+.\start-auto-dev.ps1 -console
+
+# Custom interval (30 minutes)
+.\start-auto-dev.ps1 -interval 30
+
+# One-time execution
+.\start-auto-dev.ps1 -once
+```
+
+### Monitor Progress
+```powershell
+# View logs (live)
+Get-Content auto-dev-daemon.log -Tail 50 -Wait
+
+# Stop daemon
+Stop-Process -Id <PID>
+```
+
+### What It Automates
+- ✅ Test suite execution
+- ✅ Health checks & metrics validation
+- ✅ Auto-commit changes
+- ✅ Auto-push to GitHub
+- ✅ Release note generation
+- ✅ Git tag creation
+- ✅ CI/CD pipeline triggering
+
+---
+
+## 📋 Manual Development Pipeline
+
+Run **once** with full validation:
+```powershell
+.\dev-sprint.ps1 -phase all
+```
+
+Phase-by-phase:
+```powershell
+.\dev-sprint.ps1 -phase test      # Run tests only
+.\dev-sprint.ps1 -phase code      # Code quality
+.\dev-sprint.ps1 -phase commit    # Commit only
+.\dev-sprint.ps1 -phase push      # Push only
+```
+
 The backend serves `frontend/index.html` at `/`.
 
 **Note:** Main entrypoint is `app_jwt.py` (includes JWT auth, tax, network, and admin features).

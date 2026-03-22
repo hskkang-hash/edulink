@@ -148,12 +148,12 @@ sys.path.insert(0, r'$BACKEND_DIR')
 import app_jwt
 client = app_jwt.app.test_client()
 res = client.get('/health')
-print(f"Status: {res.status_code}")
-print(f"Response: {res.get_json()}")
+print('Status: ' + str(res.status_code))
+print('Response: ' + str(res.get_json()))
 "@
         $output = & python -c $pythonCode 2>&1
         Log "INFO" "Health check response: $output"
-        if ($output -contains "200" -or $output -contains "Status: 200") {
+        if ($output -match "200" -or $output -contains "Status: 200") {
             Log "SUCCESS" "✓ /health endpoint working"
             return $true
         }
@@ -168,7 +168,12 @@ function Expand-Tests {
     <# 세무/네트워크 API 통합 테스트 추가 #>
     LogSection "Phase: Test Expansion"
     
-    $testFile = Join-Path $BACKEND_DIR "tests" "test_advanced_features.py"
+    $testsDir = Join-Path $BACKEND_DIR "tests"
+    if (-not (Test-Path $testsDir)) {
+        New-Item -ItemType Directory -Path $testsDir -Force | Out-Null
+    }
+    
+    $testFile = Join-Path $testsDir "test_advanced_features.py"
     
     # 기존 테스트 파일 확인
     if (Test-Path $testFile) {

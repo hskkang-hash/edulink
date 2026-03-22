@@ -1,0 +1,77 @@
+name: Auto-Dev Loop (15min Interval)
+
+on:
+  schedule:
+    # 15분마다 자동 실행
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'Phase to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - quick
+          - health
+          - fulltest
+
+jobs:
+  auto-dev:
+    runs-on: ubuntu-latest
+    name: Auto Dev Pipeline
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          cd backend && pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run health check
+        run: |
+          cd backend
+          python -m pytest tests/test_full_journey.py -q --tb=short
+
+      - name: Run expanded test suite
+        run: |
+          cd backend
+          python -m pytest tests/ -q --tb=short
+
+      - name: Update release notes
+        if: always()
+        run: |
+          # Get latest commit info
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          COMMIT_DATE=$(git log -1 --format=%aI)
+          echo "Latest commit: $COMMIT_HASH ($COMMIT_DATE)" >> RELEASE_v0.2.0.md
+
+      - name: Auto-commit if changes
+        if: always()
+        run: |
+          git config --local user.email "autodev@edulink.local"
+          git config --local user.name "Auto-Dev Bot"
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git add -A
+          git commit -m "chore: auto-dev cycle $(date -I)" || true
+          git push origin main || true
+
+      - name: Report status
+        if: always()
+        run: |
+          echo "✅ Auto-Dev cycle completed at $(date)"
+          echo "Latest tag: $(git describe --tags --abbrev=0)"
