@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDULINK - Instructor Platform</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .posting { margin: 10px 0; padding: 10px; background: #f9f9f9; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        input, select { padding: 8px; margin: 5px; width: 200px; }
+        .topbar { display: none; justify-content: space-between; align-items: center; margin-bottom: 14px; padding: 10px 14px; border: 1px solid #ddd; border-radius: 6px; background: #f7fbff; }
+        .muted { color: #666; font-size: 14px; }
+        .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .actions button { padding: 8px 12px; }
+        .btn-danger { background: #dc3545; }
+        .postings-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .toast { position: fixed; right: 20px; bottom: 20px; background: #1f8f4e; color: #fff; padding: 10px 14px; border-radius: 8px; opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EDULINK - Instructor Platform</h1>
+
+        <div class="topbar" id="topbar">
+            <div>
+                <strong id="userEmail"></strong>
+                <span class="muted" id="userRole"></span>
+            </div>
+            <button id="logoutBtn" class="btn-danger">Logout</button>
+        </div>
+
+        <div class="section" id="registerSection">
+            <h2>Register</h2>
+            <input type="email" id="registerEmail" placeholder="Email">
+            <input type="password" id="registerPassword" placeholder="Password">
+            <select id="registerRole">
+                <option value="instructor">Instructor</option>
+                <option value="student">Student</option>
+            </select>
+            <button id="registerBtn">Register</button>
+            <p id="registerStatus"></p>
+        </div>
+
+        <div class="section" id="loginSection">
+            <h2>Login</h2>
+            <input type="email" id="loginEmail" placeholder="Email" value="demo@example.com">
+            <input type="password" id="loginPassword" placeholder="Password" value="password">
+            <button id="loginBtn">Login</button>
+            <p id="loginStatus"></p>
+        </div>
+
+        <div class="section" id="postingsSection" style="display: none;">
+            <div class="postings-header">
+                <h2>Available Postings</h2>
+                <label id="myPostingsToggleWrap" style="display:none;">
+                    <input type="checkbox" id="myPostingsToggle"> My postings only
+                </label>
+            </div>
+            <div id="postingsList"></div>
+        </div>
+
+        <div class="section" id="createPostingSection" style="display: none;">
+            <h2>Create New Posting</h2>
+            <input type="text" id="postingTitle" placeholder="Title">
+            <select id="postingSubject">
+                <option value="math">Math</option>
+                <option value="english">English</option>
+                <option value="science">Science</option>
+            </select>
+            <input type="text" id="postingRegion" placeholder="Region">
+            <input type="number" id="postingRate" placeholder="Rate per hour">
+            <button id="createPostingBtn">Create Posting</button>
+        </div>
+
+        <div class="section" id="applicationsSection" style="display: none;">
+            <h2>My Applications</h2>
+            <div id="applicationsList"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        if (location.protocol === 'https:' && (location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+            location.replace(`http://${location.host}${location.pathname}`);
+        }
+
+        const API_BASES = [
+            location.port === '8000' ? '' : null,
+            'http://127.0.0.1:8000',
+            'http://localhost:8000'
+        ].filter(Boolean);
+        let token = localStorage.getItem('token') || null;
+        let currentUser = null;
+        let showOnlyMine = false;
+
+        async function apiFetch(path, options = {}) {
+            let lastError = null;
+            for (const base of API_BASES) {
+                try {
+                    return await fetch(`${base}${path}`, options);
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+            throw lastError || new Error('Network request failed. Check that backend is running on :8000.');
+        }
+
+        async function parseJsonSafe(response) {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch (error) {
+                return { error: `Non-JSON response (status ${response.status}): ${text.slice(0, 120)}` };
+            }
+        }
+
+        function setStatus(id, message) {
+            document.getElementById(id).textContent = message;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            if (showToast._timer) {
+                clearTimeout(showToast._timer);
+            }
+            showToast._timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1800);
+        }
+
+        function showSections() {
+            document.getElementById('postingsSection').style.display = 'block';
+            document.getElementById('applicationsSection').style.display = 'block';
+            document.getElementById('createPostingSection').style.display =
+                currentUser && currentUser.role === 'instructor' ? 'block' : 'none';
+            document.getElementById('registerSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('topbar').style.display = 'flex';
+            document.getElementById('userEmail').textContent = currentUser ? currentUser.email : '';
+            document.getElementById('userRole').textContent = currentUser ? `(${currentUser.role})` : '';
+            document.getElementById('myPostingsToggleWrap').style.display =
+                currentUser && currentUser.role === 'instructor' ? 'inline-flex' : 'none';
+        }
+
+        function hideSections() {
+            document.getElementById('postingsSection').style.display = 'none';
+            document.getElementById('applicationsSection').style.display = 'none';
+            document.getElementById('createPostingSection').style.display = 'none';
+            document.getElementById('registerSection').style.display = 'block';
+            document.getElementById('loginSection').style.display = 'block';
+            document.getElementById('topbar').style.display = 'none';
+            document.getElementById('myPostingsToggleWrap').style.display = 'none';
+        }
+
+        function logout() {
+            token = null;
+            currentUser = null;
+            showOnlyMine = false;
+            localStorage.removeItem('token');
+            document.getElementById('myPostingsToggle').checked = false;
+            setStatus('loginStatus', 'Logged out.');
+            hideSections();
+        }
+
+        async function loadUserInfo() {
+            if (!token) {
+                return;
+            }
+            const response = await apiFetch('/auth/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                token = null;
+                currentUser = null;
+                localStorage.removeItem('token');
+                throw new Error(data.error || 'Session expired. Please login again.');
+            }
+
+            currentUser = data;
+            showSections();
+            await Promise.all([loadPostings(), loadApplications()]);
+        }
+
+        async function register() {
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const role = document.getElementById('registerRole').value;
+
+            if (!email || !password) {
+                setStatus('registerStatus', 'Email and password are required.');
+                return;
+            }
+
+            try {
+                const response = await apiFetch('/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, role })
+                });
+                const data = await parseJsonSafe(response);
+
+                if (!response.ok) {
+                    setStatus('registerStatus', data.error || 'Register failed');
+                    return;
+                }
+
+                setStatus('registerStatus', 'Registration successful. Please login.');
+                document.getElementById('registerEmail').value = '';
+                document.getElementById('registerPassword').value = '';
+            } catch (error) {
+                setStatus('registerStatus', `Error: ${error.message}`);
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                setStatus('loginStatus', 'Email and password are required.');
+                return;
+            }
+
+            try {
+                const response = await apiFetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await parseJsonSafe(response);
+
+                if (!response.ok || !data.access_token) {
+                    setStatus('loginStatus', data.error || 'Login failed');
+                    return;
+                }
+
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                await loadUserInfo();
+                setStatus('loginStatus', 'Login successful!');
+            } catch (error) {
+                setStatus('loginStatus', `Error: ${error.message}`);
+            }
+        }
+
+        async function loadPostings() {
+            const response = await apiFetch('/postings');
+            const postings = await parseJsonSafe(response);
+            const list = document.getElementById('postingsList');
+
+            if (!response.ok) {
+                list.innerHTML = `<p>${postings.error || 'Failed to load postings.'}</p>`;
+                return;
+            }
+
+            if (!Array.isArray(postings) || postings.length === 0) {
+                list.innerHTML = '<p>No postings yet.</p>';
+                return;
+            }
+
+            const visiblePostings = showOnlyMine && currentUser
+                ? postings.filter((p) => p.owner_id === currentUser.id)
+                : postings;
+
+            if (visiblePostings.length === 0) {
+                list.innerHTML = '<p>No postings match this filter.</p>';
+                return;
+            }
+
+            list.innerHTML = visiblePostings.map((p) => {
+                const safeTitle = String(p.title || '').replace(/'/g, "\\'");
+                const safeSubject = String(p.subject || '').replace(/'/g, "\\'");
+                const safeRegion = String(p.region || '').replace(/'/g, "\\'");
+
+                let buttons = '';
+                if (currentUser && currentUser.role === 'student') {
+                    buttons += `<button onclick="applyToPosting(${p.id})">Apply</button>`;
+                }
+                if (currentUser && currentUser.role === 'instructor' && p.owner_id === currentUser.id) {
+                    buttons += ` <button onclick="editPosting(${p.id}, '${safeTitle}', '${safeSubject}', '${safeRegion}', ${p.rate})">Edit</button>`;
+                    buttons += ` <button class="btn-danger" onclick="deletePosting(${p.id})">Delete</button>`;
+                }
+
+                return `
+                    <div class="posting">
+                        <h3>${p.title}</h3>
+                        <p>Subject: ${p.subject} | Region: ${p.region} | Rate: $${p.rate}/hr</p>
+                        <div class="actions">${buttons}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function createPosting() {
+            const title = document.getElementById('postingTitle').value.trim();
+            const subject = document.getElementById('postingSubject').value;
+            const region = document.getElementById('postingRegion').value.trim();
+            const rate = parseInt(document.getElementById('postingRate').value, 10);
+
+            if (!title || !subject || !region || Number.isNaN(rate)) {
+                alert('Please fill all posting fields.');
+                return;
+            }
+
+            const response = await apiFetch('/postings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ title, subject, region, rate })
+            });
+
+            if (!response.ok) {
+                const data = await parseJsonSafe(response);
+                alert(data.error || 'Failed to create posting');
+                return;
+            }
+
+            document.getElementById('postingTitle').value = '';
+            document.getElementById('postingRegion').value = '';
+            document.getElementById('postingRate').value = '';
+            await loadPostings();
+            document.getElementById('postingsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showToast('Posting created successfully.');
+        }
+
+        async function applyToPosting(postingId) {
+            const response = await apiFetch('/applications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ posting_id: postingId })
+            });
+
+            if (!response.ok) {
+                const data = await parseJsonSafe(response);
+                alert(data.error || 'Failed to apply');
+                return;
+            }
+
+            alert('Application submitted!');
+            await loadApplications();
+        }
+
+        async function editPosting(id, title, subject, region, rate) {
+            const newTitle = prompt('New title:', title);
+            const newSubject = prompt('New subject:', subject);
+            const newRegion = prompt('New region:', region);
+            const newRate = prompt('New rate:', rate);
+            if (!newTitle || !newSubject || !newRegion || !newRate) {
+                return;
+            }
+
+            const response = await apiFetch(`/postings/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: newTitle,
+                    subject: newSubject,
+                    region: newRegion,
+                    rate: parseInt(newRate, 10)
+                })
+            });
+
+            if (response.ok) {
+                await loadPostings();
+            }
+        }
+
+        async function deletePosting(id) {
+            if (!confirm('Are you sure you want to delete this posting?')) {
+                return;
+            }
+
+            const response = await apiFetch(`/postings/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                await loadPostings();
+            }
+        }
+
+        async function loadApplications() {
+            if (!token) {
+                return;
+            }
+
+            const response = await apiFetch('/applications', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const applications = await parseJsonSafe(response);
+            const list = document.getElementById('applicationsList');
+
+            if (!response.ok) {
+                list.innerHTML = `<p>${applications.error || 'Failed to load applications.'}</p>`;
+                return;
+            }
+
+            if (!Array.isArray(applications) || applications.length === 0) {
+                list.innerHTML = '<p>No applications yet.</p>';
+                return;
+            }
+
+            list.innerHTML = applications.map((a) => {
+                let buttons = '';
+                if (currentUser && currentUser.role === 'instructor') {
+                    buttons = ` <button onclick="updateApplication(${a.id}, 'approved')">Approve</button>` +
+                        ` <button onclick="updateApplication(${a.id}, 'rejected')">Reject</button>`;
+                }
+
+                return `
+                    <div class="posting">
+                        <p>Application ID: ${a.id} | Posting ID: ${a.posting_id} | Status: ${a.status}</p>
+                        ${buttons}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateApplication(id, status) {
+            const response = await apiFetch(`/applications/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status })
+            });
+
+            if (response.ok) {
+                await loadApplications();
+            }
+        }
+
+        // Keep handlers accessible for inline dynamic buttons.
+        window.applyToPosting = applyToPosting;
+        window.editPosting = editPosting;
+        window.deletePosting = deletePosting;
+        window.updateApplication = updateApplication;
+
+        // Bind main buttons explicitly to avoid global scope issues.
+        document.getElementById('registerBtn').addEventListener('click', register);
+        document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('createPostingBtn').addEventListener('click', createPosting);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.getElementById('myPostingsToggle').addEventListener('change', async (event) => {
+            showOnlyMine = event.target.checked;
+            await loadPostings();
+        });
+
+        document.getElementById('registerEmail').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') register();
+        });
+        document.getElementById('registerPassword').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') register();
+        });
+        document.getElementById('loginEmail').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') login();
+        });
+        document.getElementById('loginPassword').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') login();
+        });
+
+        if (token) {
+            loadUserInfo().catch((error) => {
+                setStatus('loginStatus', error.message);
+                hideSections();
+            });
+        } else {
+            hideSections();
+        }
+    </script>
+</body>
+</html>

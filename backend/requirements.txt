@@ -1,0 +1,6 @@
+flask==2.3.3
+flask-cors==3.0.10
+sqlalchemy==2.0.24
+itsdangerous==2.2.2
+werkzeug==3.0.0
+python-dotenv==1.0.0
