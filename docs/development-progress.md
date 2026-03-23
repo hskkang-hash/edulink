@@ -39,4 +39,14 @@ Last Updated: 2026-03-23
 
 ## 현재 상태
 - 현재 진행 단계: Stage 12 완료
-- 다음 작업: 기능 확장 요청 시 신규 Stage 13부터 추가
+- 다음 작업: Stage 13 인증/권한 사용자 경험 완성 착수
+
+## 다음 단계 로드맵 (사용자 기능 중심)
+- [ ] Stage 13. 인증/권한 사용자 경험 완성
+- [ ] Stage 14. 강사 핵심 플로우 E2E
+- [ ] Stage 15. 기관(학교) 운영 플로우 E2E
+- [ ] Stage 16. 교육청 거버넌스 플로우 E2E
+- [ ] Stage 17. 플랫폼 운영/컴플라이언스 고도화
+- [ ] Stage 18. 품질/안정화 릴리스 준비
+
+참고 계획서: [docs/stage13-user-feature-plan.md](docs/stage13-user-feature-plan.md)
