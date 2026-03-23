@@ -6,6 +6,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from datetime import datetime
 import os
+# ⚠️  DEPRECATED: This file is NOT the active entrypoint.
+# The production entrypoint is app_jwt.py.
+# This file is kept for reference only and should NOT be run.
+# All new development goes into app_jwt.py.
+raise RuntimeError(
+    "main.py is deprecated and must not be executed. "
+    "Use app_jwt.py as the application entrypoint."
+)
 
 app = Flask(__name__)
 CORS(app)

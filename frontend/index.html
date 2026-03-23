@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -101,6 +101,14 @@
             width: 132px;
             height: auto;
             display: block;
+        }
+
+        .brand-lockup img.stitch-logo {
+            width: 132px;
+            height: 34px;
+            object-fit: cover;
+            object-position: left top;
+            border-radius: 6px;
         }
 
         .rail-link {
@@ -324,6 +332,14 @@
             height: auto;
             display: block;
             opacity: 0.95;
+        }
+
+        .hero-logo img.stitch-logo {
+            width: 168px;
+            height: 42px;
+            object-fit: cover;
+            object-position: left top;
+            border-radius: 6px;
         }
 
         .section {
@@ -835,6 +851,14 @@
             width: 180px;
             height: auto;
             display: block;
+        }
+
+        .identity-brand img.stitch-logo {
+            width: 180px;
+            height: 44px;
+            object-fit: cover;
+            object-position: left top;
+            border-radius: 6px;
         }
 
         .identity-slogan {
@@ -2160,6 +2184,7 @@
             <a class="rail-link" href="#" data-screen="postingsSection">Analytics</a>
             <a class="rail-link" href="#" data-screen="taxSection">Settlements</a>
             <a class="rail-link" href="#" data-screen="applicationsSection">Applicants</a>
+            <a class="rail-link" href="#" data-screen="instructorOnboardingSection">My Profile</a>
             <a class="rail-link" href="#" data-screen="networkSection">Network</a>
             <a class="rail-link" href="#" data-screen="securitySection">My Page</a>
             <button class="rail-cta" type="button" data-screen="createPostingSection">Create Posting</button>
@@ -2447,6 +2472,7 @@
                 <div class="section" id="dashboardSection" style="display: none;">
                     <h2>Dashboard</h2>
                     <div class="stats-grid" id="statsGrid"></div>
+                    <div class="stats-grid" id="dashboardDetailPanels" style="margin-top:16px;"></div>
                     <h3 style="margin-top:14px;">Recent Activity</h3>
                     <div class="activity-toolbar" id="activityToolbar">
                         <button id="activityTodayBtn" data-period="today">Today</button>
@@ -2480,10 +2506,12 @@
                     <div class="tax-actions">
                         <button id="taxOnboardBtn">Save Tax Profile</button>
                         <button id="taxEstimateBtn">Estimate Refund</button>
+                        <button id="taxEstimateRangeBtn">Estimate 2022-2025</button>
                         <button id="taxSubmitBtn">Submit Claim</button>
                         <button id="taxStatusBtn">Check Claim Status</button>
                         <button id="taxCmsChargeBtn">Charge CMS Fee</button>
                         <button id="taxEventsBtn">Load Events</button>
+                        <button id="taxSettlementCsvBtn">Export Settlement CSV</button>
                     </div>
                     <div class="tax-inline">
                         <input type="text" id="taxSubmissionIdInput" placeholder="Submission ID (optional)">
@@ -2547,6 +2575,7 @@
                             <option value="oldest">Sort: Oldest</option>
                             <option value="status">Sort: Status</option>
                         </select>
+                        <button id="applicationsClearPostingFilterBtn" style="display:none;">Clear Posting Filter</button>
                     </div>
                     <div class="applications-toolbar" id="applicationsToolbar">
                         <button id="applicationsAllBtn" class="active" onclick="setApplicationsFilter('all')">All</button>
@@ -2556,6 +2585,107 @@
                     </div>
                     <div class="applications-summary" id="applicationsSummary"></div>
                     <div id="applicationsList" class="postings"></div>
+                </div>
+
+                <div class="section" id="instructorOnboardingSection" style="display: none;">
+                    <h2>강사 프로필 등록 <span id="onboardingStepIndicator" style="font-size:14px;font-weight:400;color:#888;">Step 1 / 4</span></h2>
+                    <p class="muted">공고 지원 전에 프로필 심사를 완료해야 합니다.</p>
+
+                    <div id="onboardingStatusPanel" style="display:none;margin-bottom:20px;">
+                        <div class="stat-card" style="text-align:left;padding:20px;">
+                            <div class="stat-title">프로필 심사 상태</div>
+                            <div id="onboardingStatusValue" style="font-size:22px;font-weight:700;margin:10px 0;"></div>
+                            <div id="onboardingAdminNote" class="muted"></div>
+                        </div>
+                        <div style="margin-top:12px;">
+                            <button id="onboardingEditBtn" onclick="showOnboardingEditForm()" style="display:none;">프로필 수정하기</button>
+                        </div>
+                    </div>
+
+                    <div id="onboardingFormContainer">
+                        <div style="display:flex;gap:8px;margin-bottom:20px;align-items:center;">
+                            <div id="progressStep1" style="width:32px;height:32px;border-radius:50%;background:rgba(120,200,160,0.3);color:#9ce6bf;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:2px solid #9ce6bf;">1</div>
+                            <div style="flex:1;height:2px;background:rgba(255,255,255,0.1);"></div>
+                            <div id="progressStep2" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);color:#888;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:2px solid #444;">2</div>
+                            <div style="flex:1;height:2px;background:rgba(255,255,255,0.1);"></div>
+                            <div id="progressStep3" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);color:#888;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:2px solid #444;">3</div>
+                            <div style="flex:1;height:2px;background:rgba(255,255,255,0.1);"></div>
+                            <div id="progressStep4" style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);color:#888;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;border:2px solid #444;">4</div>
+                        </div>
+
+                        <div id="onboardingStep1">
+                            <h3 style="margin-bottom:16px;">1단계: 기본 정보</h3>
+                            <input type="text" id="obFullName" placeholder="이름 *">
+                            <input type="date" id="obBirthDate" style="margin-top:8px;">
+                            <input type="tel" id="obPhone" placeholder="전화번호 * (예: 010-1234-5678)" style="margin-top:8px;">
+                        </div>
+
+                        <div id="onboardingStep2" style="display:none;">
+                            <h3 style="margin-bottom:16px;">2단계: 교육 정보</h3>
+                            <label style="display:block;margin-bottom:8px;font-weight:600;font-size:14px;">수업 과목 <span style="color:#888;font-weight:400;">(복수 선택 가능) *</span></label>
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px;background:rgba(255,255,255,0.04);border-radius:6px;border:1px solid rgba(255,255,255,0.08);">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="math" name="obSubject"> 수학</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="english" name="obSubject"> 영어</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="science" name="obSubject"> 과학</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="music" name="obSubject"> 음악</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="coding" name="obSubject"> 코딩</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="art" name="obSubject"> 미술</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="korean" name="obSubject"> 국어</label>
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" value="social" name="obSubject"> 사회</label>
+                            </div>
+                            <input type="text" id="obRegions" placeholder="활동 지역 * (예: 수원, 용인, 성남)">
+                            <select id="obAvailableHours" style="margin-top:8px;">
+                                <option value="">가능 수업 시간대 선택</option>
+                                <option value="morning">오전 (09-12시)</option>
+                                <option value="afternoon">오후 (13-17시)</option>
+                                <option value="evening">저녁 (18-21시)</option>
+                                <option value="flexible">탄력 가능 (전 시간대)</option>
+                            </select>
+                            <select id="obEducationLevel" style="margin-top:8px;">
+                                <option value="">학력 선택</option>
+                                <option value="high_school">고졸</option>
+                                <option value="college">전문대졸</option>
+                                <option value="bachelor">학사</option>
+                                <option value="master">석사</option>
+                                <option value="phd">박사</option>
+                            </select>
+                            <input type="text" id="obCertifications" placeholder="보유 자격증 (예: 정교사2급, 평생교육사)" style="margin-top:8px;">
+                        </div>
+
+                        <div id="onboardingStep3" style="display:none;">
+                            <h3 style="margin-bottom:12px;">3단계: 세무/정산 정보</h3>
+                            <p class="muted" style="font-size:13px;margin-bottom:16px;">정산 및 원천징수를 위해 필요합니다. 계좌번호는 마스킹하여 저장됩니다.</p>
+                            <input type="text" id="obBusinessNumber" placeholder="사업자등록번호 (없으면 빈칸)">
+                            <input type="text" id="obBankName" placeholder="은행명 * (예: 국민은행)" style="margin-top:8px;">
+                            <input type="text" id="obBankAccount" placeholder="계좌번호 * (저장 시 마스킹 처리)" style="margin-top:8px;">
+                        </div>
+
+                        <div id="onboardingStep4" style="display:none;">
+                            <h3 style="margin-bottom:12px;">4단계: 신원 확인 및 동의</h3>
+                            <p class="muted" style="font-size:13px;margin-bottom:16px;">아래 동의 항목은 플랫폼 이용 및 매칭을 위한 필수 동의입니다. 모두 동의해야 제출할 수 있습니다.</p>
+                            <div style="display:flex;flex-direction:column;gap:12px;padding:16px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+                                <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+                                    <input type="checkbox" id="obWithholdingConsent" style="margin-top:3px;flex-shrink:0;">
+                                    <span><strong>원천징수 동의</strong><br><span class="muted" style="font-size:12px;">수업료의 3.3%가 원천징수됩니다.</span></span>
+                                </label>
+                                <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+                                    <input type="checkbox" id="obBackgroundConsent" style="margin-top:3px;flex-shrink:0;">
+                                    <span><strong>범죄경력 조회 동의</strong><br><span class="muted" style="font-size:12px;">아동 관련 교육 기관 배정 시 범죄경력 조회가 실행됩니다.</span></span>
+                                </label>
+                                <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
+                                    <input type="checkbox" id="obChildAbuseConsent" style="margin-top:3px;flex-shrink:0;">
+                                    <span><strong>아동학대 전력 조회 동의</strong><br><span class="muted" style="font-size:12px;">아동학대관련범죄전력 조회에 동의합니다. (아동복지법 제29조의3)</span></span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+                            <button id="onboardingPrevBtn" onclick="onboardingPrevStep()" style="display:none;">← 이전</button>
+                            <button id="onboardingNextBtn" onclick="onboardingNextStep()">다음 →</button>
+                            <button id="onboardingSubmitBtn" onclick="submitInstructorProfile()" style="display:none;">✅ 제출하기</button>
+                        </div>
+                        <p id="onboardingFormStatus" class="muted" style="margin-top:8px;font-size:13px;"></p>
+                    </div>
                 </div>
 
                 <div class="section" id="networkSection" style="display: none;">
@@ -2786,6 +2916,7 @@
         let applicationsCache = [];
         let applicationsSearchQuery = '';
         let applicationsSort = 'newest';
+        let applicationsPostingFilterId = null;
         let applicationsSearchDebounceTimer = null;
         let showOnlyMine = false;
         let latestTaxSubmissionId = null;
@@ -2805,6 +2936,7 @@
         const PRODUCT_SECTIONS = [
             'postingsSection',
             'applicationsSection',
+            'instructorOnboardingSection',
             'dashboardSection',
             'securitySection',
             'taxSection',
@@ -2826,7 +2958,7 @@
             'screenStateSection'
         ];
         const ROLE_SCREEN_ACCESS = {
-            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'networkSection'],
+            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'instructorOnboardingSection', 'securitySection', 'taxSection', 'networkSection'],
             institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection'],
             student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection'],
             district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection'],
@@ -6257,13 +6389,14 @@
 
         const ROLE_NAV_LABELS = {
             instructor: {
-                dashboardSection:     { en: 'Dashboard',     ko: '\ub300\uc2dc\ubcf4\ub4dc' },
-                postingsSection:      { en: 'Find Postings', ko: '\uacf5\uace0 \ud0d0\uc0c9' },
-                applicationsSection:  { en: 'My Applications', ko: '\ub0b4 \uc9c0\uc6d0' },
-                taxSection:           { en: 'Income & Tax',   ko: '\uc218\uc785/\uc138\ubb34' },
-                networkSection:       { en: 'Network',        ko: '\ub124\ud2b8\uc6cc\ud06c' },
-                createPostingSection: { en: 'Post Job',       ko: '\uacf5\uace0 \ub4f1\ub85d' },
-                securitySection:      { en: 'My Page',        ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
+                dashboardSection:            { en: 'Dashboard',     ko: '\ub300\uc2dc\ubcf4\ub4dc' },
+                postingsSection:             { en: 'Find Postings', ko: '\uacf5\uace0 \ud0d0\uc0c9' },
+                applicationsSection:         { en: 'My Applications', ko: '\ub0b4 \uc9c0\uc6d0' },
+                instructorOnboardingSection: { en: 'My Profile',    ko: '\ub0b4 \ud504\ub85c\ud544' },
+                taxSection:                  { en: 'Income & Tax',   ko: '\uc218\uc785/\uc138\ubb34' },
+                networkSection:              { en: 'Network',        ko: '\ub124\ud2b8\uc6cc\ud06c' },
+                createPostingSection:        { en: 'Post Job',       ko: '\uacf5\uace0 \ub4f1\ub85d' },
+                securitySection:             { en: 'My Page',        ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             },
             student: {
                 dashboardSection:    { en: 'Home',           ko: '\ud648' },
@@ -6344,6 +6477,10 @@
                     element.style.display = id === nextScreen ? 'block' : 'none';
                 }
             });
+
+            if (nextScreen === 'instructorOnboardingSection') {
+                loadInstructorOnboarding().catch(() => {});
+            }
 
             updatePrimaryNavigation();
             renderRoleWorkspace();
@@ -6637,6 +6774,7 @@
             applicationsCache = [];
             applicationsSearchQuery = '';
             applicationsSort = 'newest';
+            applicationsPostingFilterId = null;
             if (applicationsSearchDebounceTimer) {
                 clearTimeout(applicationsSearchDebounceTimer);
                 applicationsSearchDebounceTimer = null;
@@ -6658,27 +6796,36 @@
             const queryBar = document.getElementById('applicationsQueryBar');
             const searchInput = document.getElementById('applicationsSearchInput');
             const sortSelect = document.getElementById('applicationsSortSelect');
+            const clearPostingFilterBtn = document.getElementById('applicationsClearPostingFilterBtn');
             if (!title || !subtitle) {
                 return;
             }
 
-            const isInstructor = currentUser && currentUser.role === 'instructor';
-            title.textContent = isInstructor ? 'Received Applications' : 'My Applications';
-            subtitle.textContent = isInstructor
+            const role = normalizeRole(currentUser && currentUser.role);
+            const hasReviewFlow = role === 'instructor' || role === 'institution';
+            title.textContent = hasReviewFlow ? 'Received Applications' : 'My Applications';
+            subtitle.textContent = hasReviewFlow
                 ? 'Review incoming applicants by status and act on pending decisions.'
                 : 'Track your submissions by status and cancel only pending requests.';
+            if (applicationsPostingFilterId && role === 'institution') {
+                subtitle.textContent += ` (Posting #${applicationsPostingFilterId})`;
+            }
 
             if (queryBar) {
-                queryBar.style.display = isInstructor ? 'grid' : 'none';
+                queryBar.style.display = hasReviewFlow ? 'grid' : 'none';
             }
             if (searchInput) {
-                searchInput.placeholder = isInstructor
+                searchInput.placeholder = hasReviewFlow
                     ? 'Search by posting title, student email, or student ID'
                     : 'Search by posting title';
                 searchInput.value = applicationsSearchQuery;
             }
             if (sortSelect) {
                 sortSelect.value = applicationsSort;
+            }
+            if (clearPostingFilterBtn) {
+                const visible = role === 'institution' && !!applicationsPostingFilterId;
+                clearPostingFilterBtn.style.display = visible ? 'inline-flex' : 'none';
             }
         }
 
@@ -6788,6 +6935,7 @@
                 await loadTaxEstimate();
                 await loadNetworkCompliance();
                 await loadNetworkBonuses();
+                await loadInstructorOnboarding();
             }
             if (role === 'admin' || (currentUser && currentUser.role === 'super_admin')) {
                 await loadAdminComplianceSummary();
@@ -6825,10 +6973,43 @@
             if (taxHeader) taxHeader.textContent = cfg.h2;
             if (taxSubtitle) taxSubtitle.textContent = cfg.sub;
 
+            const buttonVisibilityByRole = {
+                instructor: {
+                    taxOnboardBtn: true,
+                    taxEstimateBtn: true,
+                    taxEstimateRangeBtn: true,
+                    taxSubmitBtn: true,
+                    taxStatusBtn: true,
+                    taxCmsChargeBtn: true,
+                    taxEventsBtn: true,
+                    taxSettlementCsvBtn: false,
+                    taxPollingBtn: true
+                },
+                institution: {
+                    taxOnboardBtn: false,
+                    taxEstimateBtn: false,
+                    taxEstimateRangeBtn: false,
+                    taxSubmitBtn: false,
+                    taxStatusBtn: false,
+                    taxCmsChargeBtn: false,
+                    taxEventsBtn: true,
+                    taxSettlementCsvBtn: true,
+                    taxPollingBtn: false
+                }
+            };
+            const visibility = buttonVisibilityByRole[role] || buttonVisibilityByRole.instructor;
+            Object.entries(visibility).forEach(([id, visible]) => {
+                const btn = document.getElementById(id);
+                if (!btn) {
+                    return;
+                }
+                btn.style.display = visible ? 'inline-flex' : 'none';
+            });
+
             // Show/hide tax card labels by role
             const taxCards = document.querySelectorAll('.tax-card .stat-title');
             if (role === 'institution') {
-                const labels = [lt('Total Settled', '\uc815\uc0b0 \ucd1d\uc561'), lt('Platform Fee', '\ud50c\ub7ab\ud3fc \uc218\uc218\ub8cc'), lt('Approved Sessions', '\uc2b9\uc778 \uc218\uc5c5'), lt('Pending', '\uc815\uc0b0 \ub300\uae30')];
+                const labels = [lt('Total Settled', '\uc815\uc0b0 \ucd1d\uc561'), lt('Platform Fee', '\ud50c\ub7ab\ud3fc \uc218\uc218\ub8cc'), lt('Net Payout', '\uc2e4\uc9c0\uae09\uc561'), lt('Pending Sessions', '\ub300\uae30 \uc218\uc5c5')];
                 taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
                 loadInstitutionSettlementSummary();
             } else if (role === 'district') {
@@ -6899,12 +7080,52 @@
             setTaxStatus(lt(`Tax estimate loaded for ${year}.`, `${year}년 세금 추정치를 불러왔습니다.`));
         }
 
+        async function loadTaxEstimateRange() {
+            if (!token) {
+                return;
+            }
+
+            const years = [2022, 2023, 2024, 2025];
+            const rows = [];
+            for (const year of years) {
+                const response = await apiFetch(`/api/tax/estimate?year=${encodeURIComponent(year)}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await parseJsonSafe(response);
+                if (!response.ok) {
+                    setTaxStatus(data.error || lt('Failed to load yearly estimates.', '연도별 추정치를 불러오지 못했습니다.'));
+                    return;
+                }
+                rows.push({
+                    year,
+                    gross: data.gross_income || 0,
+                    withholding: data.withholding_amount || 0,
+                    refund: data.estimated_refund || 0
+                });
+            }
+
+            const eventsList = document.getElementById('taxEventsList');
+            eventsList.innerHTML = rows.map((item) => `
+                <div class="tax-history-item">
+                    <strong>${item.year}</strong><br>
+                    ${lt('Gross', '총수익')}: ${formatWon(item.gross)}<br>
+                    ${lt('Withholding', '원천징수')}: ${formatWon(item.withholding)}<br>
+                    ${lt('Estimated Refund', '예상 환급액')}: ${formatWon(item.refund)}
+                </div>
+            `).join('');
+            setTaxStatus(lt('Loaded yearly estimates for 2022-2025.', '2022-2025 연도별 추정치를 불러왔습니다.'));
+        }
+
         async function loadInstitutionSettlementSummary() {
             if (!token || !isRole('institution', 'student')) {
                 return;
             }
 
-            const response = await apiFetch('/postings/settlement-summary', {
+            const monthInput = (document.getElementById('taxYearInput').value || '').trim();
+            const month = monthInput ? `${monthInput}-01`.slice(0, 7) : '';
+            const monthQuery = month ? `?month=${encodeURIComponent(month)}` : '';
+
+            const response = await apiFetch(`/postings/settlement-summary${monthQuery}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await parseJsonSafe(response);
@@ -6917,7 +7138,7 @@
             setTaxValues({
                 gross_income: data.total_settled || 0,
                 withholding_amount: data.platform_fee || 0,
-                estimated_refund: data.approved_sessions || 0,
+                estimated_refund: Math.max(0, (data.total_settled || 0) - (data.platform_fee || 0)),
                 service_fee_amount: data.pending_count || 0
             });
 
@@ -6929,12 +7150,51 @@
                 eventsList.innerHTML = items.map((item) => `
                     <div class="posting" style="margin-bottom:8px;">
                         <strong>${escapeHtml(item.instructor_email || '#')}</strong>
-                        <p>${lt('Approved Sessions', '승인 수업')}: ${item.approved_sessions} | ${lt('Total Payment', '총 지급액')}: ${formatWon(item.total_payment)}</p>
+                        <p>${lt('Approved Sessions', '승인 수업')}: ${item.approved_sessions} | ${lt('Pending Sessions', '대기 수업')}: ${item.pending_sessions || 0}</p>
+                        <p>${lt('Total Payment', '총 지급액')}: ${formatWon(item.total_payment)} | ${lt('Payout Status', '지급 상태')}: ${escapeHtml(item.payout_status || 'pending')}</p>
                     </div>
                 `).join('');
             }
 
             setTaxStatus(lt('Settlement summary loaded.', '정산 요약을 불러왔습니다.'));
+        }
+
+        async function exportSettlementCsv() {
+            if (!token || !isRole('institution')) {
+                return;
+            }
+
+            const monthInput = (document.getElementById('taxYearInput').value || '').trim();
+            const month = monthInput ? `${monthInput}-01`.slice(0, 7) : '';
+            const query = new URLSearchParams({ format: 'csv' });
+            if (month) {
+                query.set('month', month);
+            }
+
+            const response = await apiFetch(`/postings/settlement-summary?${query.toString()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const data = await parseJsonSafe(response);
+                setTaxStatus(data.error || lt('Failed to export settlement CSV.', '정산 CSV 내보내기에 실패했습니다.'));
+                return;
+            }
+
+            const csvText = await response.text();
+            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const filenameMonth = month || new Date().toISOString().slice(0, 7);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `settlement_summary_${filenameMonth}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            setTaxStatus(lt('Settlement CSV exported.', '정산 CSV 내보내기가 완료되었습니다.'));
+            showToast(lt('Settlement CSV exported', '정산 CSV 내보내기 완료'));
         }
 
         async function submitTaxClaim() {
@@ -7414,12 +7674,17 @@
             }
 
             const statsGrid = document.getElementById('statsGrid');
+            const detailPanels = document.getElementById('dashboardDetailPanels');
+            clearDashboardDynamicSections();
             statsGrid.innerHTML = Array.from({ length: 4 }).map(() => `
                 <div class="stat-card skeleton">
                     <div class="skeleton-text skeleton-title"></div>
                     <div class="skeleton-text skeleton-value"></div>
                 </div>
             `).join('');
+            if (detailPanels) {
+                detailPanels.innerHTML = '';
+            }
 
             const response = await apiFetch('/dashboard/stats', {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -7434,18 +7699,21 @@
             let cards;
 
             if (role === 'instructor') {
+                const income = stats.income_summary || {};
                 cards = [
-                    { title: lt('My Postings', '\ub0b4 \uacf5\uace0'), value: stats.postings_count || 0, icon: '📋' },
-                    { title: lt('Active Applications', '\uc9c4\ud589 \uc911 \uc9c0\uc6d0'), value: stats.pending_count || 0, icon: '⏳' },
-                    { title: lt('Approved', '\uc2b9\uc778\ub428'), value: stats.approved_count || 0, icon: '✅' },
-                    { title: lt('Est. Income', '\uc608\uc0c1 \uc218\uc785'), value: '₩' + ((stats.approved_count || 0) * 30000).toLocaleString(), icon: '💰' }
+                    { title: lt('Gross Income', '총수익'), value: formatWon(income.gross_amount || 0), icon: '💸' },
+                    { title: lt('Withholding', '원천징수'), value: formatWon(income.withholding_amount || 0), icon: '🧾' },
+                    { title: lt('Net Income', '순수령액'), value: formatWon(income.net_amount || 0), icon: '💰' },
+                    { title: lt('Upcoming Sessions', '예정 수업'), value: stats.upcoming_sessions_count || 0, icon: '📅' },
+                    { title: lt('Approved Applications', '승인 지원'), value: stats.approved_count || 0, icon: '✅' },
+                    { title: lt('Profile Status', '프로필 상태'), value: String(stats.profile_status || 'not_submitted').toUpperCase(), icon: '🪪' }
                 ];
             } else if (role === 'institution') {
                 cards = [
-                    { title: lt('Active Postings', '\ud65c\uc131 \uacf5\uace0'), value: stats.postings_count || 0, icon: '📢' },
-                    { title: lt('Total Applicants', '\uc804\uccb4 \uc9c0\uc6d0\uc790'), value: stats.applications_total || 0, icon: '👥' },
-                    { title: lt('Approved', '\uc2b9\uc778\ub428'), value: stats.approved_count || 0, icon: '✅' },
-                    { title: lt('Pending Review', '\uc2ec\uc0ac \ub300\uae30'), value: stats.pending_count || 0, icon: '🔍' }
+                    { title: lt('Today Classes', '당일 수업'), value: stats.today_sessions_count || 0, icon: '📚' },
+                    { title: lt('New Postings (7d)', '신규공고(7일)'), value: stats.new_postings_count || 0, icon: '📢' },
+                    { title: lt('Settlement Pending', '정산대기'), value: stats.settlement_pending_count || 0, icon: '💰' },
+                    { title: lt('Review Pending', '평가대기'), value: stats.review_pending_count || 0, icon: '📝' }
                 ];
             } else if (role === 'district') {
                 cards = [
@@ -7470,7 +7738,13 @@
                 </div>
             `).join('');
 
-            // Update dashboard section title for role
+            if (role === 'instructor' && detailPanels) {
+                renderInstructorDashboardPanels(stats);
+            }
+            if (role === 'institution' && detailPanels) {
+                renderInstitutionDashboardPanels(stats);
+            }
+
             const dashTitle = document.querySelector('#dashboardSection h2');
             if (dashTitle) {
                 const titles = {
@@ -7482,17 +7756,179 @@
                 dashTitle.textContent = titles[role] || titles.instructor;
             }
 
-            // Load additional district data if district role
             if (role === 'district') {
                 loadDistrictRegionalComparison();
                 loadDistrictInstitutions();
                 loadDistrictBudgetSummary();
             }
 
-            // Load additional admin data if admin role
             if (role === 'admin') {
                 loadAdminPlatformSummary();
             }
+        }
+
+        function clearDashboardDynamicSections() {
+            [
+                'dashboardDetailPanels',
+                'districtRegionalGrid',
+                'districtInstitutionsGrid',
+                'districtBudgetGrid',
+                'adminPlatformSummaryGrid',
+                'adminUsersGrid'
+            ].forEach((id) => {
+                const element = document.getElementById(id);
+                if (!element) {
+                    return;
+                }
+                if (id === 'dashboardDetailPanels') {
+                    element.innerHTML = '';
+                    return;
+                }
+                element.remove();
+            });
+        }
+
+        function renderInstructorDashboardPanels(stats) {
+            const detailPanels = document.getElementById('dashboardDetailPanels');
+            if (!detailPanels) {
+                return;
+            }
+
+            const upcomingSessions = Array.isArray(stats.upcoming_sessions) ? stats.upcoming_sessions : [];
+            const upcomingMarkup = upcomingSessions.length
+                ? upcomingSessions.map((session) => `
+                    <div class="posting">
+                        <strong>${escapeHtml(session.title || lt('Untitled session', '제목 없는 수업'))}</strong>
+                        <div class="muted">${escapeHtml(session.subject || '-')} · ${escapeHtml(session.organization || lt('Unassigned', '미지정'))}</div>
+                        <div class="muted">${escapeHtml(session.scheduled_at || '-')}</div>
+                    </div>
+                `).join('')
+                : `<div class="empty-state muted">${lt('No upcoming sessions.', '예정된 수업이 없습니다.')}</div>`;
+
+            const applicationSummary = `
+                <div class="posting">
+                    <strong>${lt('Application Pipeline', '지원 현황')}</strong>
+                    <div class="muted">${lt('Pending', '대기')}: ${stats.pending_count || 0}</div>
+                    <div class="muted">${lt('Approved', '승인')}: ${stats.approved_count || 0}</div>
+                    <div class="muted">${lt('Rejected', '거절')}: ${stats.rejected_count || 0}</div>
+                </div>
+            `;
+
+            detailPanels.innerHTML = `
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">📚 ${lt('Upcoming Sessions', '예정 수업 목록')}</div>
+                    ${upcomingMarkup}
+                </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">🧭 ${lt('Application Summary', '지원 요약')}</div>
+                    ${applicationSummary}
+                </div>
+            `;
+        }
+
+        function renderInstitutionDashboardPanels(stats) {
+            const detailPanels = document.getElementById('dashboardDetailPanels');
+            if (!detailPanels) {
+                return;
+            }
+
+            const monthTotal = Number(stats.month_total_sessions || 0);
+            const monthRating = Number(stats.month_avg_instructor_rating || 0);
+            const monthSettlement = Number(stats.month_settlement_amount || 0);
+
+            detailPanels.innerHTML = `
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">📈 ${lt('This Month Summary', '이번 달 통계')}</div>
+                    <div class="muted">${lt('Total Sessions', '총수업')}: ${monthTotal}</div>
+                    <div class="muted">${lt('Instructor Rating', '강사평점')}: ${monthRating.toFixed(2)}</div>
+                    <div class="muted">${lt('Monthly Settlement', '월정산액')}: ${formatWon(monthSettlement)}</div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">🗂 ${lt('Session Performance', '수업 실적')}</div>
+                    <div class="actions" style="margin-bottom:8px;">
+                        <button type="button" onclick="loadInstitutionSessionPerformance()">${lt('Refresh Sessions', '수업 새로고침')}</button>
+                    </div>
+                    <div id="institutionSessionList" class="muted">${lt('Loading session performance...', '수업 실적을 불러오는 중...')}</div>
+                </div>
+            `;
+
+            loadInstitutionSessionPerformance();
+        }
+
+        async function loadInstitutionSessionPerformance() {
+            if (!token || !isRole('institution')) {
+                return;
+            }
+
+            const container = document.getElementById('institutionSessionList');
+            if (!container) {
+                return;
+            }
+
+            const response = await apiFetch('/sessions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                container.innerHTML = `<div class="empty-state muted">${data.error || lt('Failed to load sessions.', '수업 목록을 불러오지 못했습니다.')}</div>`;
+                return;
+            }
+
+            const sessions = Array.isArray(data) ? data.slice(0, 8) : [];
+            if (!sessions.length) {
+                container.innerHTML = `<div class="empty-state muted">${lt('No sessions found.', '수업 데이터가 없습니다.')}</div>`;
+                return;
+            }
+
+            container.innerHTML = sessions.map((session) => {
+                const actual = session.actual_duration_minutes || session.scheduled_duration_minutes || 0;
+                return `
+                    <div class="posting" style="margin-bottom:8px;">
+                        <strong>${lt('Session', '수업')} #${session.id}</strong> ${statusBadge(session.status || 'scheduled')}
+                        <div class="muted">${lt('Subject', '과목')}: ${escapeHtml(session.subject || '-')} | ${lt('Instructor', '강사')}: ${escapeHtml(session.instructor_name || '-')}</div>
+                        <div class="muted">${lt('Duration', '시간')}: ${session.scheduled_duration_minutes || 0}m → ${actual}m | ${lt('Net', '실수령')}: ${formatWon(session.net_amount || 0)}</div>
+                        <div class="actions">
+                            <button type="button" onclick="adjustInstitutionSession(${session.id}, ${session.scheduled_duration_minutes || 60}, '${session.status || 'scheduled'}')">${lt('Adjust Time', '시간 보정')}</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function adjustInstitutionSession(sessionId, suggestedMinutes, currentStatus) {
+            const next = prompt(
+                lt('Enter actual duration in minutes', '실제 수업 시간을 분 단위로 입력하세요'),
+                String(suggestedMinutes || 60)
+            );
+            if (next == null) {
+                return;
+            }
+
+            const minutes = parseInt(String(next).trim(), 10);
+            if (Number.isNaN(minutes) || minutes <= 0) {
+                alert(lt('Enter a valid positive number.', '올바른 양수 값을 입력해 주세요.'));
+                return;
+            }
+
+            const response = await apiFetch(`/sessions/${sessionId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    actual_duration_minutes: minutes,
+                    status: currentStatus
+                })
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                showToast(data.error || lt('Failed to adjust session.', '수업 보정에 실패했습니다.'));
+                return;
+            }
+
+            showToast(lt('Session settlement updated.', '수업 정산이 갱신되었습니다.'));
+            await Promise.all([loadDashboardStats(), loadInstitutionSettlementSummary()]);
         }
 
         async function loadDistrictRegionalComparison() {
@@ -7792,6 +8228,15 @@
                 if (type === 'application_received') {
                     return '📥';
                 }
+                if (type === 'session_scheduled') {
+                    return '📅';
+                }
+                if (type === 'session_completed') {
+                    return '✅';
+                }
+                if (type === 'profile_submitted' || type === 'profile_reviewed') {
+                    return '🪪';
+                }
                 return '📝';
             }
 
@@ -7806,6 +8251,18 @@
                 }
                 if (item.type === 'application_received') {
                     return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>${lt('Received application for', '지원 수신:')} <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
+                }
+                if (item.type === 'session_scheduled') {
+                    return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>${lt('Upcoming session:', '예정 수업:')} <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
+                }
+                if (item.type === 'session_completed') {
+                    return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>${lt('Completed session:', '수업 완료:')} <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
+                }
+                if (item.type === 'profile_submitted') {
+                    return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>${lt('Profile submitted for review', '프로필 심사 제출 완료')}</span>${statusText}<br><span class="muted">${when}</span></div>`;
+                }
+                if (item.type === 'profile_reviewed') {
+                    return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>${lt('Profile review updated', '프로필 심사 상태 변경')}</span>${statusText}<br><span class="muted">${when}</span></div>`;
                 }
                 return `<div class="posting activity-item" role="button" tabindex="0" data-posting-id="${postingId}"><span class="activity-title"><span class="activity-icon">${icon}</span>${lt('Applied to', '지원 완료:')} <strong>${safeTitle}</strong></span>${statusText}<br><span class="muted">${when}</span></div>`;
             }).join('');
@@ -8154,6 +8611,7 @@
                 if (role === 'institution' && p.owner_id === currentUser.id) {
                     buttons += ` <button onclick="editPosting(${p.id}, '${safeTitle}', '${safeSubject}', '${safeRegion}', ${p.rate})">${lt('Edit', '\uc218\uc815')}</button>`;
                     buttons += ` <button class="btn-danger" onclick="deletePosting(${p.id})">${lt('Delete', '\uc0ad\uc81c')}</button>`;
+                    buttons += ` <button onclick="focusApplicationsForPosting(${p.id})">${lt('Applicants', '\uc9c0\uc6d0\uc790')}</button>`;
                 }
                 // admin/district can see details only
                 buttons += ` <button onclick="viewPostingDetail(${p.id})">${lt('Detail', '\uc0c1\uc138')}</button>`;
@@ -8234,7 +8692,23 @@
                     await loadPostings();
                     return;
                 }
-                alert(data.error || lt('Failed to apply', '지원에 실패했습니다.'));
+                if (response.status === 403 && data.error) {
+                    const isProfileIssue = data.error.toLowerCase().includes('profile') ||
+                        data.error.toLowerCase().includes('\ud504\ub85c\ud544') ||
+                        data.error.toLowerCase().includes('consent') ||
+                        data.error.toLowerCase().includes('approved') ||
+                        data.error.toLowerCase().includes('\uc2ec\uc0ac') ||
+                        data.error.toLowerCase().includes('\uc2b9\uc778');
+                    if (isProfileIssue) {
+                        const go = confirm(lt(
+                            data.error + '\n\nGo to My Profile to complete onboarding?',
+                            data.error + '\n\n\ub0b4 \ud504\ub85c\ud544 \ud654\uba74\uc5d0\uc11c \uc628\ubcf4\ub529\uc744 \uc644\ub8cc\ud558\uc2dc\uaca0\uc2b5\ub2c8\uae4c?'
+                        ));
+                        if (go) activateScreen('instructorOnboardingSection');
+                        return;
+                    }
+                }
+                alert(data.error || lt('Failed to apply', '\uc9c0\uc6d0\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4.'));
                 return;
             }
 
@@ -8302,7 +8776,7 @@
 
             // Update applications section header per role
             const appHeader = document.querySelector('#applicationsSection h2');
-            const appSubtitle = document.querySelector('#applicationsSection .section-subtitle');
+            const appSubtitle = document.getElementById('applicationsSubtitle');
             const headerMap = {
                 instructor: { h2: lt('My Applications', '\ub0b4 \uc9c0\uc6d0'), sub: lt('Track your application status', '\uc9c0\uc6d0 \ud604\ud669\uc744 \ud655\uc778\ud558\uc138\uc694') },
                 institution: { h2: lt('Applicant Review', '\uc9c0\uc6d0\uc790 \uc2ec\uc0ac'), sub: lt('Review and manage instructors applying to your postings', '\uae30\uad00 \uacf5\uace0\uc5d0 \uc9c0\uc6d0\ud55c \uc9c0\uc6d0\uc790\ub97c \uc2ec\uc0ac\ud558\uc138\uc694') },
@@ -8320,6 +8794,9 @@
             if (applicationsSort) {
                 params.set('sort', applicationsSort);
             }
+            if (role === 'institution' && applicationsPostingFilterId) {
+                params.set('posting_id', String(applicationsPostingFilterId));
+            }
 
             const query = params.toString() ? `/applications?${params.toString()}` : '/applications';
 
@@ -8335,11 +8812,25 @@
             }
 
             applicationsCache = Array.isArray(applications) ? applications : [];
+            updateApplicationsViewMeta();
             renderApplications(applicationsCache);
             if (role === 'instructor') {
                 // Refresh posting cards so already-applied postings render as disabled.
                 await loadPostings();
             }
+        }
+
+        async function focusApplicationsForPosting(postingId) {
+            applicationsPostingFilterId = Number(postingId) || null;
+            activateScreen('applicationsSection');
+            updateApplicationsViewMeta();
+            await loadApplications();
+        }
+
+        async function clearApplicationsPostingFilter() {
+            applicationsPostingFilterId = null;
+            updateApplicationsViewMeta();
+            await loadApplications();
         }
 
         function renderApplications(applications) {
@@ -8583,19 +9074,220 @@
         window.setApplicantRecentFilter = setApplicantRecentFilter;
         window.toggleApplicantRecentExpanded = toggleApplicantRecentExpanded;
         window.viewPostingDetail = viewPostingDetail;
+        // ── Instructor Onboarding ──────────────────────────────────────────
+        let currentOnboardingStep = 1;
+        let onboardingProfileData = null;
+
+        async function loadInstructorOnboarding() {
+            if (!token) return;
+            const response = await apiFetch('/instructor/profile', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+
+            const statusPanel = document.getElementById('onboardingStatusPanel');
+            const formContainer = document.getElementById('onboardingFormContainer');
+
+            if (!response.ok && response.status === 404) {
+                onboardingProfileData = null;
+                if (statusPanel) statusPanel.style.display = 'none';
+                if (formContainer) formContainer.style.display = 'block';
+                currentOnboardingStep = 1;
+                renderOnboardingStep(1);
+                return;
+            }
+            if (!response.ok) return;
+
+            onboardingProfileData = data;
+            const status = data.status || 'pending';
+            if (statusPanel) statusPanel.style.display = 'block';
+            if (formContainer) formContainer.style.display = 'none';
+
+            const statusLabels = {
+                pending: lt('Under Review \u23f3', '\uc2ec\uc0ac \ub300\uae30 \uc911 \u23f3'),
+                approved: lt('Approved \u2705', '\uc2b9\uc778 \uc644\ub8cc \u2705'),
+                rejected: lt('Rejected \u274c', '\ubc18\ub824 \u274c')
+            };
+            const statusValue = document.getElementById('onboardingStatusValue');
+            const adminNoteEl = document.getElementById('onboardingAdminNote');
+            const editBtn = document.getElementById('onboardingEditBtn');
+            if (statusValue) statusValue.textContent = statusLabels[status] || status;
+            if (adminNoteEl) adminNoteEl.textContent = data.admin_note
+                ? lt(`Admin note: ${data.admin_note}`, `\uad00\ub9ac\uc790 \ucf54\uba58\ud2b8: ${data.admin_note}`)
+                : '';
+            if (editBtn) editBtn.style.display = (status === 'rejected') ? 'inline-block' : 'none';
+        }
+
+        function renderOnboardingStep(step) {
+            currentOnboardingStep = step;
+            for (let i = 1; i <= 4; i++) {
+                const el = document.getElementById(`onboardingStep${i}`);
+                if (el) el.style.display = (i === step) ? 'block' : 'none';
+                const dot = document.getElementById(`progressStep${i}`);
+                if (!dot) continue;
+                if (i < step) {
+                    dot.style.background = 'rgba(120,200,160,0.7)';
+                    dot.style.color = '#fff';
+                    dot.style.border = '2px solid #9ce6bf';
+                } else if (i === step) {
+                    dot.style.background = 'rgba(120,200,160,0.3)';
+                    dot.style.color = '#9ce6bf';
+                    dot.style.border = '2px solid #9ce6bf';
+                } else {
+                    dot.style.background = 'rgba(255,255,255,0.05)';
+                    dot.style.color = '#888';
+                    dot.style.border = '2px solid #444';
+                }
+            }
+            const stepIndicator = document.getElementById('onboardingStepIndicator');
+            if (stepIndicator) stepIndicator.textContent = `Step ${step} / 4`;
+            const prevBtn = document.getElementById('onboardingPrevBtn');
+            const nextBtn = document.getElementById('onboardingNextBtn');
+            const submitBtn = document.getElementById('onboardingSubmitBtn');
+            if (prevBtn) prevBtn.style.display = step > 1 ? 'inline-block' : 'none';
+            if (nextBtn) nextBtn.style.display = step < 4 ? 'inline-block' : 'none';
+            if (submitBtn) submitBtn.style.display = step === 4 ? 'inline-block' : 'none';
+            const statusEl = document.getElementById('onboardingFormStatus');
+            if (statusEl) statusEl.textContent = '';
+        }
+
+        function onboardingNextStep() {
+            const statusEl = document.getElementById('onboardingFormStatus');
+            if (currentOnboardingStep === 1) {
+                const fullName = document.getElementById('obFullName').value.trim();
+                const phone = document.getElementById('obPhone').value.trim();
+                if (!fullName || !phone) {
+                    if (statusEl) statusEl.textContent = lt('Name and phone are required.', '\uc774\ub984\uacfc \uc804\ud654\ubc88\ud638\ub97c \uc785\ub825\ud558\uc138\uc694.');
+                    return;
+                }
+            }
+            if (currentOnboardingStep === 2) {
+                const subjects = Array.from(document.querySelectorAll('input[name="obSubject"]:checked')).map(cb => cb.value);
+                const regions = document.getElementById('obRegions').value.trim();
+                if (subjects.length === 0 || !regions) {
+                    if (statusEl) statusEl.textContent = lt('Select at least one subject and enter regions.', '\uacfc\ubaa9\uc744 1\uac1c \uc774\uc0c1 \uc120\ud0dd\ud558\uace0 \uc9c0\uc5ed\uc744 \uc785\ub825\ud558\uc138\uc694.');
+                    return;
+                }
+            }
+            if (currentOnboardingStep === 3) {
+                const bankName = document.getElementById('obBankName').value.trim();
+                const bankAccount = document.getElementById('obBankAccount').value.trim();
+                if (!bankName || !bankAccount) {
+                    if (statusEl) statusEl.textContent = lt('Bank name and account number are required.', '\uc740\ud589\uba85\uacfc \uacc4\uc88c\ubc88\ud638\ub97c \uc785\ub825\ud558\uc138\uc694.');
+                    return;
+                }
+            }
+            if (currentOnboardingStep < 4) renderOnboardingStep(currentOnboardingStep + 1);
+        }
+
+        function onboardingPrevStep() {
+            if (currentOnboardingStep > 1) renderOnboardingStep(currentOnboardingStep - 1);
+        }
+
+        function showOnboardingEditForm() {
+            const statusPanel = document.getElementById('onboardingStatusPanel');
+            const formContainer = document.getElementById('onboardingFormContainer');
+            if (statusPanel) statusPanel.style.display = 'none';
+            if (formContainer) formContainer.style.display = 'block';
+            if (onboardingProfileData) prefillOnboardingForm(onboardingProfileData);
+            currentOnboardingStep = 1;
+            renderOnboardingStep(1);
+        }
+
+        function prefillOnboardingForm(data) {
+            if (!data) return;
+            if (data.full_name) document.getElementById('obFullName').value = data.full_name;
+            if (data.birth_date) document.getElementById('obBirthDate').value = data.birth_date;
+            if (data.phone) document.getElementById('obPhone').value = data.phone;
+            if (data.subjects) {
+                const subjects = data.subjects.split(',').map(s => s.trim());
+                Array.from(document.querySelectorAll('input[name="obSubject"]')).forEach(cb => {
+                    cb.checked = subjects.includes(cb.value);
+                });
+            }
+            if (data.regions) document.getElementById('obRegions').value = data.regions;
+            if (data.available_hours) document.getElementById('obAvailableHours').value = data.available_hours;
+            if (data.education_level) document.getElementById('obEducationLevel').value = data.education_level;
+            if (data.certifications) document.getElementById('obCertifications').value = data.certifications;
+            if (data.business_number) document.getElementById('obBusinessNumber').value = data.business_number;
+            if (data.bank_name) document.getElementById('obBankName').value = data.bank_name;
+            if (data.withholding_consent) document.getElementById('obWithholdingConsent').checked = true;
+            if (data.background_check_consent) document.getElementById('obBackgroundConsent').checked = true;
+            if (data.child_abuse_consent) document.getElementById('obChildAbuseConsent').checked = true;
+        }
+
+        async function submitInstructorProfile() {
+            if (!token) return;
+            const statusEl = document.getElementById('onboardingFormStatus');
+            const withholdingConsent = document.getElementById('obWithholdingConsent').checked;
+            const backgroundConsent = document.getElementById('obBackgroundConsent').checked;
+            const childAbuseConsent = document.getElementById('obChildAbuseConsent').checked;
+            if (!withholdingConsent || !backgroundConsent || !childAbuseConsent) {
+                if (statusEl) statusEl.textContent = lt('All consent items must be checked.', '\ubaa8\ub4e0 \ub3d9\uc758 \ud56d\ubaa9\uc744 \uccb4\ud06c\ud574\uc57c \ud569\ub2c8\ub2e4.');
+                return;
+            }
+            const subjects = Array.from(document.querySelectorAll('input[name="obSubject"]:checked')).map(cb => cb.value).join(',');
+            const payload = {
+                full_name: document.getElementById('obFullName').value.trim(),
+                birth_date: document.getElementById('obBirthDate').value || null,
+                phone: document.getElementById('obPhone').value.trim(),
+                subjects,
+                regions: document.getElementById('obRegions').value.trim(),
+                available_hours: document.getElementById('obAvailableHours').value || null,
+                education_level: document.getElementById('obEducationLevel').value || null,
+                certifications: document.getElementById('obCertifications').value.trim() || null,
+                business_number: document.getElementById('obBusinessNumber').value.trim() || null,
+                bank_name: document.getElementById('obBankName').value.trim(),
+                bank_account: document.getElementById('obBankAccount').value.trim() || null,
+                withholding_consent: withholdingConsent,
+                background_check_consent: backgroundConsent,
+                child_abuse_consent: childAbuseConsent
+            };
+            if (statusEl) statusEl.textContent = lt('Submitting...', '\uc81c\ucd9c \uc911...');
+            const method = onboardingProfileData ? 'PUT' : 'POST';
+            const response = await apiFetch('/instructor/profile', {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                if (statusEl) statusEl.textContent = data.error || lt('Submission failed.', '\uc81c\ucd9c\uc5d0 \uc2e4\ud328\ud588\uc2b5\ub2c8\ub2e4.');
+                return;
+            }
+            showToast(lt('Profile submitted for review!', '\ud504\ub85c\ud544 \uc2ec\uc0ac \uc2e0\uccad\uc774 \uc644\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4!'));
+            await loadInstructorOnboarding();
+        }
+
+        window.loadInstructorOnboarding = loadInstructorOnboarding;
+        window.renderOnboardingStep = renderOnboardingStep;
+        window.onboardingNextStep = onboardingNextStep;
+        window.onboardingPrevStep = onboardingPrevStep;
+        window.showOnboardingEditForm = showOnboardingEditForm;
+        window.submitInstructorProfile = submitInstructorProfile;
+
         window.applyFromModal = applyFromModal;
         window.editFromModal = editFromModal;
         window.setActivityPeriod = setActivityPeriod;
         window.setActivityType = setActivityType;
         window.setApplicationsFilter = setApplicationsFilter;
         window.setApplicationsSort = setApplicationsSort;
+        window.focusApplicationsForPosting = focusApplicationsForPosting;
+        window.clearApplicationsPostingFilter = clearApplicationsPostingFilter;
         window.onboardTaxProfile = onboardTaxProfile;
         window.loadTaxEstimate = loadTaxEstimate;
+        window.loadTaxEstimateRange = loadTaxEstimateRange;
         window.submitTaxClaim = submitTaxClaim;
         window.checkTaxClaimStatus = checkTaxClaimStatus;
         window.loadTaxEvents = loadTaxEvents;
         window.toggleTaxPolling = toggleTaxPolling;
         window.chargeCmsFee = chargeCmsFee;
+        window.exportSettlementCsv = exportSettlementCsv;
+        window.loadInstitutionSessionPerformance = loadInstitutionSessionPerformance;
+        window.adjustInstitutionSession = adjustInstitutionSession;
         window.saveNetworkLink = saveNetworkLink;
         window.recordNetworkSale = recordNetworkSale;
         window.loadNetworkCompliance = loadNetworkCompliance;
@@ -8657,16 +9349,19 @@
         document.getElementById('applicationsSearchInput').addEventListener('input', (event) => {
             setApplicationsSearchQuery(event.target.value);
         });
+        document.getElementById('applicationsClearPostingFilterBtn').addEventListener('click', clearApplicationsPostingFilter);
         document.getElementById('myPostingsToggle').addEventListener('change', async (event) => {
             showOnlyMine = event.target.checked;
             await loadPostings();
         });
         document.getElementById('taxOnboardBtn').addEventListener('click', onboardTaxProfile);
         document.getElementById('taxEstimateBtn').addEventListener('click', loadTaxEstimate);
+        document.getElementById('taxEstimateRangeBtn').addEventListener('click', loadTaxEstimateRange);
         document.getElementById('taxSubmitBtn').addEventListener('click', submitTaxClaim);
         document.getElementById('taxStatusBtn').addEventListener('click', checkTaxClaimStatus);
         document.getElementById('taxCmsChargeBtn').addEventListener('click', chargeCmsFee);
         document.getElementById('taxEventsBtn').addEventListener('click', loadTaxEvents);
+        document.getElementById('taxSettlementCsvBtn').addEventListener('click', exportSettlementCsv);
         document.getElementById('taxPollingBtn').addEventListener('click', toggleTaxPolling);
         document.getElementById('taxEventTypeFilter').addEventListener('change', loadTaxEvents);
         document.getElementById('networkLinkBtn').addEventListener('click', saveNetworkLink);

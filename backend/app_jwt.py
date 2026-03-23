@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, send_from_directory
+﻿from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -94,7 +94,7 @@ database_url = os.getenv('DATABASE_URL', 'sqlite:///./edulinks.db')
 engine = create_engine(database_url, echo=False)
 
 # DB init
-with engine.connect() as conn:
+with engine.begin() as conn:
     conn.execute(text('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -276,6 +276,74 @@ with engine.connect() as conn:
     if 'created_at' not in app_cols:
         conn.execute(text('ALTER TABLE applications ADD COLUMN created_at TEXT'))
 
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS instructor_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER UNIQUE,
+            full_name TEXT,
+            birth_date TEXT,
+            phone TEXT,
+            subjects TEXT,
+            regions TEXT,
+            available_hours TEXT,
+            education_level TEXT,
+            certifications TEXT,
+            business_number TEXT,
+            bank_name TEXT,
+            bank_account_masked TEXT,
+            background_check_consent INTEGER DEFAULT 0,
+            child_abuse_consent INTEGER DEFAULT 0,
+            withholding_consent INTEGER DEFAULT 0,
+            id_doc_url TEXT,
+            cert_doc_url TEXT,
+            status TEXT DEFAULT 'pending',
+            admin_note TEXT,
+            reviewed_by INTEGER,
+            reviewed_at TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )
+    '''))
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            posting_id INTEGER,
+            instructor_id INTEGER,
+            org_id INTEGER,
+            scheduled_at TEXT,
+            scheduled_duration_minutes INTEGER DEFAULT 60,
+            checkin_at TEXT,
+            checkin_lat REAL,
+            checkin_lng REAL,
+            completed_at TEXT,
+            actual_duration_minutes INTEGER,
+            status TEXT DEFAULT 'scheduled',
+            journal_content TEXT,
+            next_assignment TEXT,
+            student_rating INTEGER,
+            gross_amount INTEGER,
+            withholding_amount INTEGER,
+            net_amount INTEGER,
+            created_at TEXT,
+            updated_at TEXT
+        )
+    '''))
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER,
+            reviewer_id INTEGER,
+            instructor_id INTEGER,
+            rating INTEGER,
+            comment TEXT,
+            reviewer_type TEXT DEFAULT 'institution',
+            created_at TEXT
+        )
+    '''))
+
 # helper
 
 def create_token(payload):
@@ -366,6 +434,12 @@ def root():
     return jsonify({'message': 'EDULINKS API is running'})
 
 
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    assets_dir = Path(__file__).resolve().parent.parent / 'assets'
+    return send_from_directory(str(assets_dir), filename)
+
+
 @app.route('/health')
 def health():
     return jsonify({'message': 'EDULINKS API is running'})
@@ -448,19 +522,28 @@ def get_current_user():
 
 
 def normalize_role(role):
-    if role == 'student':
-        return 'institution'
-    if role == 'super_admin':
-        return 'district'
-    return role or 'instructor'
+    return str(role or 'instructor').strip().lower()
 
 
 def has_role(user, *roles):
-    return normalize_role((user or {}).get('role')) in roles
+    normalized = normalize_role((user or {}).get('role'))
+    if normalized in roles:
+        return True
+    if normalized == 'super_admin' and 'admin' in roles:
+        return True
+    return False
 
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+
+def table_exists(conn, table_name):
+    row = conn.execute(
+        text("SELECT name FROM sqlite_master WHERE type = 'table' AND name = :name"),
+        {'name': table_name}
+    ).first()
+    return row is not None
 
 
 def get_instructor_tax_numbers(user_id, tax_year):
@@ -781,56 +864,74 @@ def get_postings_settlement_summary():
     if not has_role(user, 'institution'):
         return jsonify({'error': 'Only institutions can view settlement summary'}), 403
 
+    month = (request.args.get('month') or '').strip()
+    if not month:
+        month = datetime.now().strftime('%Y-%m')
+    if len(month) != 7 or month[4] != '-':
+        return jsonify({'error': 'month must be YYYY-MM'}), 400
+
+    export_format = (request.args.get('format') or 'json').strip().lower()
+
     with engine.connect() as conn:
         rows = conn.execute(
             text('''
                 SELECT
-                    a.student_id,
+                    s.instructor_id AS student_id,
                     COALESCE(u.email, '') AS instructor_email,
-                    COUNT(a.id) AS approved_sessions,
-                    COALESCE(SUM(p.rate), 0) AS total_payment
-                FROM applications a
-                JOIN postings p ON p.id = a.posting_id
-                LEFT JOIN users u ON u.id = a.student_id
-                WHERE p.owner_id = :owner_id
-                  AND a.status = 'approved'
-                GROUP BY a.student_id, u.email
+                    COUNT(CASE WHEN s.status = 'completed' THEN 1 END) AS approved_sessions,
+                    COUNT(CASE WHEN s.status IN ('scheduled', 'in_progress') THEN 1 END) AS pending_sessions,
+                    COALESCE(SUM(CASE WHEN s.status = 'completed' THEN s.gross_amount ELSE 0 END), 0) AS total_gross,
+                    COALESCE(SUM(CASE WHEN s.status = 'completed' THEN s.withholding_amount ELSE 0 END), 0) AS total_withholding,
+                    COALESCE(SUM(CASE WHEN s.status = 'completed' THEN s.net_amount ELSE 0 END), 0) AS total_payment
+                FROM sessions s
+                LEFT JOIN users u ON u.id = s.instructor_id
+                WHERE s.org_id = :owner_id
+                  AND strftime('%Y-%m', COALESCE(s.completed_at, s.scheduled_at, s.created_at)) = :month
+                GROUP BY s.instructor_id, u.email
                 ORDER BY total_payment DESC, approved_sessions DESC
             '''),
-            {'owner_id': user['user_id']}
+            {'owner_id': user['user_id'], 'month': month}
         ).mappings().all()
 
     total_settled = int(sum(int(row['total_payment'] or 0) for row in rows))
     approved_sessions = int(sum(int(row['approved_sessions'] or 0) for row in rows))
-    pending_rows = 0
-    with engine.connect() as conn:
-        pending_rows = conn.execute(
-            text('''
-                SELECT COUNT(a.id) AS pending_count
-                FROM applications a
-                JOIN postings p ON p.id = a.posting_id
-                WHERE p.owner_id = :owner_id
-                  AND a.status = 'pending'
-            '''),
-            {'owner_id': user['user_id']}
-        ).mappings().first()['pending_count']
-
+    pending_rows = int(sum(int(row['pending_sessions'] or 0) for row in rows))
     platform_fee = int(round(total_settled * 0.05))
 
+    items = [
+        {
+            'student_id': row['student_id'],
+            'instructor_email': row['instructor_email'] or f"#{row['student_id']}",
+            'approved_sessions': int(row['approved_sessions'] or 0),
+            'pending_sessions': int(row['pending_sessions'] or 0),
+            'total_gross': int(row['total_gross'] or 0),
+            'total_withholding': int(row['total_withholding'] or 0),
+            'total_payment': int(row['total_payment'] or 0),
+            'payout_status': 'paid' if int(row['pending_sessions'] or 0) == 0 and int(row['approved_sessions'] or 0) > 0 else 'pending'
+        }
+        for row in rows
+    ]
+
+    if export_format == 'csv':
+        csv_lines = [
+            'month,instructor_id,instructor_email,approved_sessions,pending_sessions,total_gross,total_withholding,total_payment,payout_status'
+        ]
+        for item in items:
+            csv_lines.append(
+                f"{month},{item['student_id']},\"{str(item['instructor_email']).replace('"', '""')}\",{item['approved_sessions']},{item['pending_sessions']},{item['total_gross']},{item['total_withholding']},{item['total_payment']},{item['payout_status']}"
+            )
+        response = make_response('\n'.join(csv_lines))
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = f'attachment; filename=settlement_summary_{month}.csv'
+        return response
+
     return jsonify({
+        'month': month,
         'total_settled': total_settled,
         'platform_fee': platform_fee,
         'approved_sessions': approved_sessions,
         'pending_count': int(pending_rows or 0),
-        'items': [
-            {
-                'student_id': row['student_id'],
-                'instructor_email': row['instructor_email'] or f"#{row['student_id']}",
-                'approved_sessions': int(row['approved_sessions'] or 0),
-                'total_payment': int(row['total_payment'] or 0)
-            }
-            for row in rows
-        ]
+        'items': items
     })
 
 
@@ -1116,8 +1217,7 @@ def create_posting():
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # RBAC: only institution accounts (legacy student included) can create postings.
-    if not has_role(user, 'institution'):
+    if not (has_role(user, 'institution') or has_role(user, 'instructor')):
         return jsonify({'error': 'Only institutions can create postings'}), 403
 
     data = request.get_json()
@@ -1212,7 +1312,8 @@ def apply_posting():
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    if not has_role(user, 'instructor'):
+    applicant_role = normalize_role(user.get('role'))
+    if applicant_role not in ('student', 'instructor'):
         return jsonify({'error': 'Only instructors can apply'}), 403
 
     data = request.get_json()
@@ -1221,6 +1322,31 @@ def apply_posting():
 
     status = data.get('status', 'pending')
     with engine.begin() as conn:
+        posting = conn.execute(
+            text('SELECT id, status FROM postings WHERE id = :posting_id'),
+            {'posting_id': data['posting_id']}
+        ).mappings().first()
+        if not posting:
+            return jsonify({'error': 'Posting not found'}), 404
+        if posting['status'] not in ('open', 'assigned'):
+            return jsonify({'error': 'Posting is not open for applications'}), 409
+
+        if applicant_role == 'instructor' and table_exists(conn, 'instructor_profiles'):
+            profile = conn.execute(
+                text('''
+                    SELECT status, background_check_consent, child_abuse_consent
+                    FROM instructor_profiles
+                    WHERE user_id = :user_id
+                '''),
+                {'user_id': user['user_id']}
+            ).mappings().first()
+            if not profile:
+                return jsonify({'error': 'Complete instructor onboarding before applying'}), 403
+            if profile['status'] != 'approved':
+                return jsonify({'error': 'Instructor profile approval is required before applying'}), 403
+            if not profile['background_check_consent'] or not profile['child_abuse_consent']:
+                return jsonify({'error': 'Background and child safety consents are required before applying'}), 403
+
         existing = conn.execute(
             text('SELECT id FROM applications WHERE posting_id = :posting_id AND student_id = :student_id'),
             {'posting_id': data['posting_id'], 'student_id': user['user_id']}
@@ -1232,10 +1358,9 @@ def apply_posting():
             text('INSERT INTO applications (posting_id, student_id, status, created_at) VALUES (:p,:s,:status,:c)'),
             {'p': data['posting_id'], 's': user['user_id'], 'status': status, 'c': datetime.now(timezone.utc).isoformat()}
         )
-        # Get last inserted id
         result = conn.execute(text('SELECT last_insert_rowid() as id'))
         app_id = result.scalar()
-    
+
     return jsonify({'message': 'Applied', 'id': app_id, 'status': status}), 201
 
 
@@ -1251,13 +1376,21 @@ def get_applications():
         return jsonify({'error': 'Invalid status filter'}), 400
 
     search_query = request.args.get('q', '').strip().lower()
+    posting_id = request.args.get('posting_id', '').strip()
+    if posting_id:
+        try:
+            posting_id = int(posting_id)
+        except ValueError:
+            return jsonify({'error': 'Invalid posting_id filter'}), 400
+
     sort_mode = request.args.get('sort', 'newest').strip().lower()
     allowed_sorts = {'newest', 'oldest', 'status'}
     if sort_mode not in allowed_sorts:
         return jsonify({'error': 'Invalid sort option'}), 400
 
     with engine.connect() as conn:
-        if has_role(user, 'institution'):
+        owner_view = has_role(user, 'institution') or has_role(user, 'instructor')
+        if owner_view:
             query = '''
                 SELECT
                     a.id,
@@ -1296,11 +1429,15 @@ def get_applications():
             query += ' AND a.status = :status'
             params['status'] = status_filter
 
+        if posting_id:
+            query += ' AND a.posting_id = :posting_id'
+            params['posting_id'] = posting_id
+
         if search_query:
             query += ' AND ('
             query += 'LOWER(p.title) LIKE :search_like'
             params['search_like'] = f"%{search_query}%"
-            if user.get('role') == 'instructor':
+            if owner_view:
                 query += ' OR LOWER(COALESCE(u.email, \"\")) LIKE :search_like'
                 query += ' OR LOWER(COALESCE(u.organization, \"\")) LIKE :search_like'
                 if search_query.isdigit():
@@ -1334,8 +1471,8 @@ def get_applicant_summary(student_id):
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    if not has_role(user, 'institution'):
-        return jsonify({'error': 'Only institutions can view applicant summaries'}), 403
+    if not (has_role(user, 'institution') or has_role(user, 'instructor')):
+        return jsonify({'error': 'Only instructors can view applicant summaries'}), 403
 
     with engine.connect() as conn:
         rows = conn.execute(
@@ -1391,7 +1528,7 @@ def update_application(application_id):
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    if not has_role(user, 'institution'):
+    if not (has_role(user, 'institution') or has_role(user, 'instructor')):
         return jsonify({'error': 'Only institutions can update applications'}), 403
 
     data = request.get_json() or {}
@@ -1472,6 +1609,31 @@ def dashboard_stats():
                 {'owner_id': user['user_id']}
             ).mappings().first()['count']
 
+            sessions_available = table_exists(conn, 'sessions')
+            reviews_available = table_exists(conn, 'reviews')
+
+            today_sessions_count = 0
+            if sessions_available:
+                today_sessions_count = conn.execute(
+                    text('''
+                        SELECT COUNT(*) AS count
+                        FROM sessions
+                        WHERE org_id = :owner_id
+                          AND date(scheduled_at) = date('now')
+                    '''),
+                    {'owner_id': user['user_id']}
+                ).mappings().first()['count']
+
+            new_postings_count = conn.execute(
+                text('''
+                    SELECT COUNT(*) AS count
+                    FROM postings
+                    WHERE owner_id = :owner_id
+                      AND datetime(created_at) >= datetime('now', '-7 days')
+                '''),
+                {'owner_id': user['user_id']}
+            ).mappings().first()['count']
+
             status_rows = conn.execute(
                 text('''
                     SELECT a.status, COUNT(*) AS count
@@ -1489,6 +1651,71 @@ def dashboard_stats():
                 if status in status_counts:
                     status_counts[status] = row['count']
 
+            month_key = datetime.now().strftime('%Y-%m')
+            month_sessions = {'total_sessions': 0, 'month_settlement_amount': 0}
+            month_rating = {'avg_rating': 0}
+            review_pending_count = 0
+            today_sessions = []
+            if sessions_available:
+                month_sessions = conn.execute(
+                    text('''
+                        SELECT
+                            COUNT(*) AS total_sessions,
+                            COALESCE(SUM(CASE WHEN status = 'completed' THEN net_amount ELSE 0 END), 0) AS month_settlement_amount
+                        FROM sessions
+                        WHERE org_id = :owner_id
+                          AND strftime('%Y-%m', COALESCE(completed_at, scheduled_at, created_at)) = :month_key
+                    '''),
+                    {'owner_id': user['user_id'], 'month_key': month_key}
+                ).mappings().first() or month_sessions
+
+                if reviews_available:
+                    month_rating = conn.execute(
+                        text('''
+                            SELECT COALESCE(AVG(r.rating), 0) AS avg_rating
+                            FROM reviews r
+                            JOIN sessions s ON s.id = r.session_id
+                            WHERE s.org_id = :owner_id
+                              AND strftime('%Y-%m', COALESCE(s.completed_at, s.scheduled_at, s.created_at)) = :month_key
+                        '''),
+                        {'owner_id': user['user_id'], 'month_key': month_key}
+                    ).mappings().first() or month_rating
+
+                    review_pending_count = conn.execute(
+                        text('''
+                            SELECT COUNT(*) AS count
+                            FROM sessions s
+                            LEFT JOIN reviews r ON r.session_id = s.id
+                            WHERE s.org_id = :owner_id
+                              AND s.status = 'completed'
+                              AND r.id IS NULL
+                        '''),
+                        {'owner_id': user['user_id']}
+                    ).mappings().first()['count']
+
+                today_sessions = conn.execute(
+                    text('''
+                        SELECT
+                            s.id,
+                            s.posting_id,
+                            COALESCE(p.subject, '-') AS subject,
+                            COALESCE(u.email, ('#' || s.instructor_id)) AS instructor_name,
+                            s.status,
+                            s.scheduled_duration_minutes,
+                            s.actual_duration_minutes,
+                            s.gross_amount,
+                            s.net_amount,
+                            s.scheduled_at
+                        FROM sessions s
+                        LEFT JOIN postings p ON p.id = s.posting_id
+                        LEFT JOIN users u ON u.id = s.instructor_id
+                        WHERE s.org_id = :owner_id
+                        ORDER BY datetime(s.scheduled_at) DESC, s.id DESC
+                        LIMIT 8
+                    '''),
+                    {'owner_id': user['user_id']}
+                ).mappings().all()
+
             applications_total = sum(status_counts.values())
             return jsonify({
                 'role': 'institution',
@@ -1496,7 +1723,15 @@ def dashboard_stats():
                 'applications_total': applications_total,
                 'pending_count': status_counts['pending'],
                 'approved_count': status_counts['approved'],
-                'rejected_count': status_counts['rejected']
+                'rejected_count': status_counts['rejected'],
+                'today_sessions_count': int(today_sessions_count or 0),
+                'new_postings_count': int(new_postings_count or 0),
+                'settlement_pending_count': int(status_counts['approved'] or 0),
+                'review_pending_count': int(review_pending_count or 0),
+                'month_total_sessions': int((month_sessions or {}).get('total_sessions', 0) or 0),
+                'month_avg_instructor_rating': float((month_rating or {}).get('avg_rating', 0) or 0),
+                'month_settlement_amount': int((month_sessions or {}).get('month_settlement_amount', 0) or 0),
+                'today_sessions': [dict(row) for row in today_sessions]
             })
 
         status_rows = conn.execute(
@@ -1512,7 +1747,6 @@ def dashboard_stats():
 
         applications_total = sum(status_counts.values())
 
-        # Add admin-specific stats if admin role
         if has_role(user, 'admin'):
             total_users = conn.execute(
                 text('SELECT COUNT(*) AS count FROM users')
@@ -1530,8 +1764,98 @@ def dashboard_stats():
                 'users_count': total_users
             })
 
+        if has_role(user, 'instructor'):
+            profiles_available = table_exists(conn, 'instructor_profiles')
+            sessions_available = table_exists(conn, 'sessions')
+            postings_available = table_exists(conn, 'postings')
+
+            profile_row = None
+            if profiles_available:
+                profile_row = conn.execute(
+                    text('''
+                        SELECT status, reviewed_at
+                        FROM instructor_profiles
+                        WHERE user_id = :user_id
+                    '''),
+                    {'user_id': user['user_id']}
+                ).mappings().first()
+
+            session_summary = {
+                'total_sessions': 0,
+                'upcoming_sessions_count': 0,
+                'completed_sessions_count': 0,
+                'total_gross_amount': 0,
+                'total_withholding_amount': 0,
+                'total_net_amount': 0,
+            }
+            upcoming_sessions = []
+            if sessions_available:
+                session_summary = conn.execute(
+                    text('''
+                        SELECT
+                            COUNT(*) AS total_sessions,
+                            COALESCE(SUM(CASE WHEN status IN ('scheduled', 'in_progress') THEN 1 ELSE 0 END), 0) AS upcoming_sessions_count,
+                            COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_sessions_count,
+                            COALESCE(SUM(CASE WHEN status = 'completed' THEN gross_amount ELSE 0 END), 0) AS total_gross_amount,
+                            COALESCE(SUM(CASE WHEN status = 'completed' THEN withholding_amount ELSE 0 END), 0) AS total_withholding_amount,
+                            COALESCE(SUM(CASE WHEN status = 'completed' THEN net_amount ELSE 0 END), 0) AS total_net_amount
+                        FROM sessions
+                        WHERE instructor_id = :user_id
+                    '''),
+                    {'user_id': user['user_id']}
+                ).mappings().first() or session_summary
+
+                upcoming_sessions = conn.execute(
+                    text('''
+                        SELECT
+                            s.id,
+                            s.posting_id,
+                            s.status,
+                            s.scheduled_at,
+                            s.scheduled_duration_minutes,
+                            p.title,
+                            p.subject,
+                            COALESCE(u.organization, u.email, '') AS organization
+                        FROM sessions s
+                        LEFT JOIN postings p ON p.id = s.posting_id
+                        LEFT JOIN users u ON u.id = s.org_id
+                        WHERE s.instructor_id = :user_id
+                          AND s.status IN ('scheduled', 'in_progress')
+                        ORDER BY datetime(s.scheduled_at) ASC, s.id ASC
+                        LIMIT 5
+                    '''),
+                    {'user_id': user['user_id']}
+                ).mappings().all()
+
+            postings_count = 0
+            if postings_available:
+                postings_count = conn.execute(
+                    text('SELECT COUNT(*) AS count FROM postings WHERE owner_id = :owner_id'),
+                    {'owner_id': user['user_id']}
+                ).mappings().first()['count']
+
+            return jsonify({
+                'role': 'instructor',
+                'applications_total': applications_total,
+                'pending_count': status_counts['pending'],
+                'approved_count': status_counts['approved'],
+                'rejected_count': status_counts['rejected'],
+                'postings_count': postings_count,
+                'profile_status': profile_row['status'] if profile_row else 'not_submitted',
+                'profile_reviewed_at': profile_row['reviewed_at'] if profile_row else None,
+                'upcoming_sessions_count': session_summary['upcoming_sessions_count'],
+                'completed_sessions_count': session_summary['completed_sessions_count'],
+                'total_sessions': session_summary['total_sessions'],
+                'income_summary': {
+                    'gross_amount': session_summary['total_gross_amount'],
+                    'withholding_amount': session_summary['total_withholding_amount'],
+                    'net_amount': session_summary['total_net_amount'],
+                },
+                'upcoming_sessions': [dict(row) for row in upcoming_sessions],
+            })
+
         return jsonify({
-            'role': 'instructor',
+            'role': 'student',
             'applications_total': applications_total,
             'pending_count': status_counts['pending'],
             'approved_count': status_counts['approved'],
@@ -1590,6 +1914,73 @@ def dashboard_activity():
                     LIMIT 5
                 '''),
                 {'owner_id': user['user_id'], 'since_window': since_window}
+            ).mappings().all()
+            return jsonify([dict(row) for row in rows])
+
+        if has_role(user, 'instructor'):
+            rows = conn.execute(
+                text('''
+                    SELECT * FROM (
+                        SELECT
+                            'session_scheduled' AS type,
+                            s.id AS ref_id,
+                            s.posting_id AS posting_id,
+                            p.title AS title,
+                            s.status AS status,
+                            s.scheduled_at AS created_at
+                        FROM sessions s
+                        LEFT JOIN postings p ON p.id = s.posting_id
+                        WHERE s.instructor_id = :user_id
+                          AND s.status IN ('scheduled', 'in_progress')
+                          AND datetime(s.scheduled_at) >= datetime('now', :since_window)
+
+                        UNION ALL
+
+                        SELECT
+                            'session_completed' AS type,
+                            s.id AS ref_id,
+                            s.posting_id AS posting_id,
+                            p.title AS title,
+                            s.status AS status,
+                            s.completed_at AS created_at
+                        FROM sessions s
+                        LEFT JOIN postings p ON p.id = s.posting_id
+                        WHERE s.instructor_id = :user_id
+                          AND s.status = 'completed'
+                          AND s.completed_at IS NOT NULL
+                          AND datetime(s.completed_at) >= datetime('now', :since_window)
+
+                        UNION ALL
+
+                        SELECT
+                            'application_submitted' AS type,
+                            a.id AS ref_id,
+                            a.posting_id AS posting_id,
+                            p.title AS title,
+                            a.status AS status,
+                            a.created_at AS created_at
+                        FROM applications a
+                        JOIN postings p ON p.id = a.posting_id
+                        WHERE a.student_id = :user_id
+                          AND datetime(a.created_at) >= datetime('now', :since_window)
+
+                        UNION ALL
+
+                        SELECT
+                            CASE WHEN ip.reviewed_at IS NULL THEN 'profile_submitted' ELSE 'profile_reviewed' END AS type,
+                            ip.id AS ref_id,
+                            NULL AS posting_id,
+                            COALESCE(ip.full_name, 'Instructor profile') AS title,
+                            ip.status AS status,
+                            COALESCE(ip.reviewed_at, ip.updated_at, ip.created_at) AS created_at
+                        FROM instructor_profiles ip
+                        WHERE ip.user_id = :user_id
+                          AND datetime(COALESCE(ip.reviewed_at, ip.updated_at, ip.created_at)) >= datetime('now', :since_window)
+                    )
+                    ORDER BY datetime(created_at) DESC, ref_id DESC
+                    LIMIT 7
+                '''),
+                {'user_id': user['user_id'], 'since_window': since_window}
             ).mappings().all()
             return jsonify([dict(row) for row in rows])
 
@@ -2612,6 +3003,652 @@ def network_admin_rules_simulate():
         'within_limit': simulated_ratio <= 0.35 if simulated_gamma > 0 else True,
         'sponsor_deltas': sponsor_deltas[:10]
     })
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8000, debug=True)
+
+
+# ===== 강사 프로필 온보딩 API =====
+
+@app.route('/instructor/profile', methods=['POST'])
+def create_instructor_profile():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'instructor'):
+        return jsonify({'error': 'Instructor only'}), 403
+
+    data = request.get_json() or {}
+    required = ['full_name', 'phone', 'subjects', 'regions']
+    for field in required:
+        if not data.get(field):
+            return jsonify({'error': f'{field} is required'}), 400
+    if not data.get('background_check_consent') or not data.get('child_abuse_consent') or not data.get('withholding_consent'):
+        return jsonify({'error': 'All consent fields are required'}), 400
+
+    with engine.begin() as conn:
+        existing = conn.execute(
+            text('SELECT id FROM instructor_profiles WHERE user_id = :uid'),
+            {'uid': user['user_id']}
+        ).fetchone()
+        if existing:
+            return jsonify({'error': 'Profile already exists. Use PUT to update.'}), 409
+
+        import json as _json
+        subjects_str = _json.dumps(data.get('subjects', []) if isinstance(data.get('subjects'), list) else [data.get('subjects', '')])
+        regions_str = _json.dumps(data.get('regions', []) if isinstance(data.get('regions'), list) else [data.get('regions', '')])
+        now = now_iso()
+        conn.execute(text('''
+            INSERT INTO instructor_profiles
+                (user_id, full_name, birth_date, phone, subjects, regions, available_hours,
+                 education_level, certifications, business_number, bank_name, bank_account_masked,
+                 background_check_consent, child_abuse_consent, withholding_consent,
+                 id_doc_url, cert_doc_url, status, created_at, updated_at)
+            VALUES
+                (:uid, :full_name, :birth_date, :phone, :subjects, :regions, :available_hours,
+                 :edu, :certs, :biz_no, :bank_name, :bank_masked,
+                 :bg_consent, :child_consent, :wh_consent,
+                 :id_doc, :cert_doc, 'pending', :created_at, :updated_at)
+        '''), {
+            'uid': user['user_id'],
+            'full_name': data.get('full_name', '').strip(),
+            'birth_date': data.get('birth_date', ''),
+            'phone': data.get('phone', '').strip(),
+            'subjects': subjects_str,
+            'regions': regions_str,
+            'available_hours': data.get('available_hours', ''),
+            'edu': data.get('education_level', ''),
+            'certs': data.get('certifications', ''),
+            'biz_no': data.get('business_number', ''),
+            'bank_name': data.get('bank_name', ''),
+            'bank_masked': data.get('bank_account_masked', ''),
+            'bg_consent': 1 if data.get('background_check_consent') else 0,
+            'child_consent': 1 if data.get('child_abuse_consent') else 0,
+            'wh_consent': 1 if data.get('withholding_consent') else 0,
+            'id_doc': data.get('id_doc_url', ''),
+            'cert_doc': data.get('cert_doc_url', ''),
+            'created_at': now,
+            'updated_at': now,
+        })
+
+    return jsonify({'message': 'Profile created. Pending admin review.', 'status': 'pending'}), 201
+
+
+@app.route('/instructor/profile', methods=['GET'])
+def get_instructor_profile():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    target_id = user['user_id']
+    if has_role(user, 'admin', 'super_admin'):
+        target_id_param = request.args.get('user_id', type=int)
+        if target_id_param:
+            target_id = target_id_param
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text('SELECT * FROM instructor_profiles WHERE user_id = :uid'),
+            {'uid': target_id}
+        ).mappings().first()
+
+    if not row:
+        return jsonify({'error': 'Profile not found'}), 404
+    return jsonify(dict(row))
+
+
+@app.route('/instructor/profile', methods=['PUT'])
+def update_instructor_profile():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'instructor'):
+        return jsonify({'error': 'Instructor only'}), 403
+
+    data = request.get_json() or {}
+    import json as _json
+
+    updatable = ['full_name', 'birth_date', 'phone', 'subjects', 'regions',
+                 'available_hours', 'education_level', 'certifications',
+                 'business_number', 'bank_name', 'bank_account_masked',
+                 'background_check_consent', 'child_abuse_consent', 'withholding_consent',
+                 'id_doc_url', 'cert_doc_url']
+
+    set_parts = []
+    params = {'uid': user['user_id'], 'updated_at': now_iso()}
+    for field in updatable:
+        if field not in data:
+            continue
+        val = data[field]
+        if field in ('subjects', 'regions') and isinstance(val, list):
+            val = _json.dumps(val)
+        if field in ('background_check_consent', 'child_abuse_consent', 'withholding_consent'):
+            val = 1 if val else 0
+        set_parts.append(f'{field} = :{field}')
+        params[field] = val
+
+    if not set_parts:
+        return jsonify({'error': 'No fields to update'}), 400
+
+    set_parts.append('updated_at = :updated_at')
+    # Re-set to pending when profile changes
+    set_parts.append("status = 'pending'")
+
+    with engine.begin() as conn:
+        result = conn.execute(
+            text(f'UPDATE instructor_profiles SET {", ".join(set_parts)} WHERE user_id = :uid'),
+            params
+        )
+        if result.rowcount == 0:
+            return jsonify({'error': 'Profile not found. Create it first via POST.'}), 404
+
+    return jsonify({'message': 'Profile updated. Status reset to pending.', 'status': 'pending'})
+
+
+@app.route('/instructor/profile/status', methods=['GET'])
+def instructor_profile_status():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text('SELECT status, admin_note, reviewed_at FROM instructor_profiles WHERE user_id = :uid'),
+            {'uid': user['user_id']}
+        ).mappings().first()
+
+    if not row:
+        return jsonify({'status': 'not_submitted', 'admin_note': None, 'reviewed_at': None})
+    return jsonify({'status': row['status'], 'admin_note': row['admin_note'], 'reviewed_at': row['reviewed_at']})
+
+
+@app.route('/admin/profiles', methods=['GET'])
+def admin_list_profiles():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'admin', 'super_admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+
+    status_filter = request.args.get('status', 'pending')
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text('''
+                SELECT ip.*, u.email
+                FROM instructor_profiles ip
+                JOIN users u ON u.id = ip.user_id
+                WHERE ip.status = :status
+                ORDER BY ip.created_at DESC
+            '''),
+            {'status': status_filter}
+        ).mappings().all()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/admin/profiles/<int:profile_id>/review', methods=['PATCH'])
+def admin_review_profile(profile_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'admin', 'super_admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+
+    data = request.get_json() or {}
+    action = data.get('action', '').lower()
+    if action not in ('approve', 'reject'):
+        return jsonify({'error': 'action must be approve or reject'}), 400
+
+    new_status = 'approved' if action == 'approve' else 'rejected'
+    admin_note = str(data.get('admin_note', '')).strip()
+    now = now_iso()
+
+    with engine.begin() as conn:
+        result = conn.execute(
+            text('''
+                UPDATE instructor_profiles
+                SET status = :status, admin_note = :note, reviewed_by = :reviewer, reviewed_at = :reviewed_at
+                WHERE id = :id
+            '''),
+            {'status': new_status, 'note': admin_note, 'reviewer': user['user_id'], 'reviewed_at': now, 'id': profile_id}
+        )
+        if result.rowcount == 0:
+            return jsonify({'error': 'Profile not found'}), 404
+
+    return jsonify({'message': f'Profile {new_status}', 'status': new_status, 'admin_note': admin_note})
+
+
+# ===== 수업 세션 API =====
+
+@app.route('/sessions', methods=['POST'])
+def create_session():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution', 'admin', 'super_admin'):
+        return jsonify({'error': 'Only institutions or admins can create sessions'}), 403
+
+    data = request.get_json() or {}
+    if not data.get('posting_id') or not data.get('instructor_id') or not data.get('scheduled_at'):
+        return jsonify({'error': 'posting_id, instructor_id, scheduled_at are required'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        posting = conn.execute(
+            text('SELECT id, rate, owner_id FROM postings WHERE id = :pid'),
+            {'pid': data['posting_id']}
+        ).mappings().first()
+        if not posting:
+            return jsonify({'error': 'Posting not found'}), 404
+        if has_role(user, 'institution') and posting['owner_id'] != user['user_id']:
+            return jsonify({'error': 'Posting not found or not owned'}), 404
+
+        approved_application = conn.execute(
+            text('''
+                SELECT id
+                FROM applications
+                WHERE posting_id = :posting_id
+                  AND student_id = :instructor_id
+                  AND status = 'approved'
+            '''),
+            {'posting_id': data['posting_id'], 'instructor_id': data['instructor_id']}
+        ).mappings().first()
+        if not approved_application:
+            return jsonify({'error': 'Approved application is required before creating a session'}), 409
+
+        profile = conn.execute(
+            text('''
+                SELECT status, background_check_consent, child_abuse_consent
+                FROM instructor_profiles
+                WHERE user_id = :instructor_id
+            '''),
+            {'instructor_id': data['instructor_id']}
+        ).mappings().first()
+        if not profile or profile['status'] != 'approved':
+            return jsonify({'error': 'Instructor profile must be approved before creating a session'}), 409
+        if not profile['background_check_consent'] or not profile['child_abuse_consent']:
+            return jsonify({'error': 'Instructor safety consents are incomplete'}), 409
+
+        conn.execute(text('''
+            INSERT INTO sessions
+                (posting_id, instructor_id, org_id, scheduled_at, scheduled_duration_minutes,
+                 status, gross_amount, withholding_amount, net_amount, created_at, updated_at)
+            VALUES
+                (:posting_id, :instructor_id, :org_id, :scheduled_at, :duration,
+                 'scheduled', :gross, :wh, :net, :created_at, :updated_at)
+        '''), {
+            'posting_id': data['posting_id'],
+            'instructor_id': data['instructor_id'],
+            'org_id': user['user_id'],
+            'scheduled_at': data['scheduled_at'],
+            'duration': int(data.get('scheduled_duration_minutes', 60)),
+            'gross': int(posting['rate'] or 0),
+            'wh': int(round((posting['rate'] or 0) * 0.033)),
+            'net': int(round((posting['rate'] or 0) * 0.967)),
+            'created_at': now,
+            'updated_at': now,
+        })
+        row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+
+    with engine.connect() as conn:
+        row = conn.execute(text('SELECT * FROM sessions WHERE id = :id'), {'id': row_id}).mappings().first()
+    return jsonify(dict(row)), 201
+
+
+@app.route('/sessions', methods=['GET'])
+def list_sessions():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    role = normalize_role(user.get('role'))
+    params = {}
+    clauses = []
+
+    if role == 'instructor':
+        clauses.append('s.instructor_id = :uid')
+        params['uid'] = user['user_id']
+    elif role == 'institution':
+        clauses.append('s.org_id = :uid')
+        params['uid'] = user['user_id']
+    # admin/district: no filter (all sessions)
+
+    status_filter = request.args.get('status')
+    if status_filter:
+        clauses.append('s.status = :status')
+        params['status'] = status_filter
+
+    where = f" WHERE {' AND '.join(clauses)}" if clauses else ''
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(f'''
+                SELECT
+                    s.*,
+                    COALESCE(p.title, '') AS title,
+                    COALESCE(p.subject, '') AS subject,
+                    COALESCE(u.email, ('#' || s.instructor_id)) AS instructor_name
+                FROM sessions s
+                LEFT JOIN postings p ON p.id = s.posting_id
+                LEFT JOIN users u ON u.id = s.instructor_id
+                {where}
+                ORDER BY datetime(s.scheduled_at) DESC, s.id DESC
+                LIMIT 100
+            '''),
+            params
+        ).mappings().all()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/sessions/<int:session_id>', methods=['GET'])
+def get_session(session_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text('SELECT * FROM sessions WHERE id = :id'),
+            {'id': session_id}
+        ).mappings().first()
+
+    if not row:
+        return jsonify({'error': 'Session not found'}), 404
+
+    role = normalize_role(user.get('role'))
+    if role == 'instructor' and row['instructor_id'] != user['user_id']:
+        return jsonify({'error': 'Forbidden'}), 403
+    if role == 'institution' and row['org_id'] != user['user_id']:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    return jsonify(dict(row))
+
+
+@app.route('/sessions/<int:session_id>/checkin', methods=['POST'])
+def session_checkin(session_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'instructor'):
+        return jsonify({'error': 'Instructor only'}), 403
+
+    data = request.get_json() or {}
+    lat = data.get('lat')
+    lng = data.get('lng')
+    if lat is None or lng is None:
+        return jsonify({'error': 'lat and lng are required'}), 400
+
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'lat and lng must be numbers'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(
+            text('SELECT id, status, instructor_id FROM sessions WHERE id = :id'),
+            {'id': session_id}
+        ).mappings().first()
+        if not row:
+            return jsonify({'error': 'Session not found'}), 404
+        if row['instructor_id'] != user['user_id']:
+            return jsonify({'error': 'Forbidden'}), 403
+        if row['status'] not in ('scheduled',):
+            return jsonify({'error': f"Cannot check in. Current status: {row['status']}"}), 409
+
+        conn.execute(text('''
+            UPDATE sessions
+            SET checkin_at = :now, checkin_lat = :lat, checkin_lng = :lng,
+                status = 'in_progress', updated_at = :now
+            WHERE id = :id
+        '''), {'now': now, 'lat': lat, 'lng': lng, 'id': session_id})
+
+    return jsonify({'message': 'Checked in', 'status': 'in_progress', 'checkin_at': now})
+
+
+@app.route('/sessions/<int:session_id>/complete', methods=['POST'])
+def session_complete(session_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'instructor'):
+        return jsonify({'error': 'Instructor only'}), 403
+
+    data = request.get_json() or {}
+    if not data.get('journal_content'):
+        return jsonify({'error': 'journal_content is required'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(
+            text('SELECT * FROM sessions WHERE id = :id'),
+            {'id': session_id}
+        ).mappings().first()
+        if not row:
+            return jsonify({'error': 'Session not found'}), 404
+        if row['instructor_id'] != user['user_id']:
+            return jsonify({'error': 'Forbidden'}), 403
+        if row['status'] not in ('in_progress', 'scheduled'):
+            return jsonify({'error': f"Cannot complete. Current status: {row['status']}"}), 409
+
+        actual_minutes = int(data.get('actual_duration_minutes') or row['scheduled_duration_minutes'] or 60)
+        scheduled = int(row['scheduled_duration_minutes'] or 60)
+        gross_base = int(row['gross_amount'] or 0)
+        # Adjust pay proportionally if time differs
+        actual_gross = int(round(gross_base * (actual_minutes / scheduled))) if scheduled > 0 else gross_base
+        wh = int(round(actual_gross * 0.033))
+        net = actual_gross - wh
+
+        conn.execute(text('''
+            UPDATE sessions
+            SET status = 'completed', completed_at = :now,
+                actual_duration_minutes = :actual_min,
+                journal_content = :journal,
+                next_assignment = :next_assign,
+                student_rating = :rating,
+                gross_amount = :gross,
+                withholding_amount = :wh,
+                net_amount = :net,
+                updated_at = :now
+            WHERE id = :id
+        '''), {
+            'now': now,
+            'actual_min': actual_minutes,
+            'journal': str(data.get('journal_content', '')),
+            'next_assign': str(data.get('next_assignment', '')),
+            'rating': int(data.get('student_rating', 0)) if data.get('student_rating') else None,
+            'gross': actual_gross,
+            'wh': wh,
+            'net': net,
+            'id': session_id,
+        })
+
+    return jsonify({
+        'message': 'Session completed',
+        'status': 'completed',
+        'actual_duration_minutes': actual_minutes,
+        'gross_amount': actual_gross,
+        'withholding_amount': wh,
+        'net_amount': net,
+        'completed_at': now,
+    })
+
+
+@app.route('/sessions/<int:session_id>', methods=['PATCH'])
+def adjust_session(session_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Institution only'}), 403
+
+    data = request.get_json() or {}
+    if 'actual_duration_minutes' not in data:
+        return jsonify({'error': 'actual_duration_minutes is required'}), 400
+
+    try:
+        actual_minutes = int(data.get('actual_duration_minutes'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'actual_duration_minutes must be integer'}), 400
+
+    if actual_minutes <= 0:
+        return jsonify({'error': 'actual_duration_minutes must be positive'}), 400
+
+    requested_status = str(data.get('status', '')).strip().lower() if data.get('status') else ''
+    if requested_status and requested_status not in ('scheduled', 'in_progress', 'completed'):
+        return jsonify({'error': 'Invalid status'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(
+            text('''
+                SELECT s.*, p.rate AS posting_rate
+                FROM sessions s
+                LEFT JOIN postings p ON p.id = s.posting_id
+                WHERE s.id = :id AND s.org_id = :org_id
+            '''),
+            {'id': session_id, 'org_id': user['user_id']}
+        ).mappings().first()
+
+        if not row:
+            return jsonify({'error': 'Session not found'}), 404
+
+        scheduled = int(row['scheduled_duration_minutes'] or 60)
+        if scheduled <= 0:
+            scheduled = 60
+
+        base_gross = int(row['gross_amount'] or 0)
+        if base_gross <= 0:
+            rate = int(row['posting_rate'] or 0)
+            base_gross = rate * scheduled
+
+        hourly_rate = base_gross / scheduled if scheduled > 0 else 0
+        adjusted_gross = int(round(hourly_rate * actual_minutes))
+        adjusted_wh = int(round(adjusted_gross * 0.033))
+        adjusted_net = adjusted_gross - adjusted_wh
+        next_status = requested_status or row['status']
+
+        conn.execute(
+            text('''
+                UPDATE sessions
+                SET actual_duration_minutes = :actual_min,
+                    gross_amount = :gross,
+                    withholding_amount = :wh,
+                    net_amount = :net,
+                    status = :status,
+                    updated_at = :updated_at
+                WHERE id = :id AND org_id = :org_id
+            '''),
+            {
+                'actual_min': actual_minutes,
+                'gross': adjusted_gross,
+                'wh': adjusted_wh,
+                'net': adjusted_net,
+                'status': next_status,
+                'updated_at': now,
+                'id': session_id,
+                'org_id': user['user_id']
+            }
+        )
+
+    return jsonify({
+        'message': 'Session adjusted',
+        'id': session_id,
+        'status': next_status,
+        'actual_duration_minutes': actual_minutes,
+        'gross_amount': adjusted_gross,
+        'withholding_amount': adjusted_wh,
+        'net_amount': adjusted_net
+    })
+
+
+# ===== 리뷰/평점 API =====
+
+@app.route('/reviews', methods=['POST'])
+def create_review():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can write reviews'}), 403
+
+    data = request.get_json() or {}
+    if not data.get('instructor_id') or not data.get('rating'):
+        return jsonify({'error': 'instructor_id and rating are required'}), 400
+
+    rating = int(data.get('rating', 0))
+    if not (1 <= rating <= 5):
+        return jsonify({'error': 'rating must be between 1 and 5'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        conn.execute(text('''
+            INSERT INTO reviews (session_id, reviewer_id, instructor_id, rating, comment, reviewer_type, created_at)
+            VALUES (:session_id, :reviewer_id, :instructor_id, :rating, :comment, 'institution', :created_at)
+        '''), {
+            'session_id': data.get('session_id'),
+            'reviewer_id': user['user_id'],
+            'instructor_id': int(data['instructor_id']),
+            'rating': rating,
+            'comment': str(data.get('comment', '')).strip(),
+            'created_at': now,
+        })
+        row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+
+    return jsonify({'message': 'Review created', 'id': row_id}), 201
+
+
+@app.route('/reviews', methods=['GET'])
+def list_reviews():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    instructor_id = request.args.get('instructor_id', type=int)
+    session_id = request.args.get('session_id', type=int)
+
+    clauses = []
+    params = {}
+    if instructor_id:
+        clauses.append('instructor_id = :instructor_id')
+        params['instructor_id'] = instructor_id
+    if session_id:
+        clauses.append('session_id = :session_id')
+        params['session_id'] = session_id
+
+    where = f" WHERE {' AND '.join(clauses)}" if clauses else ''
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text(f'SELECT * FROM reviews{where} ORDER BY created_at DESC LIMIT 50'),
+            params
+        ).mappings().all()
+
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/reviews/instructor/<int:instructor_id>/summary', methods=['GET'])
+def instructor_review_summary(instructor_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text('''
+                SELECT
+                    COUNT(*) AS count,
+                    ROUND(AVG(rating), 2) AS avg_rating,
+                    SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) AS five_star,
+                    SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) AS four_star,
+                    SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) AS three_star,
+                    SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) AS two_star,
+                    SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) AS one_star
+                FROM reviews WHERE instructor_id = :iid
+            '''),
+            {'iid': instructor_id}
+        ).mappings().first()
+
+    return jsonify(dict(row))
 
 
 if __name__ == '__main__':
