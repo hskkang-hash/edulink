@@ -218,6 +218,55 @@
             background: rgba(17, 24, 39, 0.02);
         }
 
+        .global-quickbar {
+            position: fixed;
+            top: 14px;
+            right: 16px;
+            z-index: 80;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(7, 9, 16, 0.72);
+            backdrop-filter: blur(8px);
+        }
+
+        .quickbar-btn {
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+        }
+
+        .quickbar-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(165, 140, 255, 0.58);
+            background: var(--brand-soft);
+        }
+
+        :root[data-theme='light'] .global-quickbar {
+            background: rgba(255, 255, 255, 0.86);
+            border-color: rgba(17, 24, 39, 0.1);
+        }
+
+        :root[data-theme='light'] .quickbar-btn {
+            border-color: rgba(17, 24, 39, 0.14);
+            background: rgba(17, 24, 39, 0.02);
+            color: #1b2238;
+        }
+
         .masthead-nav span {
             color: #a6aec2;
             border-bottom: 1px solid transparent;
@@ -744,10 +793,148 @@
             color: #5b647e;
         }
 
-        #registerSection,
+        #identityLandingSection {
+            grid-column: 1 / -1;
+            display: grid;
+            gap: 14px;
+        }
+
+        .identity-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .identity-brand img {
+            width: 180px;
+            height: auto;
+            display: block;
+        }
+
+        .identity-slogan {
+            margin: 0;
+            font-size: clamp(18px, 2.1vw, 28px);
+            line-height: 1.25;
+            letter-spacing: -0.01em;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .identity-caption {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .identity-visual {
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .identity-visual img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
         #loginSection {
-            grid-column: span 6;
+            grid-column: 3 / span 8;
             min-height: 250px;
+        }
+
+        #registerSection {
+            display: none;
+        }
+
+        .login-action-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .login-action-row button {
+            flex: 1;
+        }
+
+        /* My Page profile card */
+        .profile-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin-bottom: 22px;
+        }
+        .profile-avatar {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7db8ff 0%, #a78bfa 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .profile-info { display: flex; flex-direction: column; gap: 4px; }
+        .profile-email { font-size: 1rem; font-weight: 600; }
+        .profile-role-badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: rgba(125,184,255,0.18);
+            color: #7db8ff;
+            border: 1px solid rgba(125,184,255,0.32);
+            font-weight: 600;
+            width: fit-content;
+        }
+        .profile-joined { font-size: 0.78rem; }
+        :root[data-theme='light'] .profile-card {
+            background: rgba(0,0,0,0.03);
+            border-color: rgba(0,0,0,0.10);
+        }
+        :root[data-theme='light'] .profile-role-badge {
+            background: rgba(37,99,235,0.10);
+            color: #2563eb;
+            border-color: rgba(37,99,235,0.22);
+        }
+
+        #openSignupFlowBtn {
+            background: rgba(125, 184, 255, 0.12);
+            border: 1px solid rgba(125, 184, 255, 0.44);
+            color: #d9e8ff;
+            box-shadow: none;
+        }
+
+        #openSignupFlowBtn:hover {
+            background: rgba(125, 184, 255, 0.22);
+        }
+
+        .signup-flow-section {
+            position: fixed;
+            z-index: 60;
+            inset: 0;
+            margin: auto;
+            width: min(540px, calc(100% - 28px));
+            height: fit-content;
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42);
+        }
+
+        .signup-flow-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
         }
 
         #dashboardSection,
@@ -1696,6 +1883,7 @@
 
             h1,
             .hero-copy,
+            #identityLandingSection,
             #dashboardSection,
             #postingsSection,
             #taxSection,
@@ -1703,7 +1891,6 @@
             #applicationsSection,
             #networkSection,
             #adminInsightsSection,
-            #registerSection,
             #loginSection {
                 grid-column: 1 / -1;
             }
@@ -1779,6 +1966,11 @@
     </style>
 </head>
 <body>
+    <div class="global-quickbar" id="globalQuickbar">
+        <button type="button" class="quickbar-btn" id="quickThemeBtn" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+        <button type="button" class="quickbar-btn" id="quickLangBtn" title="Toggle language">한</button>
+    </div>
+
     <div class="app-shell">
         <aside class="side-rail">
             <div class="brand-lockup">
@@ -1789,6 +1981,7 @@
             <a class="rail-link" href="#" data-screen="taxSection">Settlements</a>
             <a class="rail-link" href="#" data-screen="applicationsSection">Applicants</a>
             <a class="rail-link" href="#" data-screen="networkSection">Network</a>
+            <a class="rail-link" href="#" data-screen="securitySection">My Page</a>
             <button class="rail-cta" type="button" data-screen="createPostingSection">Create Posting</button>
         </aside>
 
@@ -1805,6 +1998,7 @@
                             <span data-screen="applicationsSection">Applicants</span>
                             <span data-screen="taxSection">Settlements</span>
                             <span data-screen="networkSection">Network</span>
+                            <span data-screen="securitySection">My Page</span>
                         </div>
                         <div class="quick-controls">
                             <button type="button" class="quick-toggle" id="langToggleBtn">KO</button>
@@ -1815,6 +2009,18 @@
 
                 <h1>Welcome back.</h1>
                 <p class="hero-copy">Manage postings, student applications, and payout activity through one streamlined premium panel.</p>
+
+                <div class="section" id="identityLandingSection">
+                    <div class="identity-brand">
+                        <img src="../assets/edulink-logo.svg" alt="Edulink logo">
+                    </div>
+                    <h2 id="identityTitle">Edulink Identity</h2>
+                    <p class="identity-slogan" id="identitySlogan">Connected Classrooms, Trusted Staffing.</p>
+                    <p class="identity-caption" id="identityCaption">Edulink links instructors, institutions, and education operations into one reliable execution network.</p>
+                    <div class="identity-visual">
+                        <img src="../assets/edulink-hero.svg" alt="Edulink service concept image">
+                    </div>
+                </div>
 
                 <div class="section demo-role-shell" id="demoMenuSection">
                     <h2 id="architectureTitle">Product Screen Architecture</h2>
@@ -1925,7 +2131,7 @@
                     <div class="role-page-grid" id="adminTowerSectionGrid"></div>
                 </div>
 
-                <div class="section" id="buildRoadmapSection">
+                <div class="section" id="buildRoadmapSection" style="display:none">
                     <h2 id="buildRoadmapTitle">Design-First Build Roadmap</h2>
                     <p class="muted" id="buildRoadmapSubtitle">Lock the screen system first, then wire workflows and backend functions.</p>
                     <div class="roadmap-grid" id="buildRoadmapGrid"></div>
@@ -1955,14 +2161,19 @@
                     <div class="canvas-grid" id="activeScreenCanvasGrid"></div>
                 </div>
 
-                <div class="section" id="registerSection">
-                    <h2>Register</h2>
+                <div class="section signup-flow-section" id="registerSection">
+                    <div class="signup-flow-header">
+                        <h2 class="signup-flow-title">Register</h2>
+                        <button id="closeSignupFlowBtn" class="close-btn" type="button">Close</button>
+                    </div>
+                    <p class="muted signup-flow-intro">Create your Edulink account and choose your operating role.</p>
                     <input type="email" id="registerEmail" placeholder="Email">
                     <input type="password" id="registerPassword" placeholder="Password">
                     <select id="registerRole">
-                        <option value="instructor">Instructor</option>
-                        <option value="student">Student</option>
-                        <option value="admin">Admin</option>
+                        <option value="instructor">강사 (Instructor)</option>
+                        <option value="institution">기관 운영자 (Institution)</option>
+                        <option value="district">교육청 (District)</option>
+                        <option value="admin">플랫폼 운영자 (Platform Admin)</option>
                     </select>
                     <button id="registerBtn">Register</button>
                     <p id="registerStatus" class="muted"></p>
@@ -1972,8 +2183,28 @@
                     <h2>Login</h2>
                     <input type="email" id="loginEmail" placeholder="Email" value="demo@example.com">
                     <input type="password" id="loginPassword" placeholder="Password" value="password">
-                    <button id="loginBtn">Login</button>
+                    <div class="login-action-row">
+                        <button id="loginBtn">Login</button>
+                        <button type="button" id="openSignupFlowBtn">Sign Up</button>
+                    </div>
                     <p id="loginStatus" class="muted"></p>
+                </div>
+
+                <div class="section" id="securitySection" style="display: none;">
+                    <h2>My Page</h2>
+                    <p class="muted">Manage your account profile and change password in one place.</p>
+                    <div class="profile-card" id="myProfileCard" style="display:none;">
+                        <div class="profile-avatar" id="myProfileAvatar">?</div>
+                        <div class="profile-info">
+                            <div class="profile-email" id="myProfileEmail"></div>
+                            <div class="profile-role-badge" id="myProfileRole"></div>
+                            <div class="profile-joined muted" id="myProfileJoined"></div>
+                        </div>
+                    </div>
+                    <input type="password" id="currentPassword" placeholder="Current password">
+                    <input type="password" id="newPassword" placeholder="New password">
+                    <button id="changePasswordBtn">Change Password</button>
+                    <p id="securityStatus" class="muted"></p>
 
                     <h3>Password Reset</h3>
                     <input type="email" id="resetEmail" placeholder="Reset account email">
@@ -1982,14 +2213,6 @@
                     <input type="password" id="resetNewPassword" placeholder="New password">
                     <button id="resetConfirmBtn">Confirm Reset</button>
                     <p id="resetStatus" class="muted"></p>
-                </div>
-
-                <div class="section" id="securitySection" style="display: none;">
-                    <h2>Account Security</h2>
-                    <input type="password" id="currentPassword" placeholder="Current password">
-                    <input type="password" id="newPassword" placeholder="New password">
-                    <button id="changePasswordBtn">Change Password</button>
-                    <p id="securityStatus" class="muted"></p>
                 </div>
 
                 <div class="section" id="postingsSection" style="display: none;">
@@ -2381,15 +2604,32 @@
             'adminInsightsSection',
             'createPostingSection'
         ];
+        const PRELOGIN_HIDE_SECTIONS = [
+            'demoMenuSection',
+            'roleWorkspaceSection',
+            'roleSurfaceGallerySection',
+            'institutionPreviewSection',
+            'districtPreviewSection',
+            'adminPreviewSection',
+            'schoolPortalSection',
+            'districtConsoleSection',
+            'adminTowerSection',
+            'buildRoadmapSection',
+            'screenStateSection'
+        ];
         const ROLE_SCREEN_ACCESS = {
-            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'networkSection', 'createPostingSection'],
-            student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection'],
+            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'networkSection'],
+            institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection'],
+            student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection'],
+            district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection'],
             admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection'],
             super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection']
         };
         const ROLE_DEFAULT_SCREEN = {
             instructor: 'dashboardSection',
+            institution: 'dashboardSection',
             student: 'postingsSection',
+            district: 'dashboardSection',
             admin: 'adminInsightsSection',
             super_admin: 'adminInsightsSection'
         };
@@ -2403,21 +2643,32 @@
             en: {
                 heroTitle: 'Unified operations for education staffing.',
                 heroCopy: 'Design the full product surface first for instructors, institutions, districts, and platform operators, then connect each workflow in order.',
+                identityTitle: 'EDULINK Identity',
+                identitySlogan: 'Connected Classrooms, Trusted Staffing.',
+                identityCaption: 'Edulink connects instructors, institutions, districts, and operators into one education operations cloud.',
                 mastheadSub: 'Unified Operations Platform',
                 navDashboard: 'Role Views',
                 navApplicants: 'Screen Map',
                 navSettlements: 'Finance Ops',
                 navNetwork: 'Governance',
+                navMyPage: 'My Page',
                 railOverview: 'Overview',
                 railAnalytics: 'Screen System',
                 railSettlements: 'Operations',
                 railApplicants: 'Finance',
                 railNetwork: 'Governance',
+                railMyPage: 'My Page',
                 railCreatePosting: 'Design Queue',
+                quickThemeLabel: 'Theme',
+                quickLangLabel: 'Lang',
+                themeWhite: 'White',
+                themeBlack: 'Black',
+                langKorean: 'Korean',
+                langEnglish: 'English',
                 passwordReset: 'Password Reset',
                 registerTitle: 'Register',
                 loginTitle: 'Login',
-                securityTitle: 'Account Security',
+                securityTitle: 'My Page',
                 postingsTitle: 'Available Postings',
                 dashboardTitle: 'Dashboard',
                 taxTitle: 'Tax & Refund Center',
@@ -2428,6 +2679,9 @@
                 changePassword: 'Change Password',
                 registerBtn: 'Register',
                 loginBtn: 'Login',
+                signupFlowBtn: 'Sign Up',
+                signupFlowIntro: 'Create your Edulink account and choose your operating role.',
+                closeSignup: 'Close',
                 createBtn: 'Create Posting',
                 searchBtn: 'Search',
                 resetBtn: 'Reset',
@@ -2476,21 +2730,32 @@
             ko: {
                 heroTitle: '교육 인력 운영을 위한 통합 화면 설계.',
                 heroCopy: '강사, 학교·기관, 교육청, 운영자 관점의 전체 제품 화면을 먼저 설계하고 그 위에 기능을 순차적으로 연결합니다.',
+                identityTitle: 'EDULINK 아이덴티티',
+                identitySlogan: '연결된 교실, 신뢰 가능한 인력 운영.',
+                identityCaption: 'Edulink는 강사, 학교·기관, 교육청, 운영자를 하나의 교육 운영 클라우드로 연결합니다.',
                 mastheadSub: '통합 운영 플랫폼',
                 navDashboard: '역할 화면',
                 navApplicants: '화면 맵',
                 navSettlements: '재무 운영',
                 navNetwork: '거버넌스',
+                navMyPage: '마이페이지',
                 railOverview: '개요',
                 railAnalytics: '화면 체계',
                 railSettlements: '운영',
                 railApplicants: '재무',
                 railNetwork: '거버넌스',
+                railMyPage: '마이페이지',
                 railCreatePosting: '설계 큐',
+                quickThemeLabel: '테마',
+                quickLangLabel: '언어',
+                themeWhite: '화이트',
+                themeBlack: '블랙',
+                langKorean: '한글',
+                langEnglish: '영어',
                 passwordReset: '비밀번호 재설정',
                 registerTitle: '회원가입',
                 loginTitle: '로그인',
-                securityTitle: '계정 보안',
+                securityTitle: '마이페이지',
                 postingsTitle: '공고 목록',
                 dashboardTitle: '대시보드',
                 taxTitle: '세무/환급 센터',
@@ -2501,6 +2766,9 @@
                 changePassword: '비밀번호 변경',
                 registerBtn: '가입하기',
                 loginBtn: '로그인',
+                signupFlowBtn: '회원가입',
+                signupFlowIntro: 'Edulink 계정을 만들고 운영 역할을 선택하세요.',
+                closeSignup: '닫기',
                 createBtn: '공고 생성',
                 searchBtn: '검색',
                 resetBtn: '초기화',
@@ -4019,20 +4287,26 @@
             const map = [
                 ['h1', 'heroTitle'],
                 ['.hero-copy', 'heroCopy'],
+                ['#identityTitle', 'identityTitle'],
+                ['#identitySlogan', 'identitySlogan'],
+                ['#identityCaption', 'identityCaption'],
                 ['.masthead-sub', 'mastheadSub'],
                 ['.masthead-nav span:nth-child(1)', 'navDashboard'],
                 ['.masthead-nav span:nth-child(2)', 'navApplicants'],
                 ['.masthead-nav span:nth-child(3)', 'navSettlements'],
                 ['.masthead-nav span:nth-child(4)', 'navNetwork'],
+                ['.masthead-nav span:nth-child(5)', 'navMyPage'],
                 ['.side-rail .rail-link:nth-of-type(1)', 'railOverview'],
                 ['.side-rail .rail-link:nth-of-type(2)', 'railAnalytics'],
                 ['.side-rail .rail-link:nth-of-type(3)', 'railSettlements'],
                 ['.side-rail .rail-link:nth-of-type(4)', 'railApplicants'],
                 ['.side-rail .rail-link:nth-of-type(5)', 'railNetwork'],
+                ['.side-rail .rail-link:nth-of-type(6)', 'railMyPage'],
                 ['.side-rail .rail-cta', 'railCreatePosting'],
                 ['#registerSection h2', 'registerTitle'],
+                ['#registerSection .signup-flow-intro', 'signupFlowIntro'],
                 ['#loginSection h2', 'loginTitle'],
-                ['#loginSection h3', 'passwordReset'],
+                ['#securitySection h3', 'passwordReset'],
                 ['#securitySection h2', 'securityTitle'],
                 ['#postingsSection h2', 'postingsTitle'],
                 ['#dashboardSection h2', 'dashboardTitle'],
@@ -4043,6 +4317,8 @@
                 ['#logoutBtn', 'logout'],
                 ['#registerBtn', 'registerBtn'],
                 ['#loginBtn', 'loginBtn'],
+                ['#openSignupFlowBtn', 'signupFlowBtn'],
+                ['#closeSignupFlowBtn', 'closeSignup'],
                 ['#createPostingBtn', 'createBtn'],
                 ['#changePasswordBtn', 'changePassword'],
                 ['#applyFiltersBtn', 'searchBtn'],
@@ -4154,6 +4430,11 @@
                 themeBtn.textContent = t('themeLabel');
             }
 
+            const quickLangBtn = document.getElementById('quickLangBtn');
+            if (quickLangBtn) {
+                quickLangBtn.textContent = currentLang === 'ko' ? 'EN' : '한';
+            }
+
             renderRolePresentation();
         }
 
@@ -4224,6 +4505,13 @@
                 themeBtn.textContent = currentTheme === 'dark'
                     ? (currentLang === 'ko' ? '라이트' : 'Light')
                     : (currentLang === 'ko' ? '다크' : 'Dark');
+            }
+
+            const quickThemeBtn = document.getElementById('quickThemeBtn');
+            if (quickThemeBtn) {
+                const moonSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+                const sunSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+                quickThemeBtn.innerHTML = currentTheme === 'dark' ? sunSvg : moonSvg;
             }
         }
 
@@ -5709,27 +5997,28 @@
             return currentUser && currentUser.role ? currentUser.role : null;
         }
 
+        function normalizeRole(role) {
+            if (role === 'student') return 'institution';
+            if (role === 'super_admin') return 'district';
+            return role || 'instructor';
+        }
+
+        function isRole(...roles) {
+            const r = getCurrentAccessRole();
+            return roles.includes(r) || roles.includes(normalizeRole(r));
+        }
+
         function getRoleDisplayLabel() {
-            const role = getCurrentAccessRole();
+            const role = normalizeRole(getCurrentAccessRole());
             if (currentLang === 'ko') {
-                if (role === 'admin' || role === 'super_admin') {
-                    return '플랫폼 운영자';
-                }
-                if (role === 'student') {
-                    return '학습자';
-                }
+                if (role === 'admin') return '플랫폼 운영자';
+                if (role === 'district') return '교육청';
+                if (role === 'institution') return '기관 운영자';
                 return '강사';
             }
-
-            if (role === 'super_admin') {
-                return 'Platform Super Admin';
-            }
-            if (role === 'admin') {
-                return 'Platform Admin';
-            }
-            if (role === 'student') {
-                return 'Learner';
-            }
+            if (role === 'admin') return 'Platform Admin';
+            if (role === 'district') return 'District Office';
+            if (role === 'institution') return 'Institution';
             return 'Instructor';
         }
 
@@ -5741,8 +6030,42 @@
             return ROLE_DEFAULT_SCREEN[role] || 'dashboardSection';
         }
 
+        const ROLE_NAV_LABELS = {
+            instructor: {
+                dashboardSection:     { en: 'Dashboard',     ko: '\ub300\uc2dc\ubcf4\ub4dc' },
+                postingsSection:      { en: 'Find Postings', ko: '\uacf5\uace0 \ud0d0\uc0c9' },
+                applicationsSection:  { en: 'My Applications', ko: '\ub0b4 \uc9c0\uc6d0' },
+                taxSection:           { en: 'Income & Tax',   ko: '\uc218\uc785/\uc138\ubb34' },
+                networkSection:       { en: 'Network',        ko: '\ub124\ud2b8\uc6cc\ud06c' },
+                createPostingSection: { en: 'Post Job',       ko: '\uacf5\uace0 \ub4f1\ub85d' },
+                securitySection:      { en: 'My Page',        ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
+            },
+            institution: {
+                dashboardSection:     { en: 'Dashboard',       ko: '\ub300\uc2dc\ubcf4\ub4dc' },
+                postingsSection:      { en: 'My Postings',     ko: '\ub0b4 \uacf5\uace0' },
+                applicationsSection:  { en: 'Applicants',      ko: '\uc9c0\uc6d0\uc790 \uc2ec\uc0ac' },
+                taxSection:           { en: 'Settlement',      ko: '\uc815\uc0b0 \ud604\ud669' },
+                createPostingSection: { en: 'New Posting',     ko: '\uacf5\uace0 \uc791\uc131' },
+                securitySection:      { en: 'My Page',         ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
+            },
+            district: {
+                dashboardSection:    { en: 'Region Overview', ko: '\uc9c0\uc5ed \ud604\ud669' },
+                applicationsSection: { en: 'Institutions',    ko: '\uad00\ud560 \uae30\uad00' },
+                taxSection:          { en: 'Budget',          ko: '\uc608\uc0b0 \ud604\ud669' },
+                securitySection:     { en: 'My Page',         ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
+            },
+            admin: {
+                dashboardSection:    { en: 'Platform Overview', ko: '\ud50c\ub7ab\ud3fc \ud604\ud669' },
+                applicationsSection: { en: 'Members',           ko: '\ud68c\uc6d0 \uad00\ub9ac' },
+                adminInsightsSection:{ en: 'Compliance',        ko: '\ucf58\ud50c\ub77c\uc774\uc5b8\uc2a4' },
+                securitySection:     { en: 'My Page',           ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
+            }
+        };
+
         function updatePrimaryNavigation() {
             const allowed = getAllowedScreens();
+            const role = normalizeRole(getCurrentAccessRole());
+            const navLabels = ROLE_NAV_LABELS[role] || ROLE_NAV_LABELS.instructor;
 
             Array.from(document.querySelectorAll('.side-rail [data-screen]')).forEach((node) => {
                 const screenId = node.getAttribute('data-screen');
@@ -5753,6 +6076,12 @@
                 } else {
                     node.style.display = isAllowed ? 'block' : 'none';
                 }
+                const label = navLabels[screenId];
+                if (label && node.tagName !== 'BUTTON') {
+                    node.textContent = currentLang === 'ko' ? label.ko : label.en;
+                } else if (label && node.tagName === 'BUTTON') {
+                    node.textContent = currentLang === 'ko' ? label.ko : label.en;
+                }
             });
 
             Array.from(document.querySelectorAll('.masthead-nav [data-screen]')).forEach((node) => {
@@ -5760,6 +6089,10 @@
                 const isAllowed = allowed.includes(screenId);
                 node.classList.toggle('active', activeScreenId === screenId && isAllowed);
                 node.style.display = isAllowed ? 'inline-block' : 'none';
+                const label = navLabels[screenId];
+                if (label) {
+                    node.textContent = currentLang === 'ko' ? label.ko : label.en;
+                }
             });
         }
 
@@ -5989,6 +6322,22 @@
         }
 
         function showSections() {
+            const masthead = document.querySelector('.masthead');
+            const heroTitleEl = document.querySelector('h1');
+            const heroCopyEl = document.querySelector('.hero-copy');
+            if (masthead) {
+                masthead.style.display = 'flex';
+            }
+            if (heroTitleEl) {
+                heroTitleEl.style.display = 'block';
+            }
+            if (heroCopyEl) {
+                heroCopyEl.style.display = 'block';
+            }
+            const identitySection = document.getElementById('identityLandingSection');
+            if (identitySection) {
+                identitySection.style.display = 'none';
+            }
             document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('topbar').style.display = 'flex';
@@ -6002,18 +6351,44 @@
         }
 
         function hideSections() {
+            const masthead = document.querySelector('.masthead');
+            const heroTitleEl = document.querySelector('h1');
+            const heroCopyEl = document.querySelector('.hero-copy');
+            if (masthead) {
+                masthead.style.display = 'none';
+            }
+            if (heroTitleEl) {
+                heroTitleEl.style.display = 'none';
+            }
+            if (heroCopyEl) {
+                heroCopyEl.style.display = 'none';
+            }
             PRODUCT_SECTIONS.forEach((id) => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.style.display = 'none';
                 }
             });
-            document.getElementById('registerSection').style.display = 'block';
+            PRELOGIN_HIDE_SECTIONS.forEach((id) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.style.display = 'none';
+                }
+            });
+            document.getElementById('identityLandingSection').style.display = 'grid';
+            document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('topbar').style.display = 'none';
             document.getElementById('myPostingsToggleWrap').style.display = 'none';
             updatePrimaryNavigation();
-            renderActiveScreenState();
+        }
+
+        function setSignupFlowVisible(visible) {
+            const signupSection = document.getElementById('registerSection');
+            if (!signupSection) {
+                return;
+            }
+            signupSection.style.display = visible ? 'grid' : 'none';
         }
 
         function logout() {
@@ -6036,6 +6411,8 @@
             stopTaxPolling();
             localStorage.removeItem('token');
             document.getElementById('myPostingsToggle').checked = false;
+            const profileCard = document.getElementById('myProfileCard');
+            if (profileCard) profileCard.style.display = 'none';
             setStatus('loginStatus', t('logoutDone'));
             hideSections();
         }
@@ -6117,6 +6494,29 @@
             });
         }
 
+        function updateMyPageProfile() {
+            if (!currentUser) return;
+            const card = document.getElementById('myProfileCard');
+            if (!card) return;
+            card.style.display = 'flex';
+            const role = normalizeRole(currentUser.role);
+            const email = currentUser.email || '';
+            const initial = email.charAt(0).toUpperCase() || '?';
+            document.getElementById('myProfileAvatar').textContent = initial;
+            document.getElementById('myProfileEmail').textContent = email;
+            const roleLabelMap = {
+                instructor: lt('Instructor', '\uac15\uc0ac'),
+                institution: lt('Institution', '\uae30\uad00 \uc6b4\uc601\uc790'),
+                district: lt('District Office', '\uad50\uc721\uccad'),
+                admin: lt('Platform Admin', '\ud50c\ub7ab\ud3fc \uc6b4\uc601\uc790')
+            };
+            document.getElementById('myProfileRole').textContent = roleLabelMap[role] || role;
+            if (currentUser.created_at) {
+                const joined = new Date(currentUser.created_at).toLocaleDateString();
+                document.getElementById('myProfileJoined').textContent = lt('Joined', '\uac00\uc785\uc77c') + ': ' + joined;
+            }
+        }
+
         async function loadUserInfo() {
             if (!token) {
                 return;
@@ -6133,19 +6533,60 @@
             }
 
             currentUser = data;
+            updateMyPageProfile();
             showSections();
             updateActivityTypeControls();
             await Promise.all([loadPostings(), loadApplications(), loadDashboardStats(), loadDashboardActivity()]);
-            if (currentUser && currentUser.role === 'instructor') {
+            const role = normalizeRole(currentUser && currentUser.role);
+            if (role === 'instructor') {
                 await loadTaxEstimate();
                 await loadNetworkCompliance();
                 await loadNetworkBonuses();
             }
-            if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'super_admin')) {
+            if (role === 'admin' || (currentUser && currentUser.role === 'super_admin')) {
                 await loadAdminComplianceSummary();
                 await loadAdminTopSponsors();
                 await loadAdminRules();
                 await loadAdminRuleAudits();
+            }
+            renderTaxSectionForRole();
+        }
+
+        function renderTaxSectionForRole() {
+            if (!currentUser) return;
+            const role = normalizeRole(currentUser.role);
+            const taxHeader = document.querySelector('#taxSection h2');
+            const taxSubtitle = document.querySelector('#taxSection > p.muted');
+            const roleConfig = {
+                instructor: {
+                    h2: lt('Income & Tax', '\uc218\uc785 \ubc0f \uc138\ubb34'),
+                    sub: lt('3.3% withholding refund estimation and CMS fee management', '3.3% \uc6d0\uccb4\uc9d5\uc218 \uae30\ubc18 \ud658\uae09 \ucd94\uc815 \ubc0f \uc218\uc218\ub8cc \uad00\ub9ac')
+                },
+                institution: {
+                    h2: lt('Settlement & Fees', '\uc815\uc0b0 \ud604\ud669'),
+                    sub: lt('View approved instructor payments and platform fees', '\uc2b9\uc778\ub41c \uc9c0\ub3c4\uc0ac \uc815\uc0b0 \ubc0f \ud50c\ub7ab\ud3fc \uc218\uc218\ub8cc \ud655\uc778')
+                },
+                district: {
+                    h2: lt('Budget Overview', '\uc608\uc0b0 \ud604\ud669'),
+                    sub: lt('Regional education budget and spending summary', '\uc9c0\uc5ed \uad50\uc721 \uc608\uc0b0 \ubc0f \uc9c0\ucd9c \ud604\ud669')
+                },
+                admin: {
+                    h2: lt('Platform Finance', '\ud50c\ub7ab\ud3fc \uc7ac\ubb34'),
+                    sub: lt('Platform-wide revenue, fees, and compliance', '\uc804\uccb4 \ub9e4\ucd9c, \uc218\uc218\ub8cc \ubc0f \ucef4\ud50c\ub77c\uc774\uc5b8\uc2a4')
+                }
+            };
+            const cfg = roleConfig[role] || roleConfig.instructor;
+            if (taxHeader) taxHeader.textContent = cfg.h2;
+            if (taxSubtitle) taxSubtitle.textContent = cfg.sub;
+
+            // Show/hide tax card labels by role
+            const taxCards = document.querySelectorAll('.tax-card .stat-title');
+            if (role === 'institution') {
+                const labels = [lt('Total Settled', '\uc815\uc0b0 \ucd1d\uc561'), lt('Platform Fee', '\ud50c\ub7ab\ud3fc \uc218\uc218\ub8cc'), lt('Approved Sessions', '\uc2b9\uc778 \uc218\uc5c5'), lt('Pending', '\uc815\uc0b0 \ub300\uae30')];
+                taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
+            } else if (role === 'district') {
+                const labels = [lt('Total Budget', '\uc804\uccb4 \uc608\uc0b0'), lt('Allocated', '\ube48\ubc30'), lt('Remaining', '\uc794\uc5ec'), lt('Utilization', '\uc9d1\ud589\ub960')];
+                taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
             }
         }
 
@@ -6704,22 +7145,57 @@
                 return;
             }
 
-            const common = [
-                { title: 'Applications', value: stats.applications_total || 0 },
-                { title: 'Pending', value: stats.pending_count || 0 },
-                { title: 'Approved', value: stats.approved_count || 0 },
-                { title: 'Rejected', value: stats.rejected_count || 0 }
-            ];
-            const cards = stats.role === 'instructor'
-                ? [{ title: 'My Postings', value: stats.postings_count || 0 }, ...common]
-                : common;
+            const role = normalizeRole(getCurrentAccessRole());
+            let cards;
+
+            if (role === 'instructor') {
+                cards = [
+                    { title: lt('My Postings', '\ub0b4 \uacf5\uace0'), value: stats.postings_count || 0, icon: '📋' },
+                    { title: lt('Active Applications', '\uc9c4\ud589 \uc911 \uc9c0\uc6d0'), value: stats.pending_count || 0, icon: '⏳' },
+                    { title: lt('Approved', '\uc2b9\uc778\ub428'), value: stats.approved_count || 0, icon: '✅' },
+                    { title: lt('Est. Income', '\uc608\uc0c1 \uc218\uc785'), value: '₩' + ((stats.approved_count || 0) * 30000).toLocaleString(), icon: '💰' }
+                ];
+            } else if (role === 'institution') {
+                cards = [
+                    { title: lt('Active Postings', '\ud65c\uc131 \uacf5\uace0'), value: stats.postings_count || 0, icon: '📢' },
+                    { title: lt('Total Applicants', '\uc804\uccb4 \uc9c0\uc6d0\uc790'), value: stats.applications_total || 0, icon: '👥' },
+                    { title: lt('Approved', '\uc2b9\uc778\ub428'), value: stats.approved_count || 0, icon: '✅' },
+                    { title: lt('Pending Review', '\uc2ec\uc0ac \ub300\uae30'), value: stats.pending_count || 0, icon: '🔍' }
+                ];
+            } else if (role === 'district') {
+                cards = [
+                    { title: lt('Institutions', '\uad00\ud560 \uae30\uad00'), value: stats.postings_count || 12, icon: '🏫' },
+                    { title: lt('Active Instructors', '\ud65c\ub3d9 \uac15\uc0ac'), value: stats.applications_total || 0, icon: '👨‍🏫' },
+                    { title: lt('Sessions This Month', '\uc774\ub2ec \uc218\uc5c5'), value: stats.approved_count || 0, icon: '📅' },
+                    { title: lt('Budget Used', '\uc608\uc0b0 \uc9d1\ud589'), value: (stats.pending_count || 0) + '%', icon: '📊' }
+                ];
+            } else {
+                cards = [
+                    { title: lt('Total Members', '\uc804\uccb4 \ud68c\uc6d0'), value: stats.applications_total || 0, icon: '👤' },
+                    { title: lt('Active Postings', '\ud65c\uc131 \uacf5\uace0'), value: stats.postings_count || 0, icon: '📋' },
+                    { title: lt('Pending Review', '\uc2ec\uc0ac \ub300\uae30'), value: stats.pending_count || 0, icon: '⏳' },
+                    { title: lt('Issues Flagged', '\uc774\uc0c1 \ud50c\ub798\uadf8'), value: stats.rejected_count || 0, icon: '🚩' }
+                ];
+            }
 
             statsGrid.innerHTML = cards.map((card) => `
                 <div class="stat-card">
-                    <div class="stat-title">${card.title}</div>
+                    <div class="stat-title">${card.icon ? card.icon + ' ' : ''}${card.title}</div>
                     <div class="stat-value">${card.value}</div>
                 </div>
             `).join('');
+
+            // Update dashboard section title for role
+            const dashTitle = document.querySelector('#dashboardSection h2');
+            if (dashTitle) {
+                const titles = {
+                    instructor: lt('My Dashboard', '\ub0b4 \ub300\uc2dc\ubcf4\ub4dc'),
+                    institution: lt('Institution Dashboard', '\uae30\uad00 \ub300\uc2dc\ubcf4\ub4dc'),
+                    district: lt('Region Overview', '\uc9c0\uc5ed \ud604\ud669'),
+                    admin: lt('Platform Overview', '\ud50c\ub7ab\ud3fc \ud604\ud669')
+                };
+                dashTitle.textContent = titles[role] || titles.instructor;
+            }
         }
 
         function renderDashboardActivity(items) {
@@ -6931,6 +7407,7 @@
                 setStatus('registerStatus', t('registerSuccess'));
                 document.getElementById('registerEmail').value = '';
                 document.getElementById('registerPassword').value = '';
+                setSignupFlowVisible(false);
             } catch (error) {
                 setStatus('registerStatus', `Error: ${error.message}`);
             }
@@ -7068,10 +7545,35 @@
 
         async function loadPostings() {
             const params = new URLSearchParams();
+            const role = normalizeRole(getCurrentAccessRole());
             if (postingFilters.subject) params.set('subject', postingFilters.subject);
             if (postingFilters.region) params.set('region', postingFilters.region);
             if (postingFilters.minRate) params.set('min_rate', postingFilters.minRate);
-            if (showOnlyMine && currentUser && currentUser.role === 'instructor') params.set('owner_only', 'true');
+
+            // institution: show only their own postings by default
+            if (role === 'institution') {
+                params.set('owner_only', 'true');
+            } else if (showOnlyMine && role === 'instructor') {
+                params.set('owner_only', 'true');
+            }
+
+            // Update postings section header by role
+            const postingsHeader = document.querySelector('#postingsSection h2');
+            if (postingsHeader) {
+                const headerLabels = {
+                    instructor: lt('Find Postings', '\uacf5\uace0 \ud0d0\uc0c9'),
+                    institution: lt('My Postings', '\ub0b4 \uacf5\uace0'),
+                    district: lt('All Postings', '\uc804\uccb4 \uacf5\uace0'),
+                    admin: lt('All Postings', '\uc804\uccb4 \uacf5\uace0')
+                };
+                postingsHeader.textContent = headerLabels[role] || headerLabels.instructor;
+            }
+
+            // Show/hide "New Posting" quick button for institution
+            const myPostingsWrap = document.getElementById('myPostingsToggleWrap');
+            if (myPostingsWrap) {
+                myPostingsWrap.style.display = role === 'instructor' ? 'inline-flex' : 'none';
+            }
 
             const query = params.toString() ? `/postings?${params.toString()}` : '/postings';
             const response = await apiFetch(query);
@@ -7079,12 +7581,22 @@
             const list = document.getElementById('postingsList');
 
             if (!response.ok) {
-                list.innerHTML = `<p>${postings.error || lt('Failed to load postings.', '공고 목록을 불러오지 못했습니다.')}</p>`;
+                list.innerHTML = `<div class="empty-state muted">${postings.error || lt('Failed to load postings.', '\uacf5\uace0 \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.')}</div>`;
                 return;
             }
 
             if (!Array.isArray(postings) || postings.length === 0) {
-                list.innerHTML = `<p>${lt('No postings yet.', '아직 공고가 없습니다.')}</p>`;
+                const emptyLabels = {
+                    instructor: lt('No postings match your search. Try adjusting filters.', '\ud544\ud130\ub97c \uc870\uc815\ud574 \ubcf4\uc138\uc694.'),
+                    institution: lt('No postings yet. Create your first posting!', '\uccab \uacf5\uace0\ub97c \ub4f1\ub85d\ud574 \ubcf4\uc138\uc694!'),
+                    district: lt('No postings in this region.', '\ud574\ub2f9 \uc9c0\uc5ed\uc5d0 \uacf5\uace0\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.'),
+                    admin: lt('No postings found.', '\uacf5\uace0\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.')
+                };
+                const msg = emptyLabels[role] || emptyLabels.instructor;
+                const institutionQuickCreate = role === 'institution'
+                    ? `<br><button onclick="activateScreen('createPostingSection')">${lt('+ Create Posting', '+ \uacf5\uace0 \ub4f1\ub85d')}</button>`
+                    : '';
+                list.innerHTML = `<div class="empty-state muted">${msg}${institutionQuickCreate}</div>`;
                 return;
             }
 
@@ -7094,19 +7606,24 @@
                 const safeRegion = String(p.region || '').replace(/'/g, "\\'");
 
                 let buttons = '';
-                if (currentUser && currentUser.role === 'student') {
-                    buttons += `<button onclick="applyToPosting(${p.id})">Apply</button>`;
+                // instructor applies to postings
+                if (role === 'instructor') {
+                    buttons += `<button onclick="applyToPosting(${p.id})">${lt('Apply', '\uc9c0\uc6d0\ud558\uae30')}</button>`;
                 }
-                if (currentUser && currentUser.role === 'instructor' && p.owner_id === currentUser.id) {
-                    buttons += ` <button onclick="editPosting(${p.id}, '${safeTitle}', '${safeSubject}', '${safeRegion}', ${p.rate})">Edit</button>`;
-                    buttons += ` <button class="btn-danger" onclick="deletePosting(${p.id})">Delete</button>`;
+                // institution manages own postings
+                if (role === 'institution' && p.owner_id === currentUser.id) {
+                    buttons += ` <button onclick="editPosting(${p.id}, '${safeTitle}', '${safeSubject}', '${safeRegion}', ${p.rate})">${lt('Edit', '\uc218\uc815')}</button>`;
+                    buttons += ` <button class="btn-danger" onclick="deletePosting(${p.id})">${lt('Delete', '\uc0ad\uc81c')}</button>`;
                 }
-                buttons += ` <button onclick="viewPostingDetail(${p.id})">Detail</button>`;
+                // admin/district can see details only
+                buttons += ` <button onclick="viewPostingDetail(${p.id})">${lt('Detail', '\uc0c1\uc138')}</button>`;
+
+                const urgentBadge = p.urgent ? `<span class="status-chip" style="background:rgba(255,80,80,0.22);color:#ff8080;margin-left:6px;">${lt('Urgent', '\uae34\uae09')}</span>` : '';
 
                 return `
                     <div class="posting">
-                        <h3>${p.title}</h3>
-                        <p>Subject: ${p.subject} | Region: ${p.region} | Rate: $${p.rate}/hr</p>
+                        <h3>${escapeHtml(p.title)}${urgentBadge}</h3>
+                        <p>${lt('Subject', '\uacfc\ubaa9')}: ${escapeHtml(p.subject)} | ${lt('Region', '\uc9c0\uc5ed')}: ${escapeHtml(p.region)} | ${lt('Rate', '\uc2dc\uae09')}: ₩${Number(p.rate).toLocaleString()}/${lt('hr', '\uc2dc\uac04')}</p>
                         <div class="actions">${buttons}</div>
                     </div>
                 `;
@@ -7228,6 +7745,21 @@
                 return;
             }
 
+            const role = normalizeRole(getCurrentAccessRole());
+
+            // Update applications section header per role
+            const appHeader = document.querySelector('#applicationsSection h2');
+            const appSubtitle = document.querySelector('#applicationsSection .section-subtitle');
+            const headerMap = {
+                instructor: { h2: lt('My Applications', '\ub0b4 \uc9c0\uc6d0'), sub: lt('Track your application status', '\uc9c0\uc6d0 \ud604\ud669\uc744 \ud655\uc778\ud558\uc138\uc694') },
+                institution: { h2: lt('Applicant Review', '\uc9c0\uc6d0\uc790 \uc2ec\uc0ac'), sub: lt('Review and manage instructors applying to your postings', '\uae30\uad00 \uacf5\uace0\uc5d0 \uc9c0\uc6d0\ud55c \uc9c0\uc6d0\uc790\ub97c \uc2ec\uc0ac\ud558\uc138\uc694') },
+                district: { h2: lt('Institutions', '\uad00\ud560 \uae30\uad00'), sub: lt('Track registered institutions in your district', '\uad00\ud560 \uc9c0\uc5ed \uae30\uad00 \ud604\ud669') },
+                admin: { h2: lt('Members', '\ud68c\uc6d0 \uad00\ub9ac'), sub: lt('Manage platform users and permissions', '\ud50c\ub7ab\ud3fc \ud68c\uc6d0\uc744 \uad00\ub9ac\ud558\uc138\uc694') }
+            };
+            const hm = headerMap[role] || headerMap.instructor;
+            if (appHeader) appHeader.textContent = hm.h2;
+            if (appSubtitle) appSubtitle.textContent = hm.sub;
+
             const params = new URLSearchParams();
             if (applicationsSearchQuery) {
                 params.set('q', applicationsSearchQuery);
@@ -7245,7 +7777,7 @@
 
             if (!response.ok) {
                 const list = document.getElementById('applicationsList');
-                list.innerHTML = `<p>${applications.error || lt('Failed to load applications.', '지원 목록을 불러오지 못했습니다.')}</p>`;
+                list.innerHTML = `<p>${applications.error || lt('Failed to load applications.', '\uc9c0\uc6d0 \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.')}</p>`;
                 return;
             }
 
@@ -7254,6 +7786,7 @@
         }
 
         function renderApplications(applications) {
+            const role = normalizeRole(getCurrentAccessRole());
             const list = document.getElementById('applicationsList');
             const summary = document.getElementById('applicationsSummary');
 
@@ -7270,11 +7803,19 @@
                 }
             });
 
+            const cardLabels = {
+                instructor: { all: lt('Total', '\uc804\uccb4'), pending: lt('Pending', '\ub300\uae30'), approved: lt('Approved', '\uc2b9\uc778'), rejected: lt('Rejected', '\uac70\uc808') },
+                institution: { all: lt('Total', '\uc804\uccb4 \uc9c0\uc6d0\uc790'), pending: lt('Under Review', '\uc2ec\uc0ac\uc911'), approved: lt('Hired', '\uc2b9\uc778'), rejected: lt('Rejected', '\uac70\uc808') },
+                district: { all: lt('Institutions', '\uae30\uad00\uc218'), pending: lt('Pending', '\ub300\uae30'), approved: lt('Active', '\ud65c\uc131'), rejected: lt('Inactive', '\ube44\ud65c\uc131') },
+                admin: { all: lt('Members', '\ud68c\uc6d0'), pending: lt('Pending', '\ub300\uae30'), approved: lt('Approved', '\uc2b9\uc778'), rejected: lt('Rejected', '\uac70\uc808') }
+            };
+            const cl = cardLabels[role] || cardLabels.instructor;
+
             summary.innerHTML = [
-                { title: 'All', value: counts.all },
-                { title: 'Pending', value: counts.pending },
-                { title: 'Approved', value: counts.approved },
-                { title: 'Rejected', value: counts.rejected }
+                { title: cl.all, value: counts.all },
+                { title: cl.pending, value: counts.pending },
+                { title: cl.approved, value: counts.approved },
+                { title: cl.rejected, value: counts.rejected }
             ].map((card) => `
                 <div class="stat-card">
                     <div class="stat-title">${card.title}</div>
@@ -7285,7 +7826,13 @@
             updateApplicationsFilterControls();
 
             if (!applications.length) {
-                list.innerHTML = `<div class="empty-state muted">${lt('No applications yet.', '아직 지원 내역이 없습니다.')}</div>`;
+                const emptyMsg = {
+                    instructor: lt('No applications yet. Browse postings and apply!', '\uc544\uc9c1 \uc9c0\uc6d0 \ub0b4\uc5ed\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.'),
+                    institution: lt('No applicants yet. Post a job to attract instructors!', '\uc9c0\uc6d0\uc790\uac00 \uc5c6\uc2b5\ub2c8\ub2e4.'),
+                    district: lt('No institutions registered.', '\ub4f1\ub85d\ub41c \uae30\uad00\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.'),
+                    admin: lt('No members found.', '\ud68c\uc6d0\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.')
+                };
+                list.innerHTML = `<div class="empty-state muted">${emptyMsg[role] || emptyMsg.instructor}</div>`;
                 return;
             }
 
@@ -7294,24 +7841,32 @@
                 : applications.filter((item) => item.status === applicationsFilter);
 
             if (!filteredApplications.length) {
-                list.innerHTML = `<div class="empty-state muted">${lt(`No ${applicationsFilter} applications in this view.`, `현재 보기에서 ${applicationsFilter} 상태 지원이 없습니다.`)}</div>`;
+                list.innerHTML = `<div class="empty-state muted">${lt('No items match this filter.', '\ud544\ud130\uc5d0 \ud574\ub2f9\ud558\ub294 \ud56d\ubaa9\uc774 \uc5c6\uc2b5\ub2c8\ub2e4.')}</div>`;
                 return;
             }
 
             list.innerHTML = filteredApplications.map((a) => {
                 let buttons = '';
-                if (currentUser && currentUser.role === 'instructor') {
-                    buttons = ` <button onclick="openApplicantSummary(${a.student_id})">Applicant Profile</button>`;
+                if (role === 'institution') {
+                    // institution reviews applicants
+                    buttons = ` <button onclick="openApplicantSummary(${a.student_id})">${lt('Profile', '\ud504\ub85c\ud544 \ubcf4\uae30')}</button>`;
                     if (a.status === 'pending') {
-                        buttons += ` <button onclick="updateApplication(${a.id}, 'approved')">Approve</button>` +
-                            ` <button onclick="updateApplication(${a.id}, 'rejected')">Reject</button>`;
+                        buttons += ` <button onclick="updateApplication(${a.id}, 'approved')">${lt('Approve', '\uc2b9\uc778')}</button>`;
+                        buttons += ` <button onclick="updateApplication(${a.id}, 'rejected')">${lt('Reject', '\uac70\uc808')}</button>`;
                     }
-                } else if (currentUser && currentUser.role === 'student' && a.status === 'pending') {
-                    buttons = ` <button class="btn-danger" onclick="cancelApplication(${a.id})">Cancel</button>`;
+                } else if (role === 'instructor') {
+                    // instructor can cancel pending own applications
+                    if (a.status === 'pending') {
+                        buttons = ` <button class="btn-danger" onclick="cancelApplication(${a.id})">${lt('Cancel', '\uc9c0\uc6d0 \ucde8\uc18c')}</button>`;
+                    }
+                } else if (role === 'admin') {
+                    buttons = ` <button onclick="openApplicantSummary(${a.student_id})">${lt('View Member', '\ud68c\uc6d0 \uc0c1\uc138')}</button>`;
                 }
 
-                const applicantEmail = a.student_email ? escapeHtml(a.student_email) : `Student #${a.student_id}`;
+                const applicantEmail = a.student_email ? escapeHtml(a.student_email) : `#${a.student_id}`;
                 const applicantOrg = a.student_organization ? escapeHtml(a.student_organization) : '';
+
+                const showApplicant = role === 'institution' || role === 'admin';
 
                 return `
                     <div class="posting application-item">
@@ -7320,11 +7875,10 @@
                             ${statusBadge(a.status)}
                         </div>
                         <div class="application-meta">
-                            <span>Application ID: ${a.id}</span>
-                            ${currentUser && currentUser.role === 'instructor' ? `<span>Applicant: ${applicantEmail}</span>` : ''}
-                            ${currentUser && currentUser.role === 'instructor' && applicantOrg ? `<span>Org: ${applicantOrg}</span>` : ''}
-                            ${currentUser && currentUser.role === 'instructor' ? `<span>Student ID: ${a.student_id}</span>` : ''}
-                            <span>Submitted ${formatRelativeTime(a.created_at)}</span>
+                            <span>ID: ${a.id}</span>
+                            ${showApplicant ? `<span>${lt('Applicant', '\uc9c0\uc6d0\uc790')}: ${applicantEmail}</span>` : ''}
+                            ${showApplicant && applicantOrg ? `<span>${lt('Org', '\uc18c\uc18d')}: ${applicantOrg}</span>` : ''}
+                            <span>${lt('Submitted', '\uc81c\ucd9c')} ${formatRelativeTime(a.created_at)}</span>
                         </div>
                         <div class="application-actions">${buttons}</div>
                     </div>
@@ -7501,6 +8055,12 @@
 
         // Bind main buttons explicitly to avoid global scope issues.
         document.getElementById('registerBtn').addEventListener('click', register);
+        document.getElementById('openSignupFlowBtn').addEventListener('click', () => {
+            setSignupFlowVisible(true);
+        });
+        document.getElementById('closeSignupFlowBtn').addEventListener('click', () => {
+            setSignupFlowVisible(false);
+        });
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
         document.getElementById('resetRequestBtn').addEventListener('click', requestResetToken);
@@ -7595,6 +8155,8 @@
         document.getElementById('adminLoadAuditsBtn').addEventListener('click', loadAdminRuleAudits);
         document.getElementById('langToggleBtn').addEventListener('click', toggleLanguage);
         document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+        document.getElementById('quickThemeBtn').addEventListener('click', toggleTheme);
+        document.getElementById('quickLangBtn').addEventListener('click', toggleLanguage);
         document.getElementById('applyFiltersBtn').addEventListener('click', async () => {
             postingFilters.subject = document.getElementById('filterSubject').value;
             postingFilters.region = document.getElementById('filterRegion').value.trim();
