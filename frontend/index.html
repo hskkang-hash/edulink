@@ -140,6 +140,20 @@
 
         .main-pane {
             padding: 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-pane::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.22s ease;
         }
 
         .container {
@@ -1892,6 +1906,88 @@
             background: linear-gradient(135deg, #7456ff, #ba9eff);
             color: #130f21;
             font-weight: 800;
+        }
+
+        /* Stitch-inspired role layouts */
+        body.view-webapp .main-pane {
+            padding: 14px 14px 92px;
+        }
+
+        body.view-webapp .main-pane::before {
+            background-image: url('../assets/stitch/_1.png');
+            opacity: 0.08;
+        }
+
+        body.view-webapp .container {
+            max-width: 560px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        body.view-webapp h1,
+        body.view-webapp .hero-logo,
+        body.view-webapp .hero-copy,
+        body.view-webapp #dashboardSection,
+        body.view-webapp #postingsSection,
+        body.view-webapp #taxSection,
+        body.view-webapp #createPostingSection,
+        body.view-webapp #applicationsSection,
+        body.view-webapp #networkSection,
+        body.view-webapp #securitySection,
+        body.view-webapp #adminInsightsSection,
+        body.view-webapp #loginSection {
+            grid-column: 1 / -1;
+        }
+
+        body.view-webapp .side-rail {
+            width: 94px;
+            padding: 18px 10px;
+        }
+
+        body.view-webapp .side-rail .brand-lockup {
+            margin-bottom: 16px;
+        }
+
+        body.view-webapp .side-rail .brand-lockup img {
+            width: 42px;
+            height: 42px;
+        }
+
+        body.view-webapp .side-rail .rail-link,
+        body.view-webapp .side-rail .rail-cta {
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-align: center;
+            padding: 10px 8px;
+            border-radius: 10px;
+        }
+
+        body.view-webapp .masthead-nav {
+            display: none;
+        }
+
+        body.view-webapp .mobile-dock {
+            display: flex;
+        }
+
+        body.view-web .container {
+            max-width: 1280px;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+        }
+
+        body.view-web .main-pane::before {
+            background-image: url('../assets/stitch/_4.png');
+            opacity: 0.06;
+        }
+
+        body[data-role-ui='admin'] .main-pane::before,
+        body[data-role-ui='super_admin'] .main-pane::before {
+            background-image: url('../assets/stitch/_10.png');
+            opacity: 0.07;
+        }
+
+        body.view-web .mobile-dock {
+            display: none;
         }
 
         @keyframes shimmer {
@@ -6093,6 +6189,22 @@
             return role || 'instructor';
         }
 
+        function getRoleViewMode(role = getCurrentAccessRole()) {
+            // Instructor and student use app-like web view; school/admin use desktop web view.
+            if (role === 'instructor' || role === 'student') {
+                return 'webapp';
+            }
+            return 'web';
+        }
+
+        function applyRoleViewMode() {
+            const mode = currentUser ? getRoleViewMode(getCurrentAccessRole()) : '';
+            const role = currentUser && currentUser.role ? currentUser.role : '';
+            document.body.classList.toggle('view-webapp', mode === 'webapp');
+            document.body.classList.toggle('view-web', mode === 'web');
+            document.body.setAttribute('data-role-ui', role);
+        }
+
         function isRole(...roles) {
             const r = getCurrentAccessRole();
             return roles.includes(r) || roles.includes(normalizeRole(r));
@@ -6415,6 +6527,7 @@
             const masthead = document.querySelector('.masthead');
             const heroTitleEl = document.querySelector('h1');
             const heroCopyEl = document.querySelector('.hero-copy');
+            applyRoleViewMode();
             if (masthead) {
                 masthead.style.display = 'flex';
             }
@@ -6444,6 +6557,7 @@
             const masthead = document.querySelector('.masthead');
             const heroTitleEl = document.querySelector('h1');
             const heroCopyEl = document.querySelector('.hero-copy');
+            applyRoleViewMode();
             if (masthead) {
                 masthead.style.display = 'none';
             }
