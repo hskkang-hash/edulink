@@ -45,7 +45,7 @@ class InstructorProfileSessionFlowTest(unittest.TestCase):
             pass
 
     def test_instructor_application_requires_approved_profile(self):
-        institution_token = self._register_user("org@apps.com", "student")
+        institution_token = self._register_user("org@apps.com", "institution")
         instructor_token = self._register_user("teacher@apps.com", "instructor")
         admin_token = self._register_user("admin@apps.com", "admin")
 
@@ -83,7 +83,7 @@ class InstructorProfileSessionFlowTest(unittest.TestCase):
         self.assertEqual(approved_apply.status_code, 201)
 
     def test_session_lifecycle_and_instructor_dashboard_stats(self):
-        institution_token = self._register_user("org@sessions.com", "student")
+        institution_token = self._register_user("org@sessions.com", "institution")
         instructor_token = self._register_user("teacher@sessions.com", "instructor")
         admin_token = self._register_user("admin@sessions.com", "admin")
 

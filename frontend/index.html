@@ -2834,8 +2834,194 @@
                     </div>
                     <div class="audit-list" id="adminRuleAuditList"></div>
                 </div>
+
+                <!-- ===== Sprint 3-2: 수업 세션 섹션 ===== -->
+                <div class="section" id="sessionsSection" style="display:none;">
+                    <h2>수업 세션 관리</h2>
+                    <p class="muted">오늘 수업 현황, GPS 체크인, 수업 완료 및 이력 조회</p>
+                    <div class="tax-actions" id="sessionsActions">
+                        <button id="sessionsLoadBtn" onclick="loadSessions()">수업 목록 새로고침</button>
+                        <button id="sessionsCheckinBtn" onclick="openSessionCheckin()" style="display:none;">GPS 체크인</button>
+                        <button id="sessionsCompleteBtn" onclick="openSessionComplete()" style="display:none;">수업 완료 기록</button>
+                    </div>
+                    <div class="tax-inline" id="sessionsCheckinForm" style="display:none;">
+                        <input type="number" id="sessionsCheckinSessionId" placeholder="Session ID">
+                        <input type="number" id="sessionsCheckinLat" placeholder="위도 (lat)" step="0.0001">
+                        <input type="number" id="sessionsCheckinLng" placeholder="경도 (lng)" step="0.0001">
+                        <button onclick="submitSessionCheckin()">체크인 제출</button>
+                    </div>
+                    <div class="tax-inline" id="sessionsCompleteForm" style="display:none;">
+                        <input type="number" id="sessionsCompleteSessionId" placeholder="Session ID">
+                        <input type="number" id="sessionsCompleteDuration" placeholder="실제 수업 시간 (분)">
+                        <input type="text" id="sessionsCompleteJournal" placeholder="수업 일지">
+                        <button onclick="submitSessionComplete()">완료 제출</button>
+                    </div>
+                    <div class="tax-status" id="sessionsStatus">세션 대기 중.</div>
+                    <div id="sessionsList"></div>
+                </div>
+
+                <!-- ===== Sprint 6: 관리자 웹 섹션 ===== -->
+                <div class="section" id="adminWebSection" style="display:none;">
+                    <h2>플랫폼 관리</h2>
+                    <p class="muted">강사 승인, 회원 관리, 플랫폼 요약</p>
+                    <div class="tax-actions">
+                        <button id="adminWebLoadUsersBtn" onclick="adminLoadUsers()">회원 목록</button>
+                        <button id="adminWebLoadProfilesBtn" onclick="adminLoadPendingProfiles()">승인 대기 프로필</button>
+                        <button id="adminWebPlatformSummaryBtn" onclick="adminLoadPlatformSummary()">플랫폼 요약</button>
+                    </div>
+                    <div class="tax-grid" id="adminWebKpiGrid" style="display:none;">
+                        <div class="tax-card">
+                            <div class="stat-title">총 회원</div>
+                            <p class="tax-value" id="adminWebTotalUsers">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">강사 수</div>
+                            <p class="tax-value" id="adminWebInstructors">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">기관 수</div>
+                            <p class="tax-value" id="adminWebInstitutions">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">총 매칭</div>
+                            <p class="tax-value" id="adminWebTotalMatches">-</p>
+                        </div>
+                    </div>
+                    <div class="tax-status" id="adminWebStatus">관리자 패널 대기 중.</div>
+                    <div id="adminWebUserList"></div>
+                    <div id="adminWebProfileList"></div>
+                </div>
+
+                <!-- ===== Sprint 7: SOS 긴급 매칭 섹션 ===== -->
+                <div class="section" id="sosSection" style="display:none;">
+                    <h2>SOS 긴급 매칭</h2>
+                    <p class="muted">긴급 강사 매칭 — 기관: SOS 공고 생성 | 강사: 매칭 수락</p>
+                    <div class="tax-actions">
+                        <button id="sosLoadBtn" onclick="loadSosAlerts()">SOS 목록 새로고침</button>
+                    </div>
+                    <div id="sosCreateForm" style="display:none;">
+                        <h4>SOS 공고 생성</h4>
+                        <div class="tax-inline">
+                            <input type="text" id="sosTitleInput" placeholder="긴급 수업 제목">
+                            <input type="text" id="sosSubjectInput" placeholder="과목">
+                            <input type="text" id="sosRegionInput" placeholder="지역">
+                        </div>
+                        <div class="tax-inline">
+                            <input type="datetime-local" id="sosScheduledAtInput">
+                            <input type="number" id="sosRateInput" placeholder="시급 (원)">
+                            <input type="number" id="sosDurationInput" placeholder="예정 시간 (분)" value="60">
+                        </div>
+                        <button onclick="createSosAlert()">SOS 공고 생성</button>
+                    </div>
+                    <div class="tax-status" id="sosStatus">SOS 대기 중.</div>
+                    <div id="sosList"></div>
+                </div>
+
+                <!-- ===== Sprint 7: 리뷰/평점 섹션 ===== -->
+                <div class="section" id="reviewsSection" style="display:none;">
+                    <h2>리뷰 & 평점</h2>
+                    <p class="muted">기관: 강사 수업 평가 | 강사: 내 리뷰 조회</p>
+                    <div class="tax-actions">
+                        <button id="reviewsLoadBtn" onclick="loadReviews()">리뷰 목록 새로고침</button>
+                    </div>
+                    <div id="reviewsWriteForm" style="display:none;">
+                        <h4>리뷰 작성</h4>
+                        <div class="tax-inline">
+                            <input type="number" id="reviewInstructorId" placeholder="강사 ID">
+                            <input type="number" id="reviewSessionId" placeholder="Session ID (선택)">
+                            <select id="reviewRating">
+                                <option value="5">⭐⭐⭐⭐⭐ 5점</option>
+                                <option value="4">⭐⭐⭐⭐ 4점</option>
+                                <option value="3">⭐⭐⭐ 3점</option>
+                                <option value="2">⭐⭐ 2점</option>
+                                <option value="1">⭐ 1점</option>
+                            </select>
+                            <input type="text" id="reviewComment" placeholder="코멘트">
+                        </div>
+                        <button onclick="submitReview()">리뷰 제출</button>
+                    </div>
+                    <div class="tax-status" id="reviewsStatus">리뷰 대기 중.</div>
+                    <div id="reviewsList"></div>
+                </div>
+
+                <!-- ===== Sprint 8: 교육청 웹 섹션 ===== -->
+                <div class="section" id="districtSection" style="display:none;">
+                    <h2>교육청 대시보드</h2>
+                    <p class="muted">지역 기관 현황, 예산 현황, 지역 비교 리포트</p>
+                    <div class="tax-actions">
+                        <button id="districtLoadBtn" onclick="loadDistrictDashboard()">교육청 현황 로드</button>
+                        <button onclick="loadDistrictInstitutions()">기관 목록</button>
+                        <button onclick="loadDistrictComparison()">지역 비교</button>
+                        <button onclick="loadDistrictBudget()">예산 현황</button>
+                    </div>
+                    <div class="tax-grid" id="districtKpiGrid" style="display:none;">
+                        <div class="tax-card">
+                            <div class="stat-title">관할 기관 수</div>
+                            <p class="tax-value" id="districtInstitutionCount">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">진행 프로그램</div>
+                            <p class="tax-value" id="districtProgramCount">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">배정 강사</div>
+                            <p class="tax-value" id="districtInstructorCount">-</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">총 예산 집행율</div>
+                            <p class="tax-value" id="districtBudgetRate">-</p>
+                        </div>
+                    </div>
+                    <div class="tax-status" id="districtStatus">교육청 패널 대기 중.</div>
+                    <div id="districtInstitutionList"></div>
+                    <div id="districtComparisonList"></div>
+                    <div id="districtBudgetList"></div>
+                </div>
+
+                <!-- ===== Sprint 9: 전자계약 섹션 ===== -->
+                <div class="section" id="contractsSection" style="display:none;">
+                    <h2>전자계약</h2>
+                    <p class="muted">기관: 계약서 발송 및 서명 | 강사: 계약서 확인 및 서명</p>
+                    <div class="tax-actions">
+                        <button id="contractsLoadBtn" onclick="loadContracts()">계약 목록 새로고침</button>
+                    </div>
+                    <div id="contractCreateForm" style="display:none;">
+                        <h4>새 계약서 생성</h4>
+                        <div class="tax-inline">
+                            <input type="number" id="contractInstructorId" placeholder="강사 ID">
+                            <input type="text" id="contractTitle" placeholder="계약 제목">
+                            <input type="number" id="contractPostingId" placeholder="공고 ID (선택)">
+                        </div>
+                        <textarea id="contractContent" placeholder="계약 내용" style="width:100%;min-height:80px;resize:vertical;background:rgba(255,255,255,0.05);color:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:8px;"></textarea>
+                        <button onclick="createContract()">계약서 생성</button>
+                    </div>
+                    <div class="tax-status" id="contractsStatus">계약 대기 중.</div>
+                    <div id="contractsList"></div>
+                </div>
+
+                <!-- ===== Sprint 9: 에스크로 결제 섹션 ===== -->
+                <div class="section" id="escrowSection" style="display:none;">
+                    <h2>에스크로 결제</h2>
+                    <p class="muted">기관: 사전 결제 예치 및 수업 완료 후 지급/환불</p>
+                    <div class="tax-actions">
+                        <button id="escrowLoadBtn" onclick="loadEscrowCharges()">에스크로 목록 새로고침</button>
+                    </div>
+                    <div id="escrowCreateForm" style="display:none;">
+                        <h4>에스크로 예치</h4>
+                        <div class="tax-inline">
+                            <input type="number" id="escrowSessionId" placeholder="Session ID">
+                            <input type="number" id="escrowInstructorId" placeholder="강사 ID">
+                            <input type="number" id="escrowAmount" placeholder="예치 금액 (원)">
+                        </div>
+                        <button onclick="createEscrowCharge()">예치 생성</button>
+                    </div>
+                    <div class="tax-status" id="escrowStatus">에스크로 대기 중.</div>
+                    <div id="escrowChargeList"></div>
+                </div>
+
             </div>
         </main>
+
     </div>
 
     <div class="mobile-dock">
@@ -2942,7 +3128,14 @@
             'taxSection',
             'networkSection',
             'adminInsightsSection',
-            'createPostingSection'
+            'createPostingSection',
+            'sessionsSection',
+            'adminWebSection',
+            'sosSection',
+            'reviewsSection',
+            'districtSection',
+            'contractsSection',
+            'escrowSection'
         ];
         const PRELOGIN_HIDE_SECTIONS = [
             'demoMenuSection',
@@ -2958,12 +3151,12 @@
             'screenStateSection'
         ];
         const ROLE_SCREEN_ACCESS = {
-            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'instructorOnboardingSection', 'securitySection', 'taxSection', 'networkSection'],
-            institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection'],
+            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'instructorOnboardingSection', 'securitySection', 'taxSection', 'networkSection', 'sessionsSection', 'reviewsSection', 'contractsSection', 'sosSection'],
+            institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection', 'sessionsSection', 'sosSection', 'reviewsSection', 'contractsSection', 'escrowSection'],
             student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection'],
-            district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection'],
-            admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection'],
-            super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection']
+            district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection', 'districtSection'],
+            admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection'],
+            super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection']
         };
         const ROLE_DEFAULT_SCREEN = {
             instructor: 'dashboardSection',
@@ -7931,7 +8124,565 @@
             await Promise.all([loadDashboardStats(), loadInstitutionSettlementSummary()]);
         }
 
-        async function loadDistrictRegionalComparison() {
+        // ===== Sprint 3-2: 수업 세션 관리 =====
+
+        function renderSessionItem(s) {
+            const statusColors = { scheduled: '#60a5fa', checkedin: '#a78bfa', completed: '#34d399', cancelled: '#f87171' };
+            const color = statusColors[s.status] || '#888';
+            const role = currentUser && currentUser.role;
+            const action = (role === 'instructor' && s.status === 'scheduled')
+                ? `<button onclick="prefillSessionCheckin(${s.id})" style="margin-left:6px;">GPS 체크인</button>`
+                : (role === 'instructor' && s.status === 'checkedin')
+                ? `<button onclick="prefillSessionComplete(${s.id})" style="margin-left:6px;">완료 기록</button>`
+                : '';
+            return `<div class="admin-item" style="border-left:3px solid ${color};padding-left:10px;margin-bottom:8px;">
+                <strong>#${s.id}</strong> ${escapeHtml(s.title || '')} ${s.subject ? `/ ${escapeHtml(s.subject)}` : ''}
+                <span style="color:${color};margin-left:6px;">${s.status}</span>
+                <span class="muted"> | ${(s.scheduled_at||'').slice(0,16)}</span>
+                ${s.instructor_name ? `<span class="muted"> | ${escapeHtml(s.instructor_name)}</span>` : ''}
+                ${s.actual_duration_minutes ? `<span class="muted"> | 실제: ${s.actual_duration_minutes}분</span>` : ''}
+                ${s.net_amount ? `<span class="muted"> | 순수령: ₩${s.net_amount.toLocaleString()}</span>` : ''}
+                ${action}
+            </div>`;
+        }
+
+        async function loadSessions() {
+            const role = currentUser && currentUser.role;
+            document.getElementById('sessionsStatus').textContent = '세션 로딩 중...';
+            try {
+                const res = await apiFetch('/sessions');
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                const sessions = await res.json();
+                const list = document.getElementById('sessionsList');
+                list.innerHTML = sessions.length ? sessions.map(renderSessionItem).join('') : '<p class="muted">수업 세션이 없습니다.</p>';
+                document.getElementById('sessionsStatus').textContent = `총 ${sessions.length}개 세션.`;
+                document.getElementById('sessionsCheckinBtn').style.display = (role === 'instructor') ? '' : 'none';
+                document.getElementById('sessionsCompleteBtn').style.display = (role === 'instructor') ? '' : 'none';
+            } catch (e) {
+                document.getElementById('sessionsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        function openSessionCheckin() {
+            const f = document.getElementById('sessionsCheckinForm');
+            f.style.display = f.style.display === 'none' ? '' : 'none';
+        }
+
+        function openSessionComplete() {
+            const f = document.getElementById('sessionsCompleteForm');
+            f.style.display = f.style.display === 'none' ? '' : 'none';
+        }
+
+        function prefillSessionCheckin(id) {
+            document.getElementById('sessionsCheckinSessionId').value = id;
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(pos => {
+                    document.getElementById('sessionsCheckinLat').value = pos.coords.latitude.toFixed(6);
+                    document.getElementById('sessionsCheckinLng').value = pos.coords.longitude.toFixed(6);
+                });
+            }
+            document.getElementById('sessionsCheckinForm').style.display = '';
+            document.getElementById('sessionsCheckinForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function prefillSessionComplete(id) {
+            document.getElementById('sessionsCompleteSessionId').value = id;
+            document.getElementById('sessionsCompleteForm').style.display = '';
+            document.getElementById('sessionsCompleteForm').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function submitSessionCheckin() {
+            const sessionId = document.getElementById('sessionsCheckinSessionId').value;
+            const lat = parseFloat(document.getElementById('sessionsCheckinLat').value);
+            const lng = parseFloat(document.getElementById('sessionsCheckinLng').value);
+            if (!sessionId || isNaN(lat) || isNaN(lng)) {
+                document.getElementById('sessionsStatus').textContent = 'Session ID, 위도, 경도를 입력하세요.';
+                return;
+            }
+            try {
+                const res = await apiFetch(`/sessions/${sessionId}/checkin`, {
+                    method: 'POST',
+                    body: JSON.stringify({ lat, lng })
+                });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('sessionsStatus').textContent = '체크인 완료!';
+                document.getElementById('sessionsCheckinForm').style.display = 'none';
+                await loadSessions();
+            } catch (e) {
+                document.getElementById('sessionsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function submitSessionComplete() {
+            const sessionId = document.getElementById('sessionsCompleteSessionId').value;
+            const duration = parseInt(document.getElementById('sessionsCompleteDuration').value);
+            const journal = document.getElementById('sessionsCompleteJournal').value;
+            if (!sessionId || isNaN(duration)) {
+                document.getElementById('sessionsStatus').textContent = 'Session ID와 실제 수업 시간을 입력하세요.';
+                return;
+            }
+            try {
+                const res = await apiFetch(`/sessions/${sessionId}/complete`, {
+                    method: 'POST',
+                    body: JSON.stringify({ actual_duration_minutes: duration, journal_content: journal })
+                });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                const data = await res.json();
+                document.getElementById('sessionsStatus').textContent = `완료! 순수령액: ₩${(data.net_amount||0).toLocaleString()}`;
+                document.getElementById('sessionsCompleteForm').style.display = 'none';
+                await loadSessions();
+            } catch (e) {
+                document.getElementById('sessionsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        // ===== Sprint 6: 관리자 웹 =====
+
+        async function adminLoadUsers() {
+            document.getElementById('adminWebStatus').textContent = '회원 목록 로딩 중...';
+            try {
+                const res = await apiFetch('/admin/users');
+                if (!res.ok) throw new Error(await res.text());
+                const users = await res.json();
+                const list = document.getElementById('adminWebUserList');
+                list.innerHTML = `<h4>회원 목록 (${users.length}명)</h4>` + users.map(u => `
+                    <div class="admin-item" style="margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                        <strong>${escapeHtml(u.email)}</strong>
+                        <span class="muted">[${u.role}]</span>
+                        <select onchange="adminChangeUserRole(${u.id}, this.value)" style="background:rgba(255,255,255,0.05);color:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 4px;">
+                            <option value="">역할 변경...</option>
+                            <option value="instructor">instructor</option>
+                            <option value="institution">institution</option>
+                            <option value="admin">admin</option>
+                            <option value="district">district</option>
+                        </select>
+                    </div>
+                `).join('');
+                document.getElementById('adminWebStatus').textContent = `${users.length}명 조회됨.`;
+            } catch (e) {
+                document.getElementById('adminWebStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function adminChangeUserRole(userId, role) {
+            if (!role) return;
+            if (!confirm(`역할을 '${role}'로 변경하시겠습니까?`)) return;
+            try {
+                const res = await apiFetch(`/admin/users/${userId}/role`, { method: 'PATCH', body: JSON.stringify({ role }) });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('adminWebStatus').textContent = `역할 변경 완료.`;
+                await adminLoadUsers();
+            } catch (e) {
+                document.getElementById('adminWebStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function adminLoadPendingProfiles() {
+            document.getElementById('adminWebStatus').textContent = '프로필 로딩 중...';
+            try {
+                const res = await apiFetch('/admin/profiles?status=pending');
+                if (!res.ok) throw new Error(await res.text());
+                const profiles = await res.json();
+                const list = document.getElementById('adminWebProfileList');
+                if (!profiles.length) {
+                    list.innerHTML = '<p class="muted">승인 대기 프로필이 없습니다.</p>';
+                } else {
+                    list.innerHTML = `<h4>승인 대기 프로필 (${profiles.length}건)</h4>` + profiles.map(p => `
+                        <div class="admin-item" style="margin-bottom:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;">
+                            <strong>${escapeHtml(p.full_name || '-')}</strong>
+                            <span class="muted">${escapeHtml(p.subjects || '')} | ${escapeHtml(p.regions || '')}</span>
+                            <span class="muted"> | 제출: ${(p.created_at||'').slice(0,10)}</span>
+                            <div style="margin-top:6px;display:flex;align-items:center;gap:6px;">
+                                <input type="text" id="adminNote_${p.id}" placeholder="검토 노트" style="flex:1;background:rgba(255,255,255,0.05);color:inherit;border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:4px;">
+                                <button onclick="adminReviewProfile(${p.id}, 'approve')">승인</button>
+                                <button onclick="adminReviewProfile(${p.id}, 'reject')" style="color:#f87171;">반려</button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                document.getElementById('adminWebStatus').textContent = `${profiles.length}건 조회됨.`;
+            } catch (e) {
+                document.getElementById('adminWebStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function adminReviewProfile(profileId, action) {
+            const noteEl = document.getElementById(`adminNote_${profileId}`);
+            const note = noteEl ? noteEl.value : '';
+            try {
+                const res = await apiFetch(`/admin/profiles/${profileId}/review`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ action, admin_note: note })
+                });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('adminWebStatus').textContent = `프로필 ${action === 'approve' ? '승인' : '반려'} 완료.`;
+                await adminLoadPendingProfiles();
+            } catch (e) {
+                document.getElementById('adminWebStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function adminLoadPlatformSummary() {
+            document.getElementById('adminWebStatus').textContent = '플랫폼 요약 로딩 중...';
+            try {
+                const res = await apiFetch('/admin/platform-summary');
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                const kpiGrid = document.getElementById('adminWebKpiGrid');
+                kpiGrid.style.display = '';
+                document.getElementById('adminWebTotalUsers').textContent = (data.total_users ?? data.users_count ?? '-').toLocaleString();
+                document.getElementById('adminWebInstructors').textContent = (data.instructor_count ?? '-').toLocaleString();
+                document.getElementById('adminWebInstitutions').textContent = (data.institution_count ?? '-').toLocaleString();
+                document.getElementById('adminWebTotalMatches').textContent = (data.total_matchings ?? data.applications_count ?? '-').toLocaleString();
+                document.getElementById('adminWebStatus').textContent = '플랫폼 요약 로드 완료.';
+            } catch (e) {
+                document.getElementById('adminWebStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        // ===== Sprint 7: SOS 긴급 매칭 =====
+
+        function renderSosAlerts(alerts) {
+            if (!alerts.length) return '<p class="muted">SOS 공고가 없습니다.</p>';
+            const role = currentUser && currentUser.role;
+            return alerts.map(a => {
+                const acceptBtn = (role === 'instructor' && a.status === 'open')
+                    ? `<button onclick="acceptSosAlert(${a.id})" style="margin-left:8px;">수락</button>` : '';
+                const statusColor = a.status === 'open' ? '#f97316' : a.status === 'accepted' ? '#34d399' : '#888';
+                return `<div class="admin-item" style="border-left:3px solid ${statusColor};padding-left:10px;margin-bottom:8px;">
+                    <strong>${escapeHtml(a.title)}</strong>
+                    <span class="muted"> ${escapeHtml(a.subject)} | ${escapeHtml(a.region)}</span>
+                    <span style="color:${statusColor};margin-left:8px;">${a.status}</span>
+                    <span class="muted"> | ${(a.scheduled_at||'').slice(0,16)} | ₩${(a.rate||0).toLocaleString()}/h</span>
+                    ${acceptBtn}
+                </div>`;
+            }).join('');
+        }
+
+        async function loadSosAlerts() {
+            document.getElementById('sosStatus').textContent = 'SOS 로딩 중...';
+            const role = currentUser && currentUser.role;
+            const createForm = document.getElementById('sosCreateForm');
+            if (createForm) createForm.style.display = (role === 'institution') ? '' : 'none';
+            const endpoint = role === 'instructor' ? '/sos/available' : '/sos';
+            try {
+                const res = await apiFetch(endpoint);
+                if (!res.ok) throw new Error(await res.text());
+                const alerts = await res.json();
+                document.getElementById('sosList').innerHTML = renderSosAlerts(alerts);
+                document.getElementById('sosStatus').textContent = `${alerts.length}건 조회됨.`;
+            } catch (e) {
+                document.getElementById('sosStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function createSosAlert() {
+            const body = {
+                title: document.getElementById('sosTitleInput').value,
+                subject: document.getElementById('sosSubjectInput').value,
+                region: document.getElementById('sosRegionInput').value,
+                scheduled_at: document.getElementById('sosScheduledAtInput').value,
+                rate: parseInt(document.getElementById('sosRateInput').value) || 0,
+                duration_minutes: parseInt(document.getElementById('sosDurationInput').value) || 60
+            };
+            if (!body.title || !body.subject || !body.region || !body.scheduled_at || !body.rate) {
+                document.getElementById('sosStatus').textContent = '모든 필드를 입력하세요.';
+                return;
+            }
+            try {
+                const res = await apiFetch('/sos', { method: 'POST', body: JSON.stringify(body) });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('sosStatus').textContent = 'SOS 공고 생성 완료!';
+                await loadSosAlerts();
+            } catch (e) {
+                document.getElementById('sosStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function acceptSosAlert(sosId) {
+            try {
+                const res = await apiFetch(`/sos/${sosId}/accept`, { method: 'POST' });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('sosStatus').textContent = 'SOS 수락 완료!';
+                await loadSosAlerts();
+            } catch (e) {
+                document.getElementById('sosStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        // ===== Sprint 7: 리뷰/평점 =====
+
+        function renderReviews(reviews) {
+            if (!reviews.length) return '<p class="muted">리뷰가 없습니다.</p>';
+            const stars = n => '⭐'.repeat(Math.max(0, Math.min(5, n||0)));
+            return reviews.map(r => `
+                <div class="admin-item" style="margin-bottom:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;">
+                    ${stars(r.rating)} <strong>${r.rating}점</strong>
+                    <span class="muted"> | 강사 #${r.instructor_id}</span>
+                    <span class="muted"> | ${(r.created_at||'').slice(0,10)}</span>
+                    ${r.comment ? `<p style="margin:4px 0 0 0;color:#ccc;">"${escapeHtml(r.comment)}"</p>` : ''}
+                </div>`
+            ).join('');
+        }
+
+        async function loadReviews() {
+            document.getElementById('reviewsStatus').textContent = '리뷰 로딩 중...';
+            const role = currentUser && currentUser.role;
+            const writeForm = document.getElementById('reviewsWriteForm');
+            if (writeForm) writeForm.style.display = (role === 'institution') ? '' : 'none';
+            const uid = currentUser && (currentUser.user_id || currentUser.id);
+            const params = (role === 'instructor' && uid) ? `?instructor_id=${uid}` : '';
+            try {
+                const res = await apiFetch(`/reviews${params}`);
+                if (!res.ok) throw new Error(await res.text());
+                const reviews = await res.json();
+                document.getElementById('reviewsList').innerHTML = renderReviews(reviews);
+                document.getElementById('reviewsStatus').textContent = `${reviews.length}건 조회됨.`;
+            } catch (e) {
+                document.getElementById('reviewsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function submitReview() {
+            const instructorId = parseInt(document.getElementById('reviewInstructorId').value);
+            const sessionId = document.getElementById('reviewSessionId').value;
+            const rating = parseInt(document.getElementById('reviewRating').value);
+            const comment = document.getElementById('reviewComment').value;
+            if (!instructorId || !rating) {
+                document.getElementById('reviewsStatus').textContent = '강사 ID와 평점을 입력하세요.';
+                return;
+            }
+            const body = { instructor_id: instructorId, rating, comment };
+            if (sessionId) body.session_id = parseInt(sessionId);
+            try {
+                const res = await apiFetch('/reviews', { method: 'POST', body: JSON.stringify(body) });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('reviewsStatus').textContent = '리뷰 제출 완료!';
+                document.getElementById('reviewComment').value = '';
+                await loadReviews();
+            } catch (e) {
+                document.getElementById('reviewsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        // ===== Sprint 8: 교육청 웹 =====
+
+        async function loadDistrictDashboard() {
+            await Promise.all([loadDistrictInstitutions(), loadDistrictBudget(), loadDistrictComparison()]);
+        }
+
+        async function loadDistrictInstitutions() {
+            document.getElementById('districtStatus').textContent = '기관 목록 로딩 중...';
+            try {
+                const res = await apiFetch('/district/institutions');
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                const institutions = Array.isArray(data) ? data : (data.institutions || []);
+                const kpiGrid = document.getElementById('districtKpiGrid');
+                kpiGrid.style.display = '';
+                document.getElementById('districtInstitutionCount').textContent = institutions.length;
+                if (data.total_programs !== undefined) document.getElementById('districtProgramCount').textContent = data.total_programs;
+                if (data.total_instructors !== undefined) document.getElementById('districtInstructorCount').textContent = data.total_instructors;
+                document.getElementById('districtInstitutionList').innerHTML = `<h4>기관 목록 (${institutions.length}개)</h4>` +
+                    institutions.slice(0, 20).map(i => `
+                        <div class="admin-item" style="margin-bottom:6px;">
+                            <strong>${escapeHtml(i.name || i.org_name || i.email || '-')}</strong>
+                            <span class="muted">${escapeHtml(i.region || '')} | ${escapeHtml(i.email || '')}</span>
+                        </div>`
+                    ).join('');
+                document.getElementById('districtStatus').textContent = `${institutions.length}개 기관 조회됨.`;
+            } catch (e) {
+                document.getElementById('districtStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function loadDistrictComparison() {
+            try {
+                const res = await apiFetch('/district/regional-comparison');
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                const regions = Array.isArray(data) ? data : (data.regions || []);
+                document.getElementById('districtComparisonList').innerHTML = `<h4>지역 비교</h4>` + regions.slice(0, 10).map(r => `
+                    <div class="admin-item" style="margin-bottom:4px;">
+                        <strong>${escapeHtml(r.region || r.name || '-')}</strong>
+                        <span class="muted"> | 기관: ${r.institution_count ?? '-'} | 강사: ${r.instructor_count ?? '-'} | 공고: ${r.posting_count ?? r.program_count ?? '-'}</span>
+                    </div>`
+                ).join('');
+            } catch (e) {
+                document.getElementById('districtComparisonList').innerHTML = `<p class="muted">지역 비교 오류: ${e.message}</p>`;
+            }
+        }
+
+        async function loadDistrictBudget() {
+            try {
+                const res = await apiFetch('/district/budget-summary');
+                if (!res.ok) throw new Error(await res.text());
+                const data = await res.json();
+                const used = data.total_used_budget ?? data.used_budget ?? 0;
+                const total = data.total_budget ?? data.budget ?? 0;
+                const rate = total > 0 ? `${Math.round(used / total * 100)}%` : '-';
+                document.getElementById('districtBudgetRate').textContent = rate;
+                document.getElementById('districtBudgetList').innerHTML = `
+                    <h4>예산 현황</h4>
+                    <div class="admin-item">
+                        <span class="muted">총 예산: ₩${total.toLocaleString()}</span> &nbsp;
+                        <span class="muted">집행: ₩${used.toLocaleString()}</span> &nbsp;
+                        <span class="muted">집행률: ${rate}</span>
+                    </div>`;
+            } catch (e) {
+                document.getElementById('districtBudgetList').innerHTML = `<p class="muted">예산 조회 오류: ${e.message}</p>`;
+            }
+        }
+
+        // ===== Sprint 9: 전자계약 =====
+
+        function renderContract(c) {
+            const statusColors = { draft: '#60a5fa', signed: '#34d399', cancelled: '#f87171' };
+            const color = statusColors[c.status] || '#888';
+            const role = currentUser && currentUser.role;
+            const mySigned = role === 'institution' ? !!c.institution_signed_at : !!c.instructor_signed_at;
+            const signBtn = !mySigned
+                ? `<button onclick="signContract(${c.id})" style="margin-left:8px;">서명하기</button>`
+                : `<span class="muted" style="margin-left:8px;">✓ 서명 완료</span>`;
+            return `<div class="admin-item" style="border-left:3px solid ${color};padding-left:10px;margin-bottom:8px;">
+                <strong>${escapeHtml(c.title)}</strong>
+                <span style="color:${color};margin-left:8px;">${c.status}</span>
+                <span class="muted"> | 강사 #${c.instructor_id}</span>
+                <span class="muted"> | ${(c.created_at||'').slice(0,10)}</span>
+                ${signBtn}
+            </div>`;
+        }
+
+        async function loadContracts() {
+            document.getElementById('contractsStatus').textContent = '계약 목록 로딩 중...';
+            const role = currentUser && currentUser.role;
+            const createForm = document.getElementById('contractCreateForm');
+            if (createForm) createForm.style.display = (role === 'institution') ? '' : 'none';
+            try {
+                const res = await apiFetch('/contracts');
+                if (!res.ok) throw new Error(await res.text());
+                const contracts = await res.json();
+                document.getElementById('contractsList').innerHTML = contracts.length ? contracts.map(renderContract).join('') : '<p class="muted">계약이 없습니다.</p>';
+                document.getElementById('contractsStatus').textContent = `${contracts.length}건 조회됨.`;
+            } catch (e) {
+                document.getElementById('contractsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function createContract() {
+            const instructorId = document.getElementById('contractInstructorId').value;
+            const title = document.getElementById('contractTitle').value;
+            const postingId = document.getElementById('contractPostingId').value;
+            const content = document.getElementById('contractContent').value;
+            if (!instructorId || !title) {
+                document.getElementById('contractsStatus').textContent = '강사 ID와 계약 제목을 입력하세요.';
+                return;
+            }
+            const body = { instructor_id: parseInt(instructorId), title, content };
+            if (postingId) body.posting_id = parseInt(postingId);
+            try {
+                const res = await apiFetch('/contracts', { method: 'POST', body: JSON.stringify(body) });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('contractsStatus').textContent = '계약서 생성 완료!';
+                document.getElementById('contractTitle').value = '';
+                document.getElementById('contractContent').value = '';
+                await loadContracts();
+            } catch (e) {
+                document.getElementById('contractsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function signContract(contractId) {
+            try {
+                const res = await apiFetch(`/contracts/${contractId}/sign`, { method: 'PATCH' });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('contractsStatus').textContent = '계약서 서명 완료!';
+                await loadContracts();
+            } catch (e) {
+                document.getElementById('contractsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        // ===== Sprint 9: 에스크로 결제 =====
+
+        function renderEscrowCharge(ec) {
+            const statusColors = { held: '#f97316', released: '#34d399', refunded: '#f87171' };
+            const color = statusColors[ec.status] || '#888';
+            const role = currentUser && currentUser.role;
+            const actions = (role === 'institution' && ec.status === 'held')
+                ? `<button onclick="releaseEscrowCharge(${ec.id})" style="margin-left:6px;">지급 확정</button>
+                   <button onclick="refundEscrowCharge(${ec.id})" style="margin-left:4px;color:#f87171;">환불</button>`
+                : '';
+            return `<div class="admin-item" style="border-left:3px solid ${color};padding-left:10px;margin-bottom:8px;">
+                <strong>₩${(ec.amount||0).toLocaleString()}</strong>
+                <span style="color:${color};margin-left:8px;">${ec.status}</span>
+                <span class="muted"> | Session #${ec.session_id}</span>
+                <span class="muted"> | ${(ec.created_at||'').slice(0,10)}</span>
+                ${ec.refund_reason ? `<span class="muted"> | 사유: ${escapeHtml(ec.refund_reason)}</span>` : ''}
+                ${actions}
+            </div>`;
+        }
+
+        async function loadEscrowCharges() {
+            document.getElementById('escrowStatus').textContent = '에스크로 로딩 중...';
+            const role = currentUser && currentUser.role;
+            const createForm = document.getElementById('escrowCreateForm');
+            if (createForm) createForm.style.display = (role === 'institution') ? '' : 'none';
+            try {
+                const res = await apiFetch('/escrow/charges');
+                if (!res.ok) throw new Error(await res.text());
+                const charges = await res.json();
+                document.getElementById('escrowChargeList').innerHTML = charges.length ? charges.map(renderEscrowCharge).join('') : '<p class="muted">에스크로 내역이 없습니다.</p>';
+                document.getElementById('escrowStatus').textContent = `${charges.length}건 조회됨.`;
+            } catch (e) {
+                document.getElementById('escrowStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function createEscrowCharge() {
+            const sessionId = document.getElementById('escrowSessionId').value;
+            const instructorId = document.getElementById('escrowInstructorId').value;
+            const amount = parseInt(document.getElementById('escrowAmount').value);
+            if (!sessionId || isNaN(amount) || amount <= 0) {
+                document.getElementById('escrowStatus').textContent = 'Session ID와 금액을 입력하세요.';
+                return;
+            }
+            const body = { session_id: parseInt(sessionId), amount };
+            if (instructorId) body.instructor_id = parseInt(instructorId);
+            try {
+                const res = await apiFetch('/escrow/charges', { method: 'POST', body: JSON.stringify(body) });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('escrowStatus').textContent = '에스크로 예치 완료!';
+                await loadEscrowCharges();
+            } catch (e) {
+                document.getElementById('escrowStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function releaseEscrowCharge(chargeId) {
+            if (!confirm('지급 확정하시겠습니까?')) return;
+            try {
+                const res = await apiFetch(`/escrow/charges/${chargeId}/release`, { method: 'PATCH' });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('escrowStatus').textContent = '지급 확정 완료!';
+                await loadEscrowCharges();
+            } catch (e) {
+                document.getElementById('escrowStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        async function refundEscrowCharge(chargeId) {
+            const reason = prompt('환불 사유를 입력하세요:');
+            if (reason === null) return;
+            try {
+                const res = await apiFetch(`/escrow/charges/${chargeId}/refund`, { method: 'PATCH', body: JSON.stringify({ reason }) });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                document.getElementById('escrowStatus').textContent = '환불 처리 완료!';
+                await loadEscrowCharges();
+            } catch (e) {
+                document.getElementById('escrowStatus').textContent = `오류: ${e.message}`;
+            }
+        }
             const response = await apiFetch('/district/regional-comparison', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -9288,6 +10039,39 @@
         window.exportSettlementCsv = exportSettlementCsv;
         window.loadInstitutionSessionPerformance = loadInstitutionSessionPerformance;
         window.adjustInstitutionSession = adjustInstitutionSession;
+        // Sprint 3-2
+        window.loadSessions = loadSessions;
+        window.openSessionCheckin = openSessionCheckin;
+        window.openSessionComplete = openSessionComplete;
+        window.prefillSessionCheckin = prefillSessionCheckin;
+        window.prefillSessionComplete = prefillSessionComplete;
+        window.submitSessionCheckin = submitSessionCheckin;
+        window.submitSessionComplete = submitSessionComplete;
+        // Sprint 6
+        window.adminLoadUsers = adminLoadUsers;
+        window.adminChangeUserRole = adminChangeUserRole;
+        window.adminLoadPendingProfiles = adminLoadPendingProfiles;
+        window.adminReviewProfile = adminReviewProfile;
+        window.adminLoadPlatformSummary = adminLoadPlatformSummary;
+        // Sprint 7
+        window.loadSosAlerts = loadSosAlerts;
+        window.createSosAlert = createSosAlert;
+        window.acceptSosAlert = acceptSosAlert;
+        window.loadReviews = loadReviews;
+        window.submitReview = submitReview;
+        // Sprint 8
+        window.loadDistrictDashboard = loadDistrictDashboard;
+        window.loadDistrictInstitutions = loadDistrictInstitutions;
+        window.loadDistrictComparison = loadDistrictComparison;
+        window.loadDistrictBudget = loadDistrictBudget;
+        // Sprint 9
+        window.loadContracts = loadContracts;
+        window.createContract = createContract;
+        window.signContract = signContract;
+        window.loadEscrowCharges = loadEscrowCharges;
+        window.createEscrowCharge = createEscrowCharge;
+        window.releaseEscrowCharge = releaseEscrowCharge;
+        window.refundEscrowCharge = refundEscrowCharge;
         window.saveNetworkLink = saveNetworkLink;
         window.recordNetworkSale = recordNetworkSale;
         window.loadNetworkCompliance = loadNetworkCompliance;

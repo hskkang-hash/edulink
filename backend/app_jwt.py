@@ -344,6 +344,58 @@ with engine.begin() as conn:
         )
     '''))
 
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS sos_alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER,
+            title TEXT,
+            subject TEXT,
+            region TEXT,
+            scheduled_at TEXT,
+            duration_minutes INTEGER DEFAULT 60,
+            rate INTEGER,
+            status TEXT DEFAULT 'open',
+            accepted_by INTEGER,
+            accepted_at TEXT,
+            created_at TEXT
+        )
+    '''))
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS contracts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            posting_id INTEGER,
+            application_id INTEGER,
+            institution_id INTEGER,
+            instructor_id INTEGER,
+            title TEXT,
+            content TEXT,
+            status TEXT DEFAULT 'draft',
+            institution_signed_at TEXT,
+            instructor_signed_at TEXT,
+            expires_at TEXT,
+            file_url TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )
+    '''))
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS escrow_charges (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER,
+            institution_id INTEGER,
+            instructor_id INTEGER,
+            amount INTEGER,
+            status TEXT DEFAULT 'held',
+            held_at TEXT,
+            released_at TEXT,
+            refunded_at TEXT,
+            refund_reason TEXT,
+            created_at TEXT
+        )
+    '''))
+
 # helper
 
 def create_token(payload):
@@ -3649,6 +3701,324 @@ def instructor_review_summary(instructor_id):
         ).mappings().first()
 
     return jsonify(dict(row))
+
+
+# ===== SOS 긴급 매칭 API =====
+
+@app.route('/sos', methods=['POST'])
+def create_sos():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can create SOS alerts'}), 403
+
+    data = request.get_json() or {}
+    required = ['title', 'subject', 'region', 'scheduled_at', 'rate']
+    missing = [f for f in required if not data.get(f)]
+    if missing:
+        return jsonify({'error': f'Missing fields: {", ".join(missing)}'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        conn.execute(text('''
+            INSERT INTO sos_alerts (org_id, title, subject, region, scheduled_at, duration_minutes, rate, status, created_at)
+            VALUES (:org_id, :title, :subject, :region, :scheduled_at, :duration_minutes, :rate, 'open', :created_at)
+        '''), {
+            'org_id': user['user_id'],
+            'title': str(data['title']).strip(),
+            'subject': str(data['subject']).strip(),
+            'region': str(data['region']).strip(),
+            'scheduled_at': str(data['scheduled_at']).strip(),
+            'duration_minutes': int(data.get('duration_minutes', 60)),
+            'rate': int(data['rate']),
+            'created_at': now,
+        })
+        row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+
+    return jsonify({'message': 'SOS alert created', 'id': row_id}), 201
+
+
+@app.route('/sos', methods=['GET'])
+def list_sos():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        if has_role(user, 'institution'):
+            rows = conn.execute(text(
+                'SELECT * FROM sos_alerts WHERE org_id = :uid ORDER BY created_at DESC LIMIT 50'
+            ), {'uid': user['user_id']}).mappings().all()
+        elif normalize_role(user.get('role', '')) == 'instructor':
+            rows = conn.execute(text(
+                "SELECT * FROM sos_alerts WHERE status = 'open' ORDER BY created_at DESC LIMIT 50"
+            )).mappings().all()
+        else:
+            rows = conn.execute(text(
+                'SELECT * FROM sos_alerts ORDER BY created_at DESC LIMIT 50'
+            )).mappings().all()
+
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/sos/available', methods=['GET'])
+def list_sos_available():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        rows = conn.execute(text(
+            "SELECT * FROM sos_alerts WHERE status = 'open' ORDER BY created_at DESC LIMIT 50"
+        )).mappings().all()
+
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/sos/<int:sos_id>/accept', methods=['POST'])
+def accept_sos(sos_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if normalize_role(user.get('role', '')) != 'instructor':
+        return jsonify({'error': 'Only instructors can accept SOS alerts'}), 403
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(text('SELECT * FROM sos_alerts WHERE id = :id'), {'id': sos_id}).mappings().first()
+        if not row:
+            return jsonify({'error': 'SOS alert not found'}), 404
+        if row['status'] != 'open':
+            return jsonify({'error': 'SOS alert is no longer open'}), 409
+        conn.execute(text('''
+            UPDATE sos_alerts SET status = 'accepted', accepted_by = :uid, accepted_at = :now
+            WHERE id = :id
+        '''), {'uid': user['user_id'], 'now': now, 'id': sos_id})
+
+    return jsonify({'message': 'SOS accepted', 'id': sos_id})
+
+
+# ===== 전자계약 API =====
+
+@app.route('/contracts', methods=['POST'])
+def create_contract():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can create contracts'}), 403
+
+    data = request.get_json() or {}
+    if not data.get('instructor_id') or not data.get('title'):
+        return jsonify({'error': 'instructor_id and title are required'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        conn.execute(text('''
+            INSERT INTO contracts (posting_id, application_id, institution_id, instructor_id, title, content, status, created_at, updated_at)
+            VALUES (:posting_id, :application_id, :institution_id, :instructor_id, :title, :content, 'draft', :created_at, :updated_at)
+        '''), {
+            'posting_id': data.get('posting_id'),
+            'application_id': data.get('application_id'),
+            'institution_id': user['user_id'],
+            'instructor_id': int(data['instructor_id']),
+            'title': str(data['title']).strip(),
+            'content': str(data.get('content', '')).strip(),
+            'created_at': now,
+            'updated_at': now,
+        })
+        row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+
+    return jsonify({'message': 'Contract created', 'id': row_id}), 201
+
+
+@app.route('/contracts', methods=['GET'])
+def list_contracts():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    role = normalize_role(user.get('role', ''))
+
+    with engine.connect() as conn:
+        if has_role(user, 'institution'):
+            rows = conn.execute(text(
+                'SELECT * FROM contracts WHERE institution_id = :uid ORDER BY created_at DESC LIMIT 50'
+            ), {'uid': user['user_id']}).mappings().all()
+        elif role == 'instructor':
+            rows = conn.execute(text(
+                'SELECT * FROM contracts WHERE instructor_id = :uid ORDER BY created_at DESC LIMIT 50'
+            ), {'uid': user['user_id']}).mappings().all()
+        else:
+            rows = conn.execute(text(
+                'SELECT * FROM contracts ORDER BY created_at DESC LIMIT 50'
+            )).mappings().all()
+
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/contracts/<int:contract_id>/sign', methods=['PATCH'])
+def sign_contract(contract_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    role = normalize_role(user.get('role', ''))
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(text('SELECT * FROM contracts WHERE id = :id'), {'id': contract_id}).mappings().first()
+        if not row:
+            return jsonify({'error': 'Contract not found'}), 404
+        if row['status'] == 'cancelled':
+            return jsonify({'error': 'Contract is cancelled'}), 409
+
+        if has_role(user, 'institution') and row['institution_id'] == user['user_id']:
+            conn.execute(text(
+                'UPDATE contracts SET institution_signed_at = :now, updated_at = :now WHERE id = :id'
+            ), {'now': now, 'id': contract_id})
+        elif role == 'instructor' and row['instructor_id'] == user['user_id']:
+            conn.execute(text(
+                'UPDATE contracts SET instructor_signed_at = :now, updated_at = :now WHERE id = :id'
+            ), {'now': now, 'id': contract_id})
+        else:
+            return jsonify({'error': 'Not authorized to sign this contract'}), 403
+
+        updated = conn.execute(text('SELECT * FROM contracts WHERE id = :id'), {'id': contract_id}).mappings().first()
+        if updated['institution_signed_at'] and updated['instructor_signed_at']:
+            conn.execute(text(
+                "UPDATE contracts SET status = 'signed', updated_at = :now WHERE id = :id"
+            ), {'now': now, 'id': contract_id})
+
+    return jsonify({'message': 'Contract signed', 'id': contract_id})
+
+
+@app.route('/contracts/<int:contract_id>', methods=['GET'])
+def get_contract(contract_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    role = normalize_role(user.get('role', ''))
+
+    with engine.connect() as conn:
+        row = conn.execute(text('SELECT * FROM contracts WHERE id = :id'), {'id': contract_id}).mappings().first()
+    if not row:
+        return jsonify({'error': 'Contract not found'}), 404
+
+    row_dict = dict(row)
+    if not has_role(user, 'institution', 'admin', 'super_admin') and row_dict.get('instructor_id') != user['user_id']:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    return jsonify(row_dict)
+
+
+# ===== 에스크로 결제 API =====
+
+@app.route('/escrow/charges', methods=['POST'])
+def create_escrow_charge():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can create escrow charges'}), 403
+
+    data = request.get_json() or {}
+    if not data.get('session_id') or not data.get('amount'):
+        return jsonify({'error': 'session_id and amount are required'}), 400
+
+    amount = int(data['amount'])
+    if amount <= 0:
+        return jsonify({'error': 'amount must be positive'}), 400
+
+    now = now_iso()
+    with engine.begin() as conn:
+        conn.execute(text('''
+            INSERT INTO escrow_charges (session_id, institution_id, instructor_id, amount, status, held_at, created_at)
+            VALUES (:session_id, :institution_id, :instructor_id, :amount, 'held', :now, :now)
+        '''), {
+            'session_id': int(data['session_id']),
+            'institution_id': user['user_id'],
+            'instructor_id': data.get('instructor_id'),
+            'amount': amount,
+            'now': now,
+        })
+        row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+
+    return jsonify({'message': 'Escrow charge created', 'id': row_id, 'status': 'held'}), 201
+
+
+@app.route('/escrow/charges', methods=['GET'])
+def list_escrow_charges():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    role = normalize_role(user.get('role', ''))
+
+    with engine.connect() as conn:
+        if has_role(user, 'institution'):
+            rows = conn.execute(text(
+                'SELECT * FROM escrow_charges WHERE institution_id = :uid ORDER BY created_at DESC LIMIT 50'
+            ), {'uid': user['user_id']}).mappings().all()
+        elif role == 'instructor':
+            rows = conn.execute(text(
+                'SELECT * FROM escrow_charges WHERE instructor_id = :uid ORDER BY created_at DESC LIMIT 50'
+            ), {'uid': user['user_id']}).mappings().all()
+        else:
+            rows = conn.execute(text(
+                'SELECT * FROM escrow_charges ORDER BY created_at DESC LIMIT 50'
+            )).mappings().all()
+
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/escrow/charges/<int:charge_id>/release', methods=['PATCH'])
+def release_escrow_charge(charge_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution', 'admin', 'super_admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(text('SELECT * FROM escrow_charges WHERE id = :id'), {'id': charge_id}).mappings().first()
+        if not row:
+            return jsonify({'error': 'Charge not found'}), 404
+        if row['status'] != 'held':
+            return jsonify({'error': f'Cannot release charge with status: {row["status"]}'}), 409
+        if has_role(user, 'institution') and row['institution_id'] != user['user_id']:
+            return jsonify({'error': 'Forbidden'}), 403
+        conn.execute(text(
+            "UPDATE escrow_charges SET status = 'released', released_at = :now WHERE id = :id"
+        ), {'now': now, 'id': charge_id})
+
+    return jsonify({'message': 'Charge released', 'id': charge_id, 'status': 'released'})
+
+
+@app.route('/escrow/charges/<int:charge_id>/refund', methods=['PATCH'])
+def refund_escrow_charge(charge_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution', 'admin', 'super_admin'):
+        return jsonify({'error': 'Forbidden'}), 403
+
+    data = request.get_json() or {}
+    reason = str(data.get('reason', '')).strip()
+
+    now = now_iso()
+    with engine.begin() as conn:
+        row = conn.execute(text('SELECT * FROM escrow_charges WHERE id = :id'), {'id': charge_id}).mappings().first()
+        if not row:
+            return jsonify({'error': 'Charge not found'}), 404
+        if row['status'] != 'held':
+            return jsonify({'error': f'Cannot refund charge with status: {row["status"]}'}), 409
+        if has_role(user, 'institution') and row['institution_id'] != user['user_id']:
+            return jsonify({'error': 'Forbidden'}), 403
+        conn.execute(text(
+            "UPDATE escrow_charges SET status = 'refunded', refunded_at = :now, refund_reason = :reason WHERE id = :id"
+        ), {'now': now, 'reason': reason, 'id': charge_id})
+
+    return jsonify({'message': 'Charge refunded', 'id': charge_id, 'status': 'refunded'})
 
 
 if __name__ == '__main__':

@@ -124,10 +124,10 @@
 - [x] 자동 정산 계산: `rate × (실제시간/예정시간) × (1 - 0.033)`
 
 #### 3-2. 수업 세션 프론트 (`/instructor/sessions`)
-- [ ] 오늘 수업 목록
-- [ ] GPS 체크인 버튼 (위치 API 사용)
-- [ ] 수업 완료 + 일지 작성 폼
-- [ ] 수업 이력 조회
+- [x] 오늘 수업 목록
+- [x] GPS 체크인 버튼 (위치 API 사용)
+- [x] 수업 완료 + 일지 작성 폼
+- [x] 수업 이력 조회
 
 ---
 
@@ -179,20 +179,20 @@
 **기간:** Week 3-4 | **우선순위:** P1
 
 #### 6-1. 강사 승인 관리
-- [ ] 신청자 목록 → `GET /admin/users`
-- [ ] 프로필 상세 + 서류 확인
-- [ ] 승인/반려 → `PATCH /admin/profiles/<id>/review`
+- [x] 신청자 목록 → `GET /admin/users`
+- [x] 프로필 상세 + 서류 확인
+- [x] 승인/반려 → `PATCH /admin/profiles/<id>/review`
 
 #### 6-2. MLM 컴플라이언스 대시보드
-- [ ] 35% 규제 비율 게이지 → `GET /api/network/compliance`
-- [ ] 월별 재계산 로그 표시
-- [ ] 보상 규칙 편집/시뮬레이션 → `PUT /api/network/admin/rules`, `POST /api/network/admin/rules/simulate`
-- [ ] TOP 스폰서 순위 → `GET /api/network/admin/top-sponsors`
+- [x] 35% 규제 비율 게이지 → `GET /api/network/compliance`
+- [x] 월별 재계산 로그 표시
+- [x] 보상 규칙 편집/시뮬레이션 → `PUT /api/network/admin/rules`, `POST /api/network/admin/rules/simulate`
+- [x] TOP 스폰서 순위 → `GET /api/network/admin/top-sponsors`
 
 #### 6-3. 전체 플랫폼 요약
-- [ ] 사용자 통계 (강사/기관/관리자 수)
-- [ ] 총 매칭 건수, 정산액
-- [ ] API: `GET /admin/platform-summary`
+- [x] 사용자 통계 (강사/기관/관리자 수)
+- [x] 총 매칭 건수, 정산액
+- [x] API: `GET /admin/platform-summary`
 
 ---
 
@@ -200,20 +200,20 @@
 **기간:** Week 4 | **우선순위:** P1 (차별화 기능)
 
 #### 7-1. SOS 긴급 매칭 API
-- [ ] `POST /sos` — SOS 공고 생성 (기관)
-- [ ] `GET /sos/available` — 조건 매칭 강사 목록
-- [ ] `POST /sos/<id>/accept` — 강사 수락
+- [x] `POST /sos` — SOS 공고 생성 (기관)
+- [x] `GET /sos/available` — 조건 매칭 강사 목록
+- [x] `POST /sos/<id>/accept` — 강사 수락
 - [ ] WebSocket 또는 SSE: 실시간 SOS 알림 push
 
 #### 7-2. 강사 리뷰/평점 API
-- [ ] DB: `reviews` — reviewer_id, instructor_id, session_id, rating, comment
-- [ ] `POST /reviews` — 리뷰 작성 (기관/학생)
-- [ ] `GET /reviews?instructor_id=<id>` — 강사 리뷰 목록
-- [ ] 강사 평균 평점 계산 → 프로필에 반영
+- [x] DB: `reviews` — reviewer_id, instructor_id, session_id, rating, comment
+- [x] `POST /reviews` — 리뷰 작성 (기관/학생)
+- [x] `GET /reviews?instructor_id=<id>` — 강사 리뷰 목록
+- [x] 강사 평균 평점 계산 → 프로필에 반영
 
 #### 7-3. 리뷰 화면
-- [ ] 기관: 수업 완료 후 평점 입력 폼
-- [ ] 강사: 내 리뷰 목록 조회
+- [x] 기관: 수업 완료 후 평점 입력 폼
+- [x] 강사: 내 리뷰 목록 조회
 
 ---
 
@@ -221,15 +221,15 @@
 **기간:** Week 4-5 | **우선순위:** P1
 
 #### 8-1. 교육청 대시보드 (`/district/dashboard`)
-- [ ] KPI 요약 (학교 수, 프로그램 수, 강사 수, 학생 수)
-- [ ] API: `GET /district/budget-summary`, `GET /district/regional-comparison`
+- [x] KPI 요약 (학교 수, 프로그램 수, 강사 수, 학생 수)
+- [x] API: `GET /district/budget-summary`, `GET /district/regional-comparison`
 
 #### 8-2. 학교별 현황
-- [ ] 학교 목록 → `GET /district/institutions`
-- [ ] 학교별 프로그램/예산/강사 상세
+- [x] 학교 목록 → `GET /district/institutions`
+- [x] 학교별 프로그램/예산/강사 상세
 
 #### 8-3. 통계 리포트
-- [ ] 만족도, 참여도, 결원 대응률
+- [x] 만족도, 참여도, 결원 대응률
 - [ ] 리포트 생성 (PDF/CSV)
 
 ---
@@ -238,13 +238,13 @@
 **기간:** Week 5+ | **우선순위:** P2
 
 #### 9-1. 전자계약
-- [ ] DB: `contracts` — 계약서 파일, 서명 상태, 만료일
-- [ ] 계약서 발송/서명/다운로드 API
-- [ ] 기관 웹 계약 관리 화면
+- [x] DB: `contracts` — 계약서 파일, 서명 상태, 만료일
+- [x] 계약서 발송/서명/다운로드 API
+- [x] 기관 웹 계약 관리 화면
 
 #### 9-2. 에스크로 결제 연동
-- [ ] Stripe 에스크로 플로우 (사전결제 → 수업완료 → 정산)
-- [ ] 환불 로직 (노쇼, 취소)
+- [x] Stripe 에스크로 플로우 (사전결제 → 수업완료 → 정산)
+- [x] 환불 로직 (노쇼, 취소)
 
 ---
 
