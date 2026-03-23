@@ -7242,7 +7242,125 @@
                 };
                 dashTitle.textContent = titles[role] || titles.instructor;
             }
+
+            // Load additional district data if district role
+            if (role === 'district') {
+                loadDistrictRegionalComparison();
+                loadDistrictInstitutions();
+                loadDistrictBudgetSummary();
+            }
         }
+
+        async function loadDistrictRegionalComparison() {
+            const response = await apiFetch('/district/regional-comparison', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                showToast(lt('Failed to load regional data', '\uc9c0\uc5ed \ub370\uc774\ud130 \ub85c\ub4dc \uc2e4\ud328'));
+                return;
+            }
+
+            // Create simple regional comparison display
+            const regionHTML = data.regions.map(r => `
+                <div class="stat-card">
+                    <div class="stat-title">📍 ${escapeHtml(r.region)}</div>
+                    <div style="font-size:12px;color:#888;margin:4px 0;">
+                        ${r.postings_count} postings • ${r.approved_count} approved
+                    </div>
+                    <div class="stat-value">₩${r.avg_rate.toLocaleString()}/h</div>
+                </div>
+            `).join('');
+
+            const statsGrid = document.getElementById('statsGrid');
+            if (statsGrid && statsGrid.querySelector('.stat-card')) {
+                // Append regional data after KPI cards
+                const container = statsGrid.parentElement;
+                const regionSection = document.createElement('div');
+                regionSection.id = 'districtRegionalGrid';
+                regionSection.style.display = 'grid';
+                regionSection.style.gridTemplateColumns = 'repeat(auto-fit, minmax(150px, 1fr))';
+                regionSection.style.gap = '12px';
+                regionSection.style.marginTop = '20px';
+                regionSection.innerHTML = regionHTML;
+                container.appendChild(regionSection);
+            }
+        }
+
+        async function loadDistrictInstitutions() {
+            const response = await apiFetch('/district/institutions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                showToast(lt('Failed to load institutions', '\uae30\uad00 \ub370\uc774\ud130 \ub85c\ub4dc \uc2e4\ud328'));
+                return;
+            }
+
+            // Sort by revenue and show top institutions
+            const topInstitutions = data.institutions.slice(0, 5);
+            const instHTML = topInstitutions.map(inst => `
+                <div class="stat-card">
+                    <div class="stat-title">🏫 ${escapeHtml(inst.organization)}</div>
+                    <div style="font-size:12px;color:#888;margin:4px 0;">
+                        ${inst.postings_count} postings • ${inst.approved_count} approved
+                    </div>
+                    <div class="stat-value">₩${inst.total_revenue.toLocaleString()}</div>
+                </div>
+            `).join('');
+
+            const container = document.querySelector('#statsGrid').parentElement;
+            const instSection = document.createElement('div');
+            instSection.id = 'districtInstitutionsGrid';
+            instSection.style.display = 'grid';
+            instSection.style.gridTemplateColumns = 'repeat(auto-fit, minmax(150px, 1fr))';
+            instSection.style.gap = '12px';
+            instSection.style.marginTop = '20px';
+            instSection.innerHTML = `<h3 style="grid-column: 1/-1;">Top Institutions</h3>` + instHTML;
+            container.appendChild(instSection);
+        }
+
+        async function loadDistrictBudgetSummary() {
+            const response = await apiFetch('/district/budget-summary', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                showToast(lt('Failed to load budget data', '\uc608\uc0b0 \ub370\uc774\ud130 \ub85c\ub4dc \uc2e4\ud328'));
+                return;
+            }
+
+            // Show budget summary
+            const budgetHTML = `
+                <div class="stat-card">
+                    <div class="stat-title">💰 Total Budget</div>
+                    <div class="stat-value">₩${data.summary.total_budget_used.toLocaleString()}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">📊 Sessions</div>
+                    <div class="stat-value">${data.summary.total_sessions}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">🏫 Institutions</div>
+                    <div class="stat-value">${data.summary.total_institutions}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">📈 Avg/Org</div>
+                    <div class="stat-value">₩${data.summary.avg_per_institution.toLocaleString()}</div>
+                </div>
+            `;
+
+            const container = document.querySelector('#statsGrid').parentElement;
+            const budgetSection = document.createElement('div');
+            budgetSection.id = 'districtBudgetGrid';
+            budgetSection.style.display = 'grid';
+            budgetSection.style.gridTemplateColumns = 'repeat(auto-fit, minmax(150px, 1fr))';
+            budgetSection.style.gap = '12px';
+            budgetSection.style.marginTop = '20px';
+            budgetSection.innerHTML = `<h3 style="grid-column: 1/-1;">Budget Summary</h3>` + budgetHTML;
+            container.appendChild(budgetSection);
+        }
+
 
         function renderDashboardActivity(items) {
             const list = document.getElementById('activityList');

@@ -834,6 +834,149 @@ def get_postings_settlement_summary():
     })
 
 
+@app.route('/district/institutions', methods=['GET'])
+def get_district_institutions():
+    """List institutions in the district with their statistics"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'district'):
+        return jsonify({'error': 'Only district users can view institution list'}), 403
+
+    with engine.connect() as conn:
+        # Get all institutions (users with role 'institution' or 'student')
+        institutions = conn.execute(
+            text('''
+                SELECT DISTINCT
+                    u.id,
+                    u.email,
+                    u.organization,
+                    COUNT(DISTINCT p.id) as postings_count,
+                    COUNT(DISTINCT CASE WHEN a.status = 'approved' THEN a.id END) as approved_count,
+                    SUM(CASE WHEN a.status = 'approved' THEN p.rate ELSE 0 END) as total_revenue
+                FROM users u
+                LEFT JOIN postings p ON p.owner_id = u.id
+                LEFT JOIN applications a ON a.posting_id = p.id
+                WHERE u.role IN ('institution', 'student')
+                GROUP BY u.id, u.email, u.organization
+                ORDER BY total_revenue DESC
+            ''')
+        ).mappings().all()
+
+        return jsonify({
+            'institutions': [
+                {
+                    'id': inst['id'],
+                    'email': inst['email'],
+                    'organization': inst['organization'] or f"Org #{inst['id']}",
+                    'postings_count': int(inst['postings_count'] or 0),
+                    'approved_count': int(inst['approved_count'] or 0),
+                    'total_revenue': int(inst['total_revenue'] or 0)
+                }
+                for inst in institutions
+            ],
+            'total_institutions': len(institutions)
+        })
+
+
+@app.route('/district/regional-comparison', methods=['GET'])
+def get_district_regional_comparison():
+    """Get regional comparison data for district dashboard"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'district'):
+        return jsonify({'error': 'Only district users can view regional data'}), 403
+
+    with engine.connect() as conn:
+        # Get posting statistics by region
+        regions = conn.execute(
+            text('''
+                SELECT
+                    p.region,
+                    COUNT(DISTINCT p.id) as postings_count,
+                    COUNT(DISTINCT a.id) as applications_count,
+                    COUNT(DISTINCT CASE WHEN a.status = 'approved' THEN a.id END) as approved_count,
+                    AVG(p.rate) as avg_rate
+                FROM postings p
+                LEFT JOIN applications a ON a.posting_id = p.id
+                WHERE p.region IS NOT NULL AND p.region != ''
+                GROUP BY p.region
+                ORDER BY postings_count DESC
+            ''')
+        ).mappings().all()
+
+        return jsonify({
+            'regions': [
+                {
+                    'region': region['region'] or 'Unknown',
+                    'postings_count': int(region['postings_count'] or 0),
+                    'applications_count': int(region['applications_count'] or 0),
+                    'approved_count': int(region['approved_count'] or 0),
+                    'avg_rate': int(region['avg_rate'] or 0)
+                }
+                for region in regions
+            ],
+            'total_regions': len(regions)
+        })
+
+
+@app.route('/district/budget-summary', methods=['GET'])
+def get_district_budget_summary():
+    """Get budget usage summary for district dashboard"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'district'):
+        return jsonify({'error': 'Only district users can view budget data'}), 403
+
+    with engine.connect() as conn:
+        # Get budget stats aggregated by institution
+        budget_stats = conn.execute(
+            text('''
+                SELECT
+                    u.id,
+                    u.organization,
+                    COUNT(DISTINCT p.id) as postings_count,
+                    COUNT(DISTINCT CASE WHEN a.status = 'approved' THEN a.id END) as approved_sessions,
+                    SUM(CASE WHEN a.status = 'approved' THEN p.rate ELSE 0 END) as total_spent
+                FROM users u
+                LEFT JOIN postings p ON p.owner_id = u.id
+                LEFT JOIN applications a ON a.posting_id = p.id
+                WHERE u.role IN ('institution', 'student')
+                GROUP BY u.id, u.organization
+                ORDER BY total_spent DESC
+            ''')
+        ).mappings().all()
+
+        total_budget = sum(int(stat['total_spent'] or 0) for stat in budget_stats)
+        total_postings = sum(int(stat['postings_count'] or 0) for stat in budget_stats)
+        total_sessions = sum(int(stat['approved_sessions'] or 0) for stat in budget_stats)
+
+        return jsonify({
+            'summary': {
+                'total_institutions': len(budget_stats),
+                'total_postings': total_postings,
+                'total_sessions': total_sessions,
+                'total_budget_used': total_budget,
+                'avg_per_institution': int(total_budget / len(budget_stats)) if budget_stats else 0
+            },
+            'institutions': [
+                {
+                    'organization': stat['organization'] or f"Org #{stat['id']}",
+                    'postings_count': int(stat['postings_count'] or 0),
+                    'approved_sessions': int(stat['approved_sessions'] or 0),
+                    'total_spent': int(stat['total_spent'] or 0),
+                    'budget_percentage': round((int(stat['total_spent'] or 0) / total_budget * 100), 1) if total_budget > 0 else 0
+                }
+                for stat in budget_stats
+            ]
+        })
+
+
 @app.route('/postings', methods=['POST'])
 def create_posting():
     user = get_current_user()
