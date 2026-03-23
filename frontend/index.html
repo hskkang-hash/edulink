@@ -2124,6 +2124,29 @@
             .canvas-grid {
                 grid-template-columns: 1fr;
             }
+
+            body.view-web .app-shell {
+                grid-template-columns: 206px 1fr;
+            }
+
+            body.view-webapp .app-shell {
+                grid-template-columns: 88px 1fr;
+            }
+
+            body.view-web .side-rail,
+            body.view-webapp .side-rail {
+                display: flex;
+            }
+
+            body.view-web .mobile-dock {
+                display: none;
+            }
+
+            body.view-webapp .side-rail .rail-link,
+            body.view-webapp .side-rail .rail-cta {
+                font-size: 9px;
+                padding: 9px 6px;
+            }
         }
     </style>
 </head>
@@ -2805,7 +2828,7 @@
         const ROLE_SCREEN_ACCESS = {
             instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'networkSection'],
             institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection'],
-            student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection'],
+            student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection'],
             district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection'],
             admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection'],
             super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection']
@@ -2813,7 +2836,7 @@
         const ROLE_DEFAULT_SCREEN = {
             instructor: 'dashboardSection',
             institution: 'dashboardSection',
-            student: 'postingsSection',
+            student: 'dashboardSection',
             district: 'dashboardSection',
             admin: 'adminInsightsSection',
             super_admin: 'adminInsightsSection'
@@ -6242,6 +6265,13 @@
                 createPostingSection: { en: 'Post Job',       ko: '\uacf5\uace0 \ub4f1\ub85d' },
                 securitySection:      { en: 'My Page',        ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             },
+            student: {
+                dashboardSection:    { en: 'Home',           ko: '\ud648' },
+                postingsSection:     { en: 'Class Feed',     ko: '\uc218\uc5c5 \ud53c\ub4dc' },
+                applicationsSection: { en: 'My Requests',    ko: '\ub0b4 \uc694\uccad' },
+                taxSection:          { en: 'Payments',       ko: '\uacb0\uc81c/\uc815\uc0b0' },
+                securitySection:     { en: 'Profile',        ko: '\ud504\ub85c\ud544' }
+            },
             institution: {
                 dashboardSection:     { en: 'Dashboard',       ko: '\ub300\uc2dc\ubcf4\ub4dc' },
                 postingsSection:      { en: 'My Postings',     ko: '\ub0b4 \uacf5\uace0' },
@@ -6266,8 +6296,9 @@
 
         function updatePrimaryNavigation() {
             const allowed = getAllowedScreens();
-            const role = normalizeRole(getCurrentAccessRole());
-            const navLabels = ROLE_NAV_LABELS[role] || ROLE_NAV_LABELS.instructor;
+            const roleRaw = getCurrentAccessRole();
+            const role = normalizeRole(roleRaw);
+            const navLabels = ROLE_NAV_LABELS[roleRaw] || ROLE_NAV_LABELS[role] || ROLE_NAV_LABELS.instructor;
 
             Array.from(document.querySelectorAll('.side-rail [data-screen]')).forEach((node) => {
                 const screenId = node.getAttribute('data-screen');
