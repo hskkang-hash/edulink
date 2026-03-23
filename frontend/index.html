@@ -1021,6 +1021,101 @@
             background: rgba(125, 184, 255, 0.22);
         }
 
+        /* ── Pre-login layout overrides ── */
+        body.view-prelogin #identityLandingSection {
+            grid-column: 1 / 7;
+            grid-row: 1;
+        }
+
+        body.view-prelogin #loginSection {
+            grid-column: 7 / -1;
+            grid-row: 1;
+            align-self: start;
+            padding-top: 40px;
+        }
+
+        /* Hide hero image on landing so identity section stays compact */
+        body.view-prelogin .identity-visual {
+            display: none;
+        }
+
+        /* On narrow screens stack vertically */
+        @media (max-width: 880px) {
+            body.view-prelogin #identityLandingSection,
+            body.view-prelogin #loginSection {
+                grid-column: 1 / -1;
+                grid-row: auto;
+            }
+            body.view-prelogin #loginSection {
+                padding-top: 0;
+            }
+        }
+
+        /* Controls row inside login card */
+        .login-controls-row {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+        }
+
+        .login-ctrl-btn {
+            padding: 5px 13px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            border-radius: 7px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.07);
+            color: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .login-ctrl-btn:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        :root[data-theme='light'] .login-ctrl-btn {
+            border-color: rgba(0,0,0,0.13);
+            background: rgba(0,0,0,0.04);
+            color: #1a1a1a;
+        }
+
+        :root[data-theme='light'] .login-ctrl-btn:hover {
+            background: rgba(0,0,0,0.09);
+        }
+
+        /* ── Pre-login floating control bar (fallback) ── */
+        #preloginBar {
+            position: fixed;
+            top: 16px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 200;
+        }
+
+        #preloginBar button {
+            padding: 5px 13px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 7px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.08);
+            color: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        #preloginBar button:hover { background: rgba(255,255,255,0.16); }
+
+        :root[data-theme='light'] #preloginBar button {
+            border-color: rgba(0,0,0,0.14);
+            background: rgba(0,0,0,0.05);
+            color: #1a1a1a;
+        }
+
         .signup-flow-section {
             position: fixed;
             z-index: 60;
@@ -2388,7 +2483,11 @@
                 </div>
 
                 <div class="section" id="loginSection">
-                    <h2>Login</h2>
+                    <div class="login-controls-row">
+                        <button type="button" class="login-ctrl-btn" id="loginLangBtn">KO</button>
+                        <button type="button" class="login-ctrl-btn" id="loginThemeBtn">Light</button>
+                    </div>
+                    <h2 id="loginSectionTitle">Login</h2>
                     <input type="email" id="loginEmail" placeholder="Email" value="demo@example.com">
                     <input type="password" id="loginPassword" placeholder="Password" value="password">
                     <div class="login-action-row">
@@ -3022,6 +3121,12 @@
             </div>
         </main>
 
+    </div>
+
+    <!-- Floating control bar shown only on landing page (pre-login) -->
+    <div id="preloginBar" style="display:none;">
+        <button type="button" id="preloginLangBtn">KO</button>
+        <button type="button" id="preloginThemeBtn">Light</button>
     </div>
 
     <div class="mobile-dock">
@@ -4963,6 +5068,16 @@
             if (themeBtn) {
                 themeBtn.textContent = t('themeLabel');
             }
+            const preloginLangBtn = document.getElementById('preloginLangBtn');
+            if (preloginLangBtn) preloginLangBtn.textContent = t('langLabel');
+            const preloginThemeBtn = document.getElementById('preloginThemeBtn');
+            if (preloginThemeBtn) preloginThemeBtn.textContent = t('themeLabel');
+            const loginLangBtn = document.getElementById('loginLangBtn');
+            if (loginLangBtn) loginLangBtn.textContent = t('langLabel');
+            const loginThemeBtnL = document.getElementById('loginThemeBtn');
+            if (loginThemeBtnL) loginThemeBtnL.textContent = t('themeLabel');
+            const loginTitleEl = document.getElementById('loginSectionTitle');
+            if (loginTitleEl) loginTitleEl.textContent = t('loginTitle');
 
             const quickLangBtn = document.getElementById('quickLangBtn');
             if (quickLangBtn) {
@@ -5034,12 +5149,17 @@
 
         function applyTheme() {
             document.documentElement.setAttribute('data-theme', currentTheme);
+            const themeLabel = currentTheme === 'dark'
+                ? (currentLang === 'ko' ? '라이트' : 'Light')
+                : (currentLang === 'ko' ? '다크' : 'Dark');
             const themeBtn = document.getElementById('themeToggleBtn');
             if (themeBtn) {
-                themeBtn.textContent = currentTheme === 'dark'
-                    ? (currentLang === 'ko' ? '라이트' : 'Light')
-                    : (currentLang === 'ko' ? '다크' : 'Dark');
+                themeBtn.textContent = themeLabel;
             }
+            const preloginThemeBtn = document.getElementById('preloginThemeBtn');
+            if (preloginThemeBtn) preloginThemeBtn.textContent = themeLabel;
+            const loginThemeBtn = document.getElementById('loginThemeBtn');
+            if (loginThemeBtn) loginThemeBtn.textContent = themeLabel;
 
             const quickThemeBtn = document.getElementById('quickThemeBtn');
             if (quickThemeBtn) {
@@ -6905,6 +7025,9 @@
             document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('topbar').style.display = 'flex';
+            const preloginBarEl = document.getElementById('preloginBar');
+            if (preloginBarEl) preloginBarEl.style.display = 'none';
+            document.body.classList.remove('view-prelogin');
             document.getElementById('userEmail').textContent = currentUser ? currentUser.email : '';
             document.getElementById('userRole').textContent = currentUser ? `(${currentUser.role})` : '';
             document.getElementById('myPostingsToggleWrap').style.display =
@@ -6945,6 +7068,9 @@
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('topbar').style.display = 'none';
             document.getElementById('myPostingsToggleWrap').style.display = 'none';
+            const preloginBar = document.getElementById('preloginBar');
+            if (preloginBar) preloginBar.style.display = 'flex';
+            document.body.classList.add('view-prelogin');
             updatePrimaryNavigation();
         }
 
@@ -8683,6 +8809,8 @@
                 document.getElementById('escrowStatus').textContent = `오류: ${e.message}`;
             }
         }
+
+        async function loadDistrictRegionalComparison() {
             const response = await apiFetch('/district/regional-comparison', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -10255,6 +10383,14 @@
         } else {
             hideSections();
         }
+
+        // Prelogin control bar buttons
+        document.getElementById('preloginLangBtn').addEventListener('click', toggleLanguage);
+        document.getElementById('preloginThemeBtn').addEventListener('click', toggleTheme);
+        // Login card embedded controls
+        document.getElementById('loginLangBtn').addEventListener('click', toggleLanguage);
+        document.getElementById('loginThemeBtn').addEventListener('click', toggleTheme);
     </script>
+
 </body>
 </html>

@@ -62,6 +62,11 @@ node_modules/
 npm-debug.log
 yarn-error.log
 
+### Playwright E2E
+/e2e/report/
+/playwright-report/
+/test-results/
+
 ### 시스템 파일
 .DS_Store
 Thumbs.db
