@@ -896,14 +896,68 @@
             width: fit-content;
         }
         .profile-joined { font-size: 0.78rem; }
-        :root[data-theme='light'] .profile-card {
-            background: rgba(0,0,0,0.03);
-            border-color: rgba(0,0,0,0.10);
+        .security-group {
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .security-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+        }
+        .security-group input {
+            width: 100%;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .security-group button {
+            width: 100%;
+            padding: 10px;
+            background: rgba(125,184,255,0.18);
+            border: 1px solid rgba(125,184,255,0.32);
+            border-radius: 6px;
+            color: #7db8ff;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .security-group button:hover {
+            background: rgba(125,184,255,0.28);
         }
         :root[data-theme='light'] .profile-role-badge {
             background: rgba(37,99,235,0.10);
             color: #2563eb;
             border-color: rgba(37,99,235,0.22);
+        }
+        :root[data-theme='light'] .security-group {
+            background: rgba(0,0,0,0.03);
+            border-color: rgba(0,0,0,0.08);
+        }
+        :root[data-theme='light'] .security-group input {
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.10);
+            color: #000;
+        }
+        :root[data-theme='light'] .security-group button {
+            background: rgba(37,99,235,0.10);
+            border-color: rgba(37,99,235,0.22);
+            color: #2563eb;
+        }
+        :root[data-theme='light'] .security-group button:hover {
+            background: rgba(37,99,235,0.20);
+        }
+        :root[data-theme='light'] .profile-card {
+            background: rgba(0,0,0,0.03);
+            border-color: rgba(0,0,0,0.10);
         }
 
         #openSignupFlowBtn {
@@ -2192,27 +2246,46 @@
 
                 <div class="section" id="securitySection" style="display: none;">
                     <h2>My Page</h2>
-                    <p class="muted">Manage your account profile and change password in one place.</p>
+                    <p class="muted">Manage your account profile, security settings and personal information.</p>
                     <div class="profile-card" id="myProfileCard" style="display:none;">
                         <div class="profile-avatar" id="myProfileAvatar">?</div>
                         <div class="profile-info">
                             <div class="profile-email" id="myProfileEmail"></div>
                             <div class="profile-role-badge" id="myProfileRole"></div>
+                            <div class="profile-organization muted" id="myProfileOrg" style="font-size:12px;margin-top:4px;"></div>
                             <div class="profile-joined muted" id="myProfileJoined"></div>
                         </div>
                     </div>
-                    <input type="password" id="currentPassword" placeholder="Current password">
-                    <input type="password" id="newPassword" placeholder="New password">
-                    <button id="changePasswordBtn">Change Password</button>
-                    <p id="securityStatus" class="muted"></p>
 
-                    <h3>Password Reset</h3>
-                    <input type="email" id="resetEmail" placeholder="Reset account email">
-                    <button id="resetRequestBtn">Request Reset Token</button>
-                    <input type="text" id="resetToken" placeholder="Reset token">
-                    <input type="password" id="resetNewPassword" placeholder="New password">
-                    <button id="resetConfirmBtn">Confirm Reset</button>
-                    <p id="resetStatus" class="muted"></p>
+                    <h3 style="margin-top: 24px;">Security Settings</h3>
+                    <div class="security-group">
+                        <label>Change Password</label>
+                        <input type="password" id="currentPassword" placeholder="Current password">
+                        <input type="password" id="newPassword" placeholder="New password">
+                        <button id="changePasswordBtn">Update Password</button>
+                        <p id="securityStatus" class="muted" style="font-size:12px;margin-top:8px;"></p>
+                    </div>
+
+                    <div class="security-group" style="margin-top:16px;">
+                        <label>Account Recovery</label>
+                        <p class="muted" style="font-size:12px;">Reset your password if you've forgotten it.</p>
+                        <input type="email" id="resetEmail" placeholder="Your registered email">
+                        <button id="resetRequestBtn">Request Reset Token</button>
+                        <input type="text" id="resetToken" placeholder="Enter reset token from email" style="margin-top:8px;">
+                        <input type="password" id="resetNewPassword" placeholder="New password">
+                        <button id="resetConfirmBtn">Confirm Reset</button>
+                        <p id="resetStatus" class="muted" style="font-size:12px;margin-top:8px;"></p>
+                    </div>
+
+                    <div class="account-info" style="margin-top:24px;padding:12px;background:rgba(255,255,255,0.05);border-radius:6px;">
+                        <h4 style="margin:0 0 8px 0;">Account Information</h4>
+                        <div style="font-size:12px;line-height:1.6;color:#888;">
+                            <div>Email: <strong id="accountEmail">-</strong></div>
+                            <div>Role: <strong id="accountRole">-</strong></div>
+                            <div>Organization: <strong id="accountOrg">-</strong></div>
+                            <div>Member Since: <strong id="accountCreated">-</strong></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="section" id="postingsSection" style="display: none;">
@@ -6518,9 +6591,20 @@
                 admin: lt('Platform Admin', '\ud50c\ub7ab\ud3fc \uc6b4\uc601\uc790')
             };
             document.getElementById('myProfileRole').textContent = roleLabelMap[role] || role;
+            if (currentUser.organization) {
+                document.getElementById('myProfileOrg').textContent = currentUser.organization;
+            }
             if (currentUser.created_at) {
                 const joined = new Date(currentUser.created_at).toLocaleDateString();
                 document.getElementById('myProfileJoined').textContent = lt('Joined', '\uac00\uc785\uc77c') + ': ' + joined;
+            }
+
+            // Also update account info section
+            document.getElementById('accountEmail').textContent = email;
+            document.getElementById('accountRole').textContent = roleLabelMap[role] || role;
+            document.getElementById('accountOrg').textContent = currentUser.organization || lt('Not specified', '\ubbf8\uc9c0\uc815');
+            if (currentUser.created_at) {
+                document.getElementById('accountCreated').textContent = new Date(currentUser.created_at).toLocaleDateString();
             }
         }
 
