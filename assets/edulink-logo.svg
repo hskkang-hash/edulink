@@ -1,0 +1,13 @@
+<svg width="180" height="44" viewBox="0 0 180 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5FD6FF"/>
+      <stop offset="100%" stop-color="#7C5BFF"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="42" height="42" rx="12" fill="#0B1020" stroke="url(#g1)" stroke-width="2"/>
+  <path d="M11 22C11 15.3726 16.3726 10 23 10H31V16H23C19.6863 16 17 18.6863 17 22C17 25.3137 19.6863 28 23 28H31V34H23C16.3726 34 11 28.6274 11 22Z" fill="url(#g1)"/>
+  <path d="M28 13H33V31H28V13Z" fill="#EAF3FF"/>
+  <text x="52" y="19" fill="#EAF3FF" font-family="Manrope, Arial, sans-serif" font-size="12" font-weight="700" letter-spacing="0.14em">EDULINK</text>
+  <text x="52" y="34" fill="#9AB0D9" font-family="Manrope, Arial, sans-serif" font-size="10" font-weight="600" letter-spacing="0.08em">EDU OPERATIONS CLOUD</text>
+</svg>
