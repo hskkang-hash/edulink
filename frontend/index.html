@@ -2231,6 +2231,11 @@
                         </select>
                         <input type="text" id="filterRegion" placeholder="Region">
                         <input type="number" id="filterMinRate" placeholder="Min rate">
+                        <select id="filterSortBy">
+                            <option value="newest">Sort: Newest</option>
+                            <option value="rate_desc">Sort: Rate High</option>
+                            <option value="deadline_soon">Sort: Deadline Soon</option>
+                        </select>
                         <button id="applyFiltersBtn">Search</button>
                         <button id="resetFiltersBtn">Reset</button>
                     </div>
@@ -2325,6 +2330,7 @@
                     </select>
                     <input type="text" id="postingRegion" placeholder="Region">
                     <input type="number" id="postingRate" placeholder="Rate per hour">
+                    <input type="date" id="postingDeadline" placeholder="Deadline">
                     <button id="createPostingBtn">Create Posting</button>
                     <button id="cancelEditPostingBtn" class="close-btn" style="display:none;">Cancel Edit</button>
                 </div>
@@ -2636,7 +2642,8 @@
         const postingFilters = {
             subject: '',
             region: '',
-            minRate: ''
+            minRate: '',
+            sortBy: 'newest'
         };
 
         const I18N = {
@@ -6584,6 +6591,7 @@
             if (role === 'institution') {
                 const labels = [lt('Total Settled', '\uc815\uc0b0 \ucd1d\uc561'), lt('Platform Fee', '\ud50c\ub7ab\ud3fc \uc218\uc218\ub8cc'), lt('Approved Sessions', '\uc2b9\uc778 \uc218\uc5c5'), lt('Pending', '\uc815\uc0b0 \ub300\uae30')];
                 taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
+                loadInstitutionSettlementSummary();
             } else if (role === 'district') {
                 const labels = [lt('Total Budget', '\uc804\uccb4 \uc608\uc0b0'), lt('Allocated', '\ube48\ubc30'), lt('Remaining', '\uc794\uc5ec'), lt('Utilization', '\uc9d1\ud589\ub960')];
                 taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
@@ -6650,6 +6658,44 @@
                 service_fee_amount: Math.round((data.estimated_refund || 0) * feeRate)
             });
             setTaxStatus(lt(`Tax estimate loaded for ${year}.`, `${year}년 세금 추정치를 불러왔습니다.`));
+        }
+
+        async function loadInstitutionSettlementSummary() {
+            if (!token || !isRole('institution', 'student')) {
+                return;
+            }
+
+            const response = await apiFetch('/postings/settlement-summary', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+
+            if (!response.ok) {
+                setTaxStatus(data.error || lt('Failed to load settlement summary.', '정산 요약을 불러오지 못했습니다.'));
+                return;
+            }
+
+            setTaxValues({
+                gross_income: data.total_settled || 0,
+                withholding_amount: data.platform_fee || 0,
+                estimated_refund: data.approved_sessions || 0,
+                service_fee_amount: data.pending_count || 0
+            });
+
+            const eventsList = document.getElementById('taxEventsList');
+            const items = Array.isArray(data.items) ? data.items : [];
+            if (!items.length) {
+                eventsList.innerHTML = `<div class="empty-state muted">${lt('No approved settlements yet.', '승인된 정산 내역이 없습니다.')}</div>`;
+            } else {
+                eventsList.innerHTML = items.map((item) => `
+                    <div class="posting" style="margin-bottom:8px;">
+                        <strong>${escapeHtml(item.instructor_email || '#')}</strong>
+                        <p>${lt('Approved Sessions', '승인 수업')}: ${item.approved_sessions} | ${lt('Total Payment', '총 지급액')}: ${formatWon(item.total_payment)}</p>
+                    </div>
+                `).join('');
+            }
+
+            setTaxStatus(lt('Settlement summary loaded.', '정산 요약을 불러왔습니다.'));
         }
 
         async function submitTaxClaim() {
@@ -7363,6 +7409,7 @@
             document.getElementById('postingTitle').value = '';
             document.getElementById('postingRegion').value = '';
             document.getElementById('postingRate').value = '';
+            document.getElementById('postingDeadline').value = '';
             document.getElementById('postingSubject').value = 'math';
         }
 
@@ -7378,6 +7425,7 @@
             document.getElementById('postingSubject').value = posting.subject || 'math';
             document.getElementById('postingRegion').value = posting.region || '';
             document.getElementById('postingRate').value = posting.rate || '';
+            document.getElementById('postingDeadline').value = posting.deadline || '';
             document.getElementById('createPostingSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
@@ -7546,9 +7594,11 @@
         async function loadPostings() {
             const params = new URLSearchParams();
             const role = normalizeRole(getCurrentAccessRole());
+            const appliedPostingIds = new Set((applicationsCache || []).map((a) => Number(a.posting_id)));
             if (postingFilters.subject) params.set('subject', postingFilters.subject);
             if (postingFilters.region) params.set('region', postingFilters.region);
             if (postingFilters.minRate) params.set('min_rate', postingFilters.minRate);
+            if (postingFilters.sortBy) params.set('sort_by', postingFilters.sortBy);
 
             // institution: show only their own postings by default
             if (role === 'institution') {
@@ -7608,7 +7658,10 @@
                 let buttons = '';
                 // instructor applies to postings
                 if (role === 'instructor') {
-                    buttons += `<button onclick="applyToPosting(${p.id})">${lt('Apply', '\uc9c0\uc6d0\ud558\uae30')}</button>`;
+                    const alreadyApplied = appliedPostingIds.has(Number(p.id));
+                    buttons += alreadyApplied
+                        ? `<button disabled style="opacity:0.6;cursor:not-allowed;">${lt('Applied', '\uc9c0\uc6d0 \uc644\ub8cc')}</button>`
+                        : `<button onclick="applyToPosting(${p.id})">${lt('Apply', '\uc9c0\uc6d0\ud558\uae30')}</button>`;
                 }
                 // institution manages own postings
                 if (role === 'institution' && p.owner_id === currentUser.id) {
@@ -7619,11 +7672,14 @@
                 buttons += ` <button onclick="viewPostingDetail(${p.id})">${lt('Detail', '\uc0c1\uc138')}</button>`;
 
                 const urgentBadge = p.urgent ? `<span class="status-chip" style="background:rgba(255,80,80,0.22);color:#ff8080;margin-left:6px;">${lt('Urgent', '\uae34\uae09')}</span>` : '';
+                const statusBadgeText = p.status === 'assigned'
+                    ? `<span class="status-chip" style="margin-left:6px;">${lt('Assigned', '\ubc30\uc815\uc644\ub8cc')}</span>`
+                    : `<span class="status-chip" style="margin-left:6px;background:rgba(120,200,160,0.22);color:#9ce6bf;">${lt('Open', '\ubaa8\uc9d1\uc911')}</span>`;
 
                 return `
                     <div class="posting">
-                        <h3>${escapeHtml(p.title)}${urgentBadge}</h3>
-                        <p>${lt('Subject', '\uacfc\ubaa9')}: ${escapeHtml(p.subject)} | ${lt('Region', '\uc9c0\uc5ed')}: ${escapeHtml(p.region)} | ${lt('Rate', '\uc2dc\uae09')}: ₩${Number(p.rate).toLocaleString()}/${lt('hr', '\uc2dc\uac04')}</p>
+                        <h3>${escapeHtml(p.title)}${urgentBadge}${statusBadgeText}</h3>
+                        <p>${lt('Subject', '\uacfc\ubaa9')}: ${escapeHtml(p.subject)} | ${lt('Region', '\uc9c0\uc5ed')}: ${escapeHtml(p.region)} | ${lt('Rate', '\uc2dc\uae09')}: ₩${Number(p.rate).toLocaleString()}/${lt('hr', '\uc2dc\uac04')} | ${lt('Deadline', '\ub9c8\uac10\uc77c')}: ${p.deadline || '-'}</p>
                         <div class="actions">${buttons}</div>
                     </div>
                 `;
@@ -7635,6 +7691,7 @@
             const subject = document.getElementById('postingSubject').value;
             const region = document.getElementById('postingRegion').value.trim();
             const rate = parseInt(document.getElementById('postingRate').value, 10);
+            const deadline = document.getElementById('postingDeadline').value || null;
 
             if (!title || !subject || !region || Number.isNaN(rate)) {
                 alert(lt('Please fill all posting fields.', '공고 필드를 모두 입력해 주세요.'));
@@ -7651,7 +7708,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ title, subject, region, rate })
+                body: JSON.stringify({ title, subject, region, rate, deadline })
             });
 
             if (!response.ok) {
@@ -7684,21 +7741,29 @@
 
             if (!response.ok) {
                 const data = await parseJsonSafe(response);
+                if (response.status === 409) {
+                    showToast(lt('Already applied to this posting.', '\uc774\ubbf8 \uc9c0\uc6d0\ud55c \uacf5\uace0\uc785\ub2c8\ub2e4.'));
+                    await loadApplications();
+                    await loadPostings();
+                    return;
+                }
                 alert(data.error || lt('Failed to apply', '지원에 실패했습니다.'));
                 return;
             }
 
-            alert(lt('Application submitted!', '지원이 완료되었습니다!'));
+            showToast(lt('Application submitted!', '\uc9c0\uc6d0\uc774 \uc644\ub8cc\ub418\uc5c8\uc2b5\ub2c8\ub2e4!'));
             await loadApplications();
+            await loadPostings();
             await loadDashboardStats();
             await loadDashboardActivity(true);
         }
 
-        async function editPosting(id, title, subject, region, rate) {
+        async function editPosting(id, title, subject, region, rate, deadline = '') {
             const newTitle = prompt('New title:', title);
             const newSubject = prompt('New subject:', subject);
             const newRegion = prompt('New region:', region);
             const newRate = prompt('New rate:', rate);
+            const newDeadline = prompt('New deadline (YYYY-MM-DD):', deadline || '');
             if (!newTitle || !newSubject || !newRegion || !newRate) {
                 return;
             }
@@ -7713,7 +7778,8 @@
                     title: newTitle,
                     subject: newSubject,
                     region: newRegion,
-                    rate: parseInt(newRate, 10)
+                    rate: parseInt(newRate, 10),
+                    deadline: newDeadline || null
                 })
             });
 
@@ -7783,6 +7849,10 @@
 
             applicationsCache = Array.isArray(applications) ? applications : [];
             renderApplications(applicationsCache);
+            if (role === 'instructor') {
+                // Refresh posting cards so already-applied postings render as disabled.
+                await loadPostings();
+            }
         }
 
         function renderApplications(applications) {
@@ -7957,21 +8027,23 @@
             modalPostingId = data.id;
             modalPostingData = data;
             document.getElementById('modalBody').innerHTML =
-                `Subject: ${data.subject}<br>` +
-                `Region: ${data.region}<br>` +
-                `Rate: $${data.rate}/hr<br>` +
+                `${lt('Subject', '\uacfc\ubaa9')}: ${data.subject}<br>` +
+                `${lt('Region', '\uc9c0\uc5ed')}: ${data.region}<br>` +
+                `${lt('Rate', '\uc2dc\uae09')}: ₩${Number(data.rate || 0).toLocaleString()}/${lt('hr', '\uc2dc\uac04')}<br>` +
+                `${lt('Status', '\uc0c1\ud0dc')}: ${data.status || 'open'}<br>` +
                 `Owner ID: ${data.owner_id}<br>` +
-                `Created: ${data.created_at || '-'} `;
+                `${lt('Created', '\uc0dd\uc131')}: ${data.created_at || '-'} `;
 
             const modalApplyBtn = document.getElementById('modalApplyBtn');
             const modalEditBtn = document.getElementById('modalEditBtn');
             const modalBackApplicantBtn = document.getElementById('modalBackApplicantBtn');
-            if (currentUser && currentUser.role === 'student') {
+            const role = normalizeRole(getCurrentAccessRole());
+            if (currentUser && role === 'instructor') {
                 modalApplyBtn.style.display = 'inline-block';
             } else {
                 modalApplyBtn.style.display = 'none';
             }
-            if (currentUser && currentUser.role === 'instructor' && data.owner_id === currentUser.id) {
+            if (currentUser && role === 'institution' && data.owner_id === currentUser.id) {
                 modalEditBtn.style.display = 'inline-block';
             } else {
                 modalEditBtn.style.display = 'none';
@@ -8161,15 +8233,18 @@
             postingFilters.subject = document.getElementById('filterSubject').value;
             postingFilters.region = document.getElementById('filterRegion').value.trim();
             postingFilters.minRate = document.getElementById('filterMinRate').value.trim();
+            postingFilters.sortBy = document.getElementById('filterSortBy').value || 'newest';
             await loadPostings();
         });
         document.getElementById('resetFiltersBtn').addEventListener('click', async () => {
             postingFilters.subject = '';
             postingFilters.region = '';
             postingFilters.minRate = '';
+            postingFilters.sortBy = 'newest';
             document.getElementById('filterSubject').value = '';
             document.getElementById('filterRegion').value = '';
             document.getElementById('filterMinRate').value = '';
+            document.getElementById('filterSortBy').value = 'newest';
             await loadPostings();
         });
 

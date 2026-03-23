@@ -112,6 +112,8 @@ with engine.connect() as conn:
             subject TEXT,
             region TEXT,
             rate INTEGER,
+            status TEXT DEFAULT 'open',
+            deadline TEXT,
             created_at TEXT,
             owner_id INTEGER
         )
@@ -257,6 +259,10 @@ with engine.connect() as conn:
         conn.execute(text('ALTER TABLE postings ADD COLUMN owner_id INTEGER'))
     if 'created_at' not in posting_cols:
         conn.execute(text('ALTER TABLE postings ADD COLUMN created_at TEXT'))
+    if 'status' not in posting_cols:
+        conn.execute(text("ALTER TABLE postings ADD COLUMN status TEXT DEFAULT 'open'"))
+    if 'deadline' not in posting_cols:
+        conn.execute(text('ALTER TABLE postings ADD COLUMN deadline TEXT'))
 
     user_cols = [row[1] for row in conn.execute(text('PRAGMA table_info(users)')).fetchall()]
     if 'organization' not in user_cols:
@@ -441,19 +447,31 @@ def get_current_user():
     return verify_token(token)
 
 
+def normalize_role(role):
+    if role == 'student':
+        return 'institution'
+    if role == 'super_admin':
+        return 'district'
+    return role or 'instructor'
+
+
+def has_role(user, *roles):
+    return normalize_role((user or {}).get('role')) in roles
+
+
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
 def get_instructor_tax_numbers(user_id, tax_year):
-    params = {'owner_id': user_id, 'year': str(tax_year)}
+    params = {'student_id': user_id, 'year': str(tax_year)}
     with engine.connect() as conn:
         row = conn.execute(
             text('''
                 SELECT COALESCE(SUM(p.rate), 0) AS gross_income
                 FROM applications a
                 JOIN postings p ON p.id = a.posting_id
-                WHERE p.owner_id = :owner_id
+                WHERE a.student_id = :student_id
                   AND a.status = 'approved'
                   AND substr(COALESCE(a.created_at, ''), 1, 4) = :year
             '''),
@@ -713,6 +731,7 @@ def get_postings():
     subject = request.args.get('subject')
     region = request.args.get('region')
     min_rate = request.args.get('min_rate', type=int)
+    sort_by = request.args.get('sort_by', 'newest').strip().lower()
     owner_only = request.args.get('owner_only') == 'true'
     user = get_current_user()
 
@@ -736,15 +755,83 @@ def get_postings():
         params['owner_id'] = user['user_id']
 
     where_sql = f" WHERE {' AND '.join(clauses)}" if clauses else ''
+
+    sort_sql = ' ORDER BY id DESC'
+    if sort_by == 'rate_desc':
+        sort_sql = ' ORDER BY rate DESC, id DESC'
+    elif sort_by == 'deadline_soon':
+        sort_sql = " ORDER BY CASE WHEN deadline IS NULL OR deadline = '' THEN 1 ELSE 0 END ASC, deadline ASC, id DESC"
+
     query = text(
-        'SELECT id, title, subject, region, rate, created_at, owner_id FROM postings'
+        'SELECT id, title, subject, region, rate, status, deadline, created_at, owner_id FROM postings'
         + where_sql
-        + ' ORDER BY id DESC'
+        + sort_sql
     )
 
     with engine.connect() as conn:
         result = conn.execute(query, params).mappings().all()
         return jsonify([dict(row) for row in result])
+
+
+@app.route('/postings/settlement-summary', methods=['GET'])
+def get_postings_settlement_summary():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can view settlement summary'}), 403
+
+    with engine.connect() as conn:
+        rows = conn.execute(
+            text('''
+                SELECT
+                    a.student_id,
+                    COALESCE(u.email, '') AS instructor_email,
+                    COUNT(a.id) AS approved_sessions,
+                    COALESCE(SUM(p.rate), 0) AS total_payment
+                FROM applications a
+                JOIN postings p ON p.id = a.posting_id
+                LEFT JOIN users u ON u.id = a.student_id
+                WHERE p.owner_id = :owner_id
+                  AND a.status = 'approved'
+                GROUP BY a.student_id, u.email
+                ORDER BY total_payment DESC, approved_sessions DESC
+            '''),
+            {'owner_id': user['user_id']}
+        ).mappings().all()
+
+    total_settled = int(sum(int(row['total_payment'] or 0) for row in rows))
+    approved_sessions = int(sum(int(row['approved_sessions'] or 0) for row in rows))
+    pending_rows = 0
+    with engine.connect() as conn:
+        pending_rows = conn.execute(
+            text('''
+                SELECT COUNT(a.id) AS pending_count
+                FROM applications a
+                JOIN postings p ON p.id = a.posting_id
+                WHERE p.owner_id = :owner_id
+                  AND a.status = 'pending'
+            '''),
+            {'owner_id': user['user_id']}
+        ).mappings().first()['pending_count']
+
+    platform_fee = int(round(total_settled * 0.05))
+
+    return jsonify({
+        'total_settled': total_settled,
+        'platform_fee': platform_fee,
+        'approved_sessions': approved_sessions,
+        'pending_count': int(pending_rows or 0),
+        'items': [
+            {
+                'student_id': row['student_id'],
+                'instructor_email': row['instructor_email'] or f"#{row['student_id']}",
+                'approved_sessions': int(row['approved_sessions'] or 0),
+                'total_payment': int(row['total_payment'] or 0)
+            }
+            for row in rows
+        ]
+    })
 
 
 @app.route('/postings', methods=['POST'])
@@ -753,9 +840,9 @@ def create_posting():
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    # RBAC: Only instructors can create postings
-    if user.get('role') != 'instructor':
-        return jsonify({'error': 'Only instructors can create postings'}), 403
+    # RBAC: only institution accounts (legacy student included) can create postings.
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can create postings'}), 403
 
     data = request.get_json()
     for key in ('title', 'subject', 'region', 'rate'):
@@ -764,12 +851,14 @@ def create_posting():
 
     with engine.begin() as conn:
         conn.execute(
-            text('INSERT INTO postings (title, subject, region, rate, created_at, owner_id) VALUES (:title,:subject,:region,:rate,:created_at,:owner_id)'),
+            text('INSERT INTO postings (title, subject, region, rate, status, deadline, created_at, owner_id) VALUES (:title,:subject,:region,:rate,:status,:deadline,:created_at,:owner_id)'),
             {
                 'title': data['title'],
                 'subject': data['subject'],
                 'region': data['region'],
                 'rate': data['rate'],
+                'status': data.get('status', 'open'),
+                'deadline': data.get('deadline'),
                 'created_at': datetime.now(timezone.utc).isoformat(),
                 'owner_id': user['user_id']
             }
@@ -785,7 +874,7 @@ def create_posting():
 def get_posting_detail(posting_id):
     with engine.connect() as conn:
         row = conn.execute(
-            text('SELECT id, title, subject, region, rate, created_at, owner_id FROM postings WHERE id = :id'),
+            text('SELECT id, title, subject, region, rate, status, deadline, created_at, owner_id FROM postings WHERE id = :id'),
             {'id': posting_id}
         ).mappings().first()
         if not row:
@@ -809,12 +898,14 @@ def update_posting(posting_id):
             return jsonify({'error': 'Posting not found or not owned'}), 404
 
         conn.execute(
-            text('UPDATE postings SET title=:title, subject=:subject, region=:region, rate=:rate WHERE id=:id'),
+            text('UPDATE postings SET title=:title, subject=:subject, region=:region, rate=:rate, status=:status, deadline=:deadline WHERE id=:id'),
             {
                 'title': data.get('title', ''),
                 'subject': data.get('subject', ''),
                 'region': data.get('region', ''),
                 'rate': data.get('rate', 0),
+                'status': data.get('status', 'open'),
+                'deadline': data.get('deadline'),
                 'id': posting_id
             }
         )
@@ -844,6 +935,9 @@ def apply_posting():
     user = get_current_user()
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'instructor'):
+        return jsonify({'error': 'Only instructors can apply'}), 403
 
     data = request.get_json()
     if 'posting_id' not in data:
@@ -887,7 +981,7 @@ def get_applications():
         return jsonify({'error': 'Invalid sort option'}), 400
 
     with engine.connect() as conn:
-        if user.get('role') == 'instructor':
+        if has_role(user, 'institution'):
             query = '''
                 SELECT
                     a.id,
@@ -964,8 +1058,8 @@ def get_applicant_summary(student_id):
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    if user.get('role') != 'instructor':
-        return jsonify({'error': 'Only instructors can view applicant summaries'}), 403
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can view applicant summaries'}), 403
 
     with engine.connect() as conn:
         rows = conn.execute(
@@ -1021,8 +1115,8 @@ def update_application(application_id):
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    if user.get('role') != 'instructor':
-        return jsonify({'error': 'Only instructors can update applications'}), 403
+    if not has_role(user, 'institution'):
+        return jsonify({'error': 'Only institutions can update applications'}), 403
 
     data = request.get_json() or {}
     status = data.get('status')
@@ -1047,6 +1141,18 @@ def update_application(application_id):
             {'status': status, 'application_id': application_id}
         )
 
+        if status == 'approved':
+            conn.execute(
+                text('''
+                    UPDATE postings
+                    SET status = 'assigned'
+                    WHERE id = (
+                        SELECT posting_id FROM applications WHERE id = :application_id
+                    )
+                '''),
+                {'application_id': application_id}
+            )
+
     return jsonify({'message': 'Application updated', 'status': status})
 
 
@@ -1056,8 +1162,8 @@ def cancel_application(application_id):
     if not user:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    if user.get('role') != 'student':
-        return jsonify({'error': 'Only students can cancel applications'}), 403
+    if not has_role(user, 'instructor'):
+        return jsonify({'error': 'Only instructors can cancel applications'}), 403
 
     with engine.begin() as conn:
         row = conn.execute(
@@ -1084,7 +1190,7 @@ def dashboard_stats():
         return jsonify({'error': 'Unauthorized'}), 401
 
     with engine.connect() as conn:
-        if user.get('role') == 'instructor':
+        if has_role(user, 'institution'):
             postings_count = conn.execute(
                 text('SELECT COUNT(*) AS count FROM postings WHERE owner_id = :owner_id'),
                 {'owner_id': user['user_id']}
@@ -1109,7 +1215,7 @@ def dashboard_stats():
 
             applications_total = sum(status_counts.values())
             return jsonify({
-                'role': 'instructor',
+                'role': 'institution',
                 'postings_count': postings_count,
                 'applications_total': applications_total,
                 'pending_count': status_counts['pending'],
@@ -1130,7 +1236,7 @@ def dashboard_stats():
 
         applications_total = sum(status_counts.values())
         return jsonify({
-            'role': 'student',
+            'role': 'instructor',
             'applications_total': applications_total,
             'pending_count': status_counts['pending'],
             'approved_count': status_counts['approved'],
@@ -1156,7 +1262,7 @@ def dashboard_activity():
     since_window = windows[period]
 
     with engine.connect() as conn:
-        if user.get('role') == 'instructor':
+        if has_role(user, 'institution'):
             rows = conn.execute(
                 text('''
                     SELECT * FROM (
