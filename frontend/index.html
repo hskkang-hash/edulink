@@ -7249,6 +7249,11 @@
                 loadDistrictInstitutions();
                 loadDistrictBudgetSummary();
             }
+
+            // Load additional admin data if admin role
+            if (role === 'admin') {
+                loadAdminPlatformSummary();
+            }
         }
 
         async function loadDistrictRegionalComparison() {
@@ -7359,6 +7364,131 @@
             budgetSection.style.marginTop = '20px';
             budgetSection.innerHTML = `<h3 style="grid-column: 1/-1;">Budget Summary</h3>` + budgetHTML;
             container.appendChild(budgetSection);
+        }
+
+        async function loadAdminUsers() {
+            """Load admin user list and display user management grid"""
+            if (!token) return;
+
+            const response = await apiFetch('/admin/users', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                showToast(lt('Failed to load users', '회원 목록 로드 실패'));
+                return;
+            }
+
+            const userListHTML = data.users.map(u => {
+                const normalizedRole = normalizeRole(u.role);
+                return `
+                    <div class="stat-card">
+                        <div class="stat-title">${escapeHtml(u.email)}</div>
+                        <div style="font-size:12px;color:#888;margin:4px 0;">
+                            Role: ${escapeHtml(normalizedRole)}
+                        </div>
+                        <div style="font-size:12px;margin:4px 0;">
+                            Postings: ${u.postings_count} • Apps: ${u.applications_count}
+                        </div>
+                        <select class="user-role-select" data-user-id="${u.id}" data-current-role="${u.role}" onchange="updateUserRole(${u.id}, this)">
+                            <option value="instructor" ${u.role === 'instructor' ? 'selected' : ''}>강사 (Instructor)</option>
+                            <option value="institution" ${u.role === 'institution' || u.role === 'student' ? 'selected' : ''}>기관 (Institution)</option>
+                            <option value="district" ${u.role === 'district' ? 'selected' : ''}>교육청 (District)</option>
+                            <option value="admin" ${u.role === 'admin' || u.role === 'super_admin' ? 'selected' : ''}>운영자 (Admin)</option>
+                        </select>
+                    </div>
+                `;
+            }).join('');
+
+            const container = document.querySelector('#statsGrid').parentElement;
+            const userSection = document.createElement('div');
+            userSection.id = 'adminUsersGrid';
+            userSection.style.display = 'grid';
+            userSection.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))';
+            userSection.style.gap = '12px';
+            userSection.style.marginTop = '20px';
+            userSection.innerHTML = `
+                <h3 style="grid-column: 1/-1;">User Management (${data.total_users} total)</h3>
+                ${userListHTML}
+            `;
+            container.appendChild(userSection);
+        }
+
+        async function updateUserRole(userId, selectElement) {
+            """Update user role via admin API"""
+            const newRole = selectElement.value;
+            const response = await apiFetch(`/admin/users/${userId}/role`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ role: newRole })
+            });
+            
+            if (response.ok) {
+                showToast(lt('User role updated', '회원 역할이 변경되었습니다'));
+                // Update the select element to show the new role
+                selectElement.setAttribute('data-current-role', newRole);
+            } else {
+                showToast(lt('Failed to update user role', '역할 변경 실패'));
+                // Revert the select
+                selectElement.value = selectElement.getAttribute('data-current-role');
+            }
+        }
+
+        async function loadAdminPlatformSummary() {
+            """Load platform-wide summary for admin dashboard"""
+            if (!token) return;
+
+            const response = await apiFetch('/admin/platform-summary', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok) {
+                showToast(lt('Failed to load platform summary', '플랫폼 통계 로드 실패'));
+                return;
+            }
+
+            const summaryHTML = `
+                <div class="stat-card">
+                    <div class="stat-title">👥 Total Users</div>
+                    <div class="stat-value">${data.platform.total_users}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">📋 Total Postings</div>
+                    <div class="stat-value">${data.platform.total_postings}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">📝 Applications</div>
+                    <div class="stat-value">${data.platform.total_applications}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">✅ Approved</div>
+                    <div class="stat-value">${data.platform.applications_approved}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">⏳ Pending</div>
+                    <div class="stat-value">${data.platform.applications_pending}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">❌ Rejected</div>
+                    <div class="stat-value">${data.platform.applications_rejected}</div>
+                </div>
+            `;
+
+            const container = document.querySelector('#statsGrid').parentElement;
+            const summarySection = document.createElement('div');
+            summarySection.id = 'adminPlatformSummaryGrid';
+            summarySection.style.display = 'grid';
+            summarySection.style.gridTemplateColumns = 'repeat(auto-fit, minmax(150px, 1fr))';
+            summarySection.style.gap = '12px';
+            summarySection.style.marginTop = '20px';
+            summarySection.innerHTML = `<h3 style="grid-column: 1/-1;">Platform Summary</h3>` + summaryHTML;
+            container.appendChild(summarySection);
+
+            // Also load user management UI
+            loadAdminUsers();
         }
 
 

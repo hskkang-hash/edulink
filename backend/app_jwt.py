@@ -977,6 +977,139 @@ def get_district_budget_summary():
         })
 
 
+@app.route('/admin/users', methods=['GET'])
+def get_admin_users():
+    """List all users for admin management"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'admin'):
+        return jsonify({'error': 'Only admins can view user list'}), 403
+
+    with engine.connect() as conn:
+        users = conn.execute(
+            text('''
+                SELECT
+                    u.id,
+                    u.email,
+                    u.role,
+                    u.organization,
+                    u.created_at,
+                    COUNT(DISTINCT p.id) as postings_count,
+                    COUNT(DISTINCT a.id) as applications_count
+                FROM users u
+                LEFT JOIN postings p ON p.owner_id = u.id
+                LEFT JOIN applications a ON a.student_id = u.id
+                GROUP BY u.id, u.email, u.role, u.organization, u.created_at
+                ORDER BY u.created_at DESC
+            ''')
+        ).mappings().all()
+
+        return jsonify({
+            'users': [
+                {
+                    'id': usr['id'],
+                    'email': usr['email'],
+                    'role': usr['role'] or 'instructor',
+                    'organization': usr['organization'],
+                    'created_at': usr['created_at'],
+                    'postings_count': int(usr['postings_count'] or 0),
+                    'applications_count': int(usr['applications_count'] or 0)
+                }
+                for usr in users
+            ],
+            'total_users': len(users)
+        })
+
+
+@app.route('/admin/users/<int:user_id>/role', methods=['PATCH'])
+def update_user_role(user_id):
+    """Update user role for admin management"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'admin'):
+        return jsonify({'error': 'Only admins can modify user roles'}), 403
+
+    data = request.get_json() or {}
+    new_role = data.get('role')
+
+    if not new_role or new_role not in ['instructor', 'institution', 'district', 'admin', 'student', 'super_admin']:
+        return jsonify({'error': 'Invalid role'}), 400
+
+    with engine.begin() as conn:
+        conn.execute(
+            text('UPDATE users SET role = :role WHERE id = :user_id'),
+            {'role': new_role, 'user_id': user_id}
+        )
+
+    log_tax_event(user['user_id'], 'admin_user_role_changed', f'target_user_id={user_id};new_role={new_role}')
+    return jsonify({'message': f'User {user_id} role updated to {new_role}'})
+
+
+@app.route('/admin/platform-summary', methods=['GET'])
+def get_admin_platform_summary():
+    """Get platform-wide summary for admin dashboard"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    if not has_role(user, 'admin'):
+        return jsonify({'error': 'Only admins can view platform summary'}), 403
+
+    with engine.connect() as conn:
+        # Overall stats
+        total_users = conn.execute(
+            text('SELECT COUNT(*) as count FROM users')
+        ).mappings().first()['count']
+
+        total_postings = conn.execute(
+            text('SELECT COUNT(*) as count FROM postings')
+        ).mappings().first()['count']
+
+        total_applications = conn.execute(
+            text('SELECT COUNT(*) as count FROM applications')
+        ).mappings().first()['count']
+
+        application_status = conn.execute(
+            text('''
+                SELECT status, COUNT(*) as count
+                FROM applications
+                GROUP BY status
+            ''')
+        ).mappings().all()
+
+        status_map = {row['status']: int(row['count']) for row in application_status}
+
+        # User role breakdown
+        role_breakdown = conn.execute(
+            text('''
+                SELECT role, COUNT(*) as count
+                FROM users
+                GROUP BY role
+            ''')
+        ).mappings().all()
+
+        return jsonify({
+            'platform': {
+                'total_users': int(total_users),
+                'total_postings': int(total_postings),
+                'total_applications': int(total_applications),
+                'applications_approved': int(status_map.get('approved', 0)),
+                'applications_pending': int(status_map.get('pending', 0)),
+                'applications_rejected': int(status_map.get('rejected', 0))
+            },
+            'role_breakdown': {
+                'instructor': next((int(r['count']) for r in role_breakdown if r['role'] == 'instructor'), 0),
+                'institution': next((int(r['count']) for r in role_breakdown if r['role'] in ['institution', 'student']), 0),
+                'district': next((int(r['count']) for r in role_breakdown if r['role'] == 'district'), 0),
+                'admin': next((int(r['count']) for r in role_breakdown if r['role'] in ['admin', 'super_admin']), 0)
+            }
+        })
+
+
 @app.route('/postings', methods=['POST'])
 def create_posting():
     user = get_current_user()
@@ -1378,6 +1511,25 @@ def dashboard_stats():
                 status_counts[status] = row['count']
 
         applications_total = sum(status_counts.values())
+
+        # Add admin-specific stats if admin role
+        if has_role(user, 'admin'):
+            total_users = conn.execute(
+                text('SELECT COUNT(*) AS count FROM users')
+            ).mappings().first()['count']
+            total_postings = conn.execute(
+                text('SELECT COUNT(*) AS count FROM postings')
+            ).mappings().first()['count']
+            return jsonify({
+                'role': 'admin',
+                'applications_total': applications_total,
+                'pending_count': status_counts['pending'],
+                'approved_count': status_counts['approved'],
+                'rejected_count': status_counts['rejected'],
+                'postings_count': total_postings,
+                'users_count': total_users
+            })
+
         return jsonify({
             'role': 'instructor',
             'applications_total': applications_total,
