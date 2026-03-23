@@ -300,6 +300,18 @@
             max-width: 760px;
         }
 
+        .hero-logo {
+            grid-column: 1 / 9;
+            margin-bottom: 8px;
+        }
+
+        .hero-logo img {
+            width: 168px;
+            height: auto;
+            display: block;
+            opacity: 0.95;
+        }
+
         .section {
             margin: 0;
             padding: 22px;
@@ -2020,11 +2032,6 @@
     </style>
 </head>
 <body>
-    <div class="global-quickbar" id="globalQuickbar">
-        <button type="button" class="quickbar-btn" id="quickThemeBtn" title="Toggle theme"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
-        <button type="button" class="quickbar-btn" id="quickLangBtn" title="Toggle language">한</button>
-    </div>
-
     <div class="app-shell">
         <aside class="side-rail">
             <div class="brand-lockup">
@@ -2061,6 +2068,9 @@
                     </div>
                 </div>
 
+                <div class="hero-logo">
+                    <img src="../assets/edulink-logo.svg" alt="Edulink">
+                </div>
                 <h1>Welcome back.</h1>
                 <p class="hero-copy">Manage postings, student applications, and payout activity through one streamlined premium panel.</p>
 
@@ -2088,14 +2098,14 @@
                     <div class="scenario-grid" id="demoScenarioGrid"></div>
                 </div>
 
-                <div class="section" id="roleWorkspaceSection">
+                <div class="section" id="roleWorkspaceSection" style="display:none;">
                     <h2 id="roleWorkspaceTitle">Role Workspace Canvas</h2>
                     <p class="muted" id="roleWorkspaceSubtitle">Role-specific navigation and operating panels designed before feature hookup.</p>
                     <div class="workspace-nav-grid" id="workspaceNavGrid"></div>
                     <div class="workspace-panel-grid" id="workspacePanelGrid"></div>
                 </div>
 
-                <div class="section" id="roleSurfaceGallerySection">
+                <div class="section" id="roleSurfaceGallerySection" style="display:none;">
                     <h2 id="roleSurfaceGalleryTitle">Role Screen Gallery</h2>
                     <p class="muted" id="roleSurfaceGallerySubtitle">Designed page sets for each role before backend hookup.</p>
                     <div class="surface-gallery-grid" id="roleSurfaceGalleryGrid"></div>
@@ -7451,7 +7461,7 @@
         }
 
         async function loadAdminUsers() {
-            """Load admin user list and display user management grid"""
+            // Load admin user list and display user management grid.
             if (!token) return;
 
             const response = await apiFetch('/admin/users', {
@@ -7499,7 +7509,7 @@
         }
 
         async function updateUserRole(userId, selectElement) {
-            """Update user role via admin API"""
+            // Update user role via admin API.
             const newRole = selectElement.value;
             const response = await apiFetch(`/admin/users/${userId}/role`, {
                 method: 'PATCH',
@@ -7522,7 +7532,7 @@
         }
 
         async function loadAdminPlatformSummary() {
-            """Load platform-wide summary for admin dashboard"""
+            // Load platform-wide summary for admin dashboard.
             if (!token) return;
 
             const response = await apiFetch('/admin/platform-summary', {
@@ -8559,8 +8569,6 @@
         document.getElementById('adminLoadAuditsBtn').addEventListener('click', loadAdminRuleAudits);
         document.getElementById('langToggleBtn').addEventListener('click', toggleLanguage);
         document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-        document.getElementById('quickThemeBtn').addEventListener('click', toggleTheme);
-        document.getElementById('quickLangBtn').addEventListener('click', toggleLanguage);
         document.getElementById('applyFiltersBtn').addEventListener('click', async () => {
             postingFilters.subject = document.getElementById('filterSubject').value;
             postingFilters.region = document.getElementById('filterRegion').value.trim();
