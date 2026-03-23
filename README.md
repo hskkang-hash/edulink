@@ -51,6 +51,58 @@ http://localhost:8000
 
 ---
 
+## Cloudflare Deployment (Wrangler)
+
+This repository can be deployed as a static Worker assets project using Wrangler.
+
+### 1) Prerequisites
+```bash
+node -v
+npm -v
+```
+
+### 2) Install dependencies
+```bash
+npm install
+```
+
+### 3) Login to Cloudflare
+```bash
+npx wrangler login
+```
+
+### 4) Build static bundle
+```bash
+npm run build
+```
+
+Build output is generated in `dist/`.
+
+### 5) Deploy
+```bash
+npm run cf:deploy
+```
+
+Optional dry-run:
+```bash
+npm run cf:deploy:dry
+```
+
+### Notes
+- Wrangler config file is `wrangler.toml`.
+- Static assets are uploaded from `dist/` via `[assets].directory`.
+- Build script copies `frontend/` and `assets/` into `dist/` so image paths resolve on Cloudflare.
+- This deployment is for frontend static hosting. Backend Flask APIs must be hosted separately and reachable from the deployed frontend.
+
+### GitHub Push Auto-Deploy
+- Workflow: `.github/workflows/deploy-cloudflare-static.yml`
+- Trigger: push to `main` and manual dispatch
+- Required GitHub secret:
+	- `CLOUDFLARE_API_TOKEN`
+- Token scope should allow Workers deployment for the target account.
+
+---
+
 ## 🤖 Autonomous Development Mode (New!)
 
 Run 24/7 **unattended automated development** - no user interaction needed!

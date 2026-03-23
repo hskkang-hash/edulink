@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "EduLink E2E tests with Playwright",
   "scripts": {
+    "build": "node scripts/build-static.mjs",
+    "cf:deploy": "npm run build && npx wrangler deploy",
+    "cf:deploy:dry": "npm run build && npx wrangler deploy --dry-run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -10,6 +13,7 @@
     "test:e2e:report": "playwright show-report"
   },
   "devDependencies": {
-    "@playwright/test": "^1.42.0"
+    "@playwright/test": "^1.42.0",
+    "wrangler": "^4.76.0"
   }
 }
