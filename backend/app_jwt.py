@@ -31,7 +31,7 @@ CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=
 
 _rate_limit_lock = Lock()
 _rate_limit_buckets = {}
-ALLOWED_PUBLIC_REGISTER_ROLES = {'instructor', 'student', 'institution', 'district', 'admin', 'super_admin'}
+ALLOWED_PUBLIC_REGISTER_ROLES = {'instructor', 'school', 'student', 'institution', 'district', 'admin', 'super_admin'}
 PRIVILEGED_REGISTER_ROLES = {'admin', 'super_admin'}
 
 # ?대찓???대뙌??珥덇린??
@@ -1341,7 +1341,7 @@ def update_user_role(user_id):
     data = request.get_json() or {}
     new_role = data.get('role')
 
-    if not new_role or new_role not in ['instructor', 'institution', 'district', 'admin', 'student', 'super_admin']:
+    if not new_role or new_role not in ['instructor', 'school', 'institution', 'district', 'admin', 'student', 'super_admin']:
         return jsonify({'error': 'Invalid role'}), 400
 
     with engine.begin() as conn:

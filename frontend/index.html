@@ -870,6 +870,15 @@
             border-radius: 6px;
         }
 
+        .identity-wordmark {
+            font-size: clamp(52px, 8vw, 110px);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            margin: 0;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
         .identity-slogan {
             margin: 0;
             font-size: clamp(18px, 2.1vw, 28px);
@@ -2988,7 +2997,7 @@
                     <div class="identity-brand">
                         <img src="./assets/edulink-logo.svg" alt="Edulink logo">
                     </div>
-                    <h2 id="identityTitle">EDULINK Identity</h2>
+                    <p class="identity-wordmark">EduLink</p>
                     <p class="identity-slogan" id="identitySlogan">Edulink — Connecting Instructors, Powering Operations</p>
                     <p class="identity-caption" id="identityCaption">EduLink is more than a simple instructor recruitment platform — it is an all-in-one service that integrates matching, operations, and settlement. With a mobile-first app for instructors and dedicated management web portals for institutions and education offices, it supports both on-site execution and administrative control. EduLink is building a new standard operating system for the public and private education markets.</p>
                     <div class="identity-visual">
@@ -3144,10 +3153,9 @@
                     <input type="email" id="registerEmail" placeholder="Email">
                     <input type="password" id="registerPassword" placeholder="Password">
                     <select id="registerRole">
-                        <option value="instructor">강사 (Instructor) - 프리랜서 수업 운영</option>
-                        <option value="institution">기관 운영자 (Institution) - 공고/심사/정산</option>
-                        <option value="district">교육청 (District) - 지역 모니터링/예산</option>
-                        <option value="admin">플랫폼 운영자 (Platform Admin) - 회원/컴플라이언스</option>
+                        <option value="instructor" data-ko="강사" data-en="Instructor">강사</option>
+                        <option value="school" data-ko="학교" data-en="School">학교</option>
+                        <option value="institution" data-ko="기관" data-en="Institution">기관</option>
                     </select>
                     <button id="registerBtn">Register</button>
                     <p id="registerStatus" class="muted"></p>
@@ -4172,7 +4180,6 @@
             en: {
                 heroTitle: 'Unified operations for education staffing.',
                 heroCopy: 'Design the full product surface first for instructors, institutions, districts, and platform operators, then connect each workflow in order.',
-                identityTitle: 'EDULINK Identity',
                 identitySlogan: 'Edulink — Connecting Instructors, Powering Operations',
                 identityCaption: 'EduLink is more than a simple instructor recruitment platform — it is an all-in-one service that integrates matching, operations, and settlement. With a mobile-first app for instructors and dedicated management web portals for institutions and education offices, it supports both on-site execution and administrative control. EduLink is building a new standard operating system for the public and private education markets.',
                 mastheadSub: 'Unified Operations Platform',
@@ -4265,7 +4272,6 @@
             ko: {
                 heroTitle: '교육 인력 운영을 위한 통합 화면 설계.',
                 heroCopy: '강사, 학교·기관, 교육청, 운영자 관점의 전체 제품 화면을 먼저 설계하고 그 위에 기능을 순차적으로 연결합니다.',
-                identityTitle: 'EDULINK 아이덴티티',
                 identitySlogan: 'EduLink 강사를 연결하고, 운영을 완성하다',
                 identityCaption: 'EduLink는 단순한 강사 구인 플랫폼이 아니라 매칭·운영·정산을 통합한 올인원 서비스입니다. 모바일 중심의 강사용 앱과 기관·교육청용 관리 웹으로 현장과 행정을 동시에 지원합니다. 공공교육과 사교육 시장의 새로운 표준 운영 체계를 만들어갑니다.',
                 mastheadSub: '통합 운영 플랫폼',
@@ -5828,7 +5834,6 @@
             const map = [
                 ['h1', 'heroTitle'],
                 ['.hero-copy', 'heroCopy'],
-                ['#identityTitle', 'identityTitle'],
                 ['#identitySlogan', 'identitySlogan'],
                 ['#identityCaption', 'identityCaption'],
                 ['.masthead-sub', 'mastheadSub'],
@@ -5888,6 +5893,14 @@
                     el.textContent = t(key);
                 }
             });
+
+            const roleSelect = document.getElementById('registerRole');
+            if (roleSelect) {
+                for (const opt of roleSelect.options) {
+                    const label = currentLang === 'ko' ? opt.dataset.ko : opt.dataset.en;
+                    if (label) opt.textContent = label;
+                }
+            }
 
             const placeholders = [
                 ['registerEmail', 'placeholderEmail'],
