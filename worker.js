@@ -41,7 +41,31 @@ export default {
         redirect: "follow",
       });
 
-      return fetch(proxiedRequest);
+      try {
+        const backendResponse = await fetch(proxiedRequest);
+        const contentType = (backendResponse.headers.get("content-type") || "").toLowerCase();
+
+        if (backendResponse.ok) {
+          return backendResponse;
+        }
+
+        if (backendResponse.status >= 500 || contentType.includes("text/html")) {
+          const text = await backendResponse.text();
+          const tunnelUnavailable = /tunnel unavailable|localtunnel|loca\.lt|service unavailable/i.test(text);
+
+          if (tunnelUnavailable || contentType.includes("text/html")) {
+            return jsonError(
+              backendResponse.status || 503,
+              `Backend is temporarily unavailable (${backendResponse.status || 503}). Please retry in a moment.`,
+              env.BACKEND_ORIGIN,
+            );
+          }
+        }
+
+        return backendResponse;
+      } catch (error) {
+        return jsonError(503, "Backend is temporarily unavailable (503). Please retry in a moment.", env.BACKEND_ORIGIN);
+      }
     }
 
     const assetResponse = await env.ASSETS.fetch(request);
@@ -62,3 +86,21 @@ export default {
     return assetResponse;
   },
 };
+
+function jsonError(status, message, backendOrigin) {
+  return new Response(
+    JSON.stringify({
+      error: message,
+      errorCode: "BACKEND_UNAVAILABLE",
+      status,
+      backendOrigin,
+    }),
+    {
+      status,
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+      },
+    },
+  );
+}

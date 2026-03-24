@@ -47,6 +47,14 @@
             transition: background 0.25s ease, color 0.25s ease;
         }
 
+        body.app-booting .app-shell {
+            visibility: hidden;
+        }
+
+        body.app-ready .app-shell {
+            visibility: visible;
+        }
+
         :root[data-theme='light'] {
             --bg: #eef1f7;
             --surface: #ffffff;
@@ -2895,7 +2903,7 @@
 
     </style>
 </head>
-<body>
+<body class="app-booting view-prelogin">
     <a href="#main-content" class="skip-to-content">Skip to main content</a>
     <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">☰</button>
     <div class="side-rail-overlay" id="sideRailOverlay"></div>
@@ -3126,7 +3134,6 @@
                     </div>
                     <p id="loginStatus" class="muted"></p>
                     <div class="login-policy-row" id="publicTrustLinksSection">
-                        <a class="login-policy-link" href="/content-hub.html" target="_blank" rel="noopener">Content Hub</a>
                         <a class="login-policy-link" href="/about.html" target="_blank" rel="noopener">About</a>
                         <a class="login-policy-link" href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
                         <a class="login-policy-link" href="/terms.html" target="_blank" rel="noopener">Terms</a>
@@ -4118,8 +4125,8 @@
             institution: 'dashboardSection',
             student: 'dashboardSection',
             district: 'dashboardSection',
-            admin: 'adminInsightsSection',
-            super_admin: 'adminInsightsSection'
+            admin: 'dashboardSection',
+            super_admin: 'dashboardSection'
         };
         const postingFilters = {
             subject: '',
@@ -7551,6 +7558,11 @@
             for (const base of API_BASES) {
                 try {
                     const response = await fetch(`${base}${path}`, options);
+                    const hasNextBase = API_BASES.indexOf(base) < API_BASES.length - 1;
+                    if (hasNextBase && await shouldRetryApiBase(response)) {
+                        lastError = new Error(getServiceUnavailableMessage(response.status));
+                        continue;
+                    }
                     if (response.status === 401 && token && hasAuthHeader && !isAuthOnly) {
                         handleSessionExpired();
                     }
@@ -7562,12 +7574,47 @@
             throw lastError || new Error('Network request failed. Please retry or refresh this page.');
         }
 
+        function getServiceUnavailableMessage(status = 503) {
+            return lt(
+                `Backend is temporarily unavailable (${status}). Please retry in a moment.`,
+                `백엔드 연결이 일시적으로 불안정합니다(${status}). 잠시 후 다시 시도해 주세요.`
+            );
+        }
+
+        function hasTunnelFailureMarker(text = '') {
+            return /tunnel unavailable|localtunnel|loca\.lt|service unavailable|backend unavailable/i.test(String(text || ''));
+        }
+
+        async function shouldRetryApiBase(response) {
+            if (!response || response.ok || ![502, 503, 504].includes(Number(response.status || 0))) {
+                return false;
+            }
+
+            const clone = response.clone();
+            const contentType = String(clone.headers.get('content-type') || '').toLowerCase();
+            const text = await clone.text();
+            return contentType.includes('text/html') || hasTunnelFailureMarker(text);
+        }
+
         async function parseJsonSafe(response) {
             const text = await response.text();
             try {
                 return JSON.parse(text);
             } catch (error) {
-                return { error: `Non-JSON response (status ${response.status}): ${text.slice(0, 120)}` };
+                const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+                if (Number(response.status || 0) >= 500 || contentType.includes('text/html') || hasTunnelFailureMarker(text)) {
+                    return {
+                        error: getServiceUnavailableMessage(response.status || 503),
+                        errorCode: 'BACKEND_UNAVAILABLE',
+                        status: response.status || 503
+                    };
+                }
+                return {
+                    error: `Request failed (status ${response.status}).`,
+                    errorCode: 'NON_JSON_RESPONSE',
+                    status: response.status,
+                    raw: text.slice(0, 120)
+                };
             }
         }
 
@@ -7978,6 +8025,7 @@
             activeScreenId = getAllowedScreens().includes(activeScreenId) ? activeScreenId : getDefaultScreen();
             activateScreen(activeScreenId, { scroll: false, silentUnauthorized: true });
             updateApplicationsViewMeta();
+            markAppReady('webapp');
         }
 
         function hideSections() {
@@ -8015,6 +8063,18 @@
             if (preloginBar) preloginBar.style.display = 'none';
             document.body.classList.add('view-prelogin');
             updatePrimaryNavigation();
+            markAppReady('prelogin');
+        }
+
+        function markAppReady(mode) {
+            if (!document.body) {
+                return;
+            }
+            document.body.classList.remove('app-booting');
+            document.body.classList.add('app-ready');
+            if (mode) {
+                document.body.setAttribute('data-app-mode', mode);
+            }
         }
 
         function normalizeLoginError(response, data) {

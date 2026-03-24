@@ -6,4 +6,4 @@ compatibility_date = "2026-03-23"
 directory = "./dist"
 
 [vars]
-BACKEND_ORIGIN = "https://kind-peas-mate.loca.lt"
+BACKEND_ORIGIN = "https://wild-cars-heal.loca.lt"
