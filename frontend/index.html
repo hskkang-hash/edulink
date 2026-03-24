@@ -909,6 +909,42 @@
             flex: 1;
         }
 
+        .login-policy-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .login-policy-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--surface-border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 12px;
+            transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+        }
+
+        .login-policy-link:hover {
+            border-color: rgba(165, 140, 255, 0.42);
+            background: var(--brand-soft);
+            transform: translateY(-1px);
+        }
+
+        :root[data-theme='light'] .login-policy-row {
+            border-top-color: rgba(0, 0, 0, 0.08);
+        }
+
+        :root[data-theme='light'] .login-policy-link {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
         /* My Page profile card */
         .profile-card {
             display: flex;
@@ -2907,18 +2943,6 @@
                 </div>
                 <h1>Welcome back.</h1>
                 <p class="hero-copy">Manage postings, student applications, and payout activity through one streamlined premium panel.</p>
-                <div class="section policy-card" id="publicTrustLinksSection">
-                    <strong class="policy-card-title">Public & Policy</strong>
-                    <div class="policy-links">
-                        <a class="policy-link" href="/content-hub.html" target="_blank" rel="noopener">Content Hub</a>
-                        <a class="policy-link" href="/about.html" target="_blank" rel="noopener">About</a>
-                        <a class="policy-link" href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
-                        <a class="policy-link" href="/terms.html" target="_blank" rel="noopener">Terms</a>
-                        <a class="policy-link" href="/contact.html" target="_blank" rel="noopener">Contact</a>
-                        <a class="policy-link" href="/adsense-disclosure.html" target="_blank" rel="noopener">Ads & Cookies</a>
-                    </div>
-                </div>
-
                 <div class="section" id="identityLandingSection">
                     <div class="identity-brand">
                         <img src="./assets/edulink-logo.svg" alt="Edulink logo">
@@ -3101,6 +3125,14 @@
                         <button type="button" id="openSignupFlowBtn">Sign Up</button>
                     </div>
                     <p id="loginStatus" class="muted"></p>
+                    <div class="login-policy-row" id="publicTrustLinksSection">
+                        <a class="login-policy-link" href="/content-hub.html" target="_blank" rel="noopener">Content Hub</a>
+                        <a class="login-policy-link" href="/about.html" target="_blank" rel="noopener">About</a>
+                        <a class="login-policy-link" href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
+                        <a class="login-policy-link" href="/terms.html" target="_blank" rel="noopener">Terms</a>
+                        <a class="login-policy-link" href="/contact.html" target="_blank" rel="noopener">Contact</a>
+                        <a class="login-policy-link" href="/adsense-disclosure.html" target="_blank" rel="noopener">Ads & Cookies</a>
+                    </div>
                 </div>
 
                 <div class="section" id="securitySection" style="display: none;">
