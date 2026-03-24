@@ -62,11 +62,14 @@ class RoleBasedUiSmokeTest(unittest.TestCase):
             '''))
 
         self.original_engine = app_jwt.engine
+        self.original_allow_privileged_register = app_jwt.app.config.get('ALLOW_PRIVILEGED_SELF_REGISTER', False)
         app_jwt.engine = self.engine
+        app_jwt.app.config['ALLOW_PRIVILEGED_SELF_REGISTER'] = True
         self.client = app_jwt.app.test_client()
 
     def tearDown(self):
         app_jwt.engine = self.original_engine
+        app_jwt.app.config['ALLOW_PRIVILEGED_SELF_REGISTER'] = self.original_allow_privileged_register
 
     def _register_and_login(self, email, role):
         register_response = self.client.post('/auth/register', json={

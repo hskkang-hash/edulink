@@ -8,15 +8,31 @@ import os
 from pathlib import Path
 import uuid
 import json
+from threading import Lock
 from email_adapter import get_email_adapter
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
 import time
 
 app = Flask(__name__)
-CORS(app)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'super-secret-key')
 app.config['EXPOSE_RESET_TOKEN_IN_RESPONSE'] = os.getenv('EXPOSE_RESET_TOKEN_IN_RESPONSE', 'false').lower() == 'true'
 app.config['EMAIL_ADAPTER_TYPE'] = os.getenv('EMAIL_ADAPTER_TYPE', 'mock')
+app.config['ALLOW_PRIVILEGED_SELF_REGISTER'] = os.getenv('ALLOW_PRIVILEGED_SELF_REGISTER', 'false').lower() == 'true'
+app.config['MAX_LOGIN_ATTEMPTS_PER_10_MIN'] = int(os.getenv('MAX_LOGIN_ATTEMPTS_PER_10_MIN', '20'))
+app.config['MAX_RESET_ATTEMPTS_PER_30_MIN'] = int(os.getenv('MAX_RESET_ATTEMPTS_PER_30_MIN', '8'))
+app.config['MAX_REGISTER_ATTEMPTS_PER_10_MIN'] = int(os.getenv('MAX_REGISTER_ATTEMPTS_PER_10_MIN', '15'))
+
+allowed_origins_env = os.getenv(
+    'ALLOWED_CORS_ORIGINS',
+    'http://localhost:8000,http://127.0.0.1:8000,https://edulink.hskkang.workers.dev,https://edulinks.pro'
+)
+allowed_origins = [origin.strip() for origin in allowed_origins_env.split(',') if origin.strip()]
+CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=False)
+
+_rate_limit_lock = Lock()
+_rate_limit_buckets = {}
+ALLOWED_PUBLIC_REGISTER_ROLES = {'instructor', 'student', 'institution', 'district', 'admin', 'super_admin'}
+PRIVILEGED_REGISTER_ROLES = {'admin', 'super_admin'}
 
 # ?대찓???대뙌??珥덇린??
 email_adapter = get_email_adapter(app.config['EMAIL_ADAPTER_TYPE'])
@@ -85,6 +101,16 @@ def after_request(response):
                 endpoint=endpoint,
                 status=response.status_code
             ).inc()
+
+    # Baseline security headers.
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('X-Frame-Options', 'DENY')
+    response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.setdefault('Cross-Origin-Resource-Policy', 'same-site')
+
+    if request.path.startswith('/auth/'):
+        response.headers['Cache-Control'] = 'no-store'
+        response.headers['Pragma'] = 'no-cache'
     
     return response
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -449,6 +475,44 @@ def validate_password_policy(password):
     return None
 
 
+def normalize_email(value):
+    return str(value or '').strip().lower()
+
+
+def mask_email(value):
+    email = normalize_email(value)
+    if '@' not in email:
+        return '***'
+    local, domain = email.split('@', 1)
+    if len(local) <= 2:
+        masked_local = local[:1] + '*'
+    else:
+        masked_local = local[:2] + ('*' * (len(local) - 2))
+    return f"{masked_local}@{domain}"
+
+
+def get_client_ip():
+    forwarded = request.headers.get('X-Forwarded-For', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.remote_addr or 'unknown'
+
+
+def consume_rate_limit(bucket, key, limit, window_seconds):
+    now = time.time()
+    storage_key = f"{bucket}:{key}"
+    with _rate_limit_lock:
+        entries = _rate_limit_buckets.get(storage_key, [])
+        cutoff = now - float(window_seconds)
+        entries = [ts for ts in entries if ts >= cutoff]
+        if len(entries) >= int(limit):
+            _rate_limit_buckets[storage_key] = entries
+            return False
+        entries.append(now)
+        _rate_limit_buckets[storage_key] = entries
+    return True
+
+
 def mask_token(token):
     """
     留덉뒪??泥섎━???좏겙??諛섑솚?⑸땲??
@@ -571,10 +635,20 @@ def register():
     if not data or 'email' not in data or 'password' not in data:
         return jsonify({'error': 'email/password required'}), 400
 
-    email = str(data.get('email', '')).strip()
+    email = normalize_email(data.get('email', ''))
     password = str(data.get('password', ''))
     if not email or not password:
         return jsonify({'error': 'email/password required'}), 400
+
+    client_ip = get_client_ip()
+    if not consume_rate_limit('register', f"{client_ip}:{email}", app.config['MAX_REGISTER_ATTEMPTS_PER_10_MIN'], 600):
+        return jsonify({'error': 'Too many registration attempts. Please retry later.'}), 429
+
+    role = normalize_role(data.get('role', 'instructor'))
+    if role not in ALLOWED_PUBLIC_REGISTER_ROLES:
+        return jsonify({'error': 'Invalid role'}), 400
+    if role in PRIVILEGED_REGISTER_ROLES and not app.config.get('ALLOW_PRIVILEGED_SELF_REGISTER'):
+        return jsonify({'error': 'Privileged role registration is blocked'}), 403
 
     policy_error = validate_password_policy(password)
     if policy_error:
@@ -587,7 +661,7 @@ def register():
         if existing:
             return jsonify({'error': 'Email already registered'}), 400
         conn.execute(text('INSERT INTO users (email, password, role, organization, created_at) VALUES (:email,:password,:role,:org,:created_at)'),
-                     {'email': email, 'password': hashed_password, 'role': data.get('role', 'instructor'), 'org': data.get('organization', ''), 'created_at': datetime.now(timezone.utc).isoformat()})
+                     {'email': email, 'password': hashed_password, 'role': role, 'org': data.get('organization', ''), 'created_at': datetime.now(timezone.utc).isoformat()})
 
     return jsonify({'message': 'registered'}), 201
 
@@ -598,10 +672,14 @@ def login():
     if not data or 'email' not in data or 'password' not in data:
         return jsonify({'error': 'email/password required'}), 400
 
-    email = str(data.get('email', '')).strip()
+    email = normalize_email(data.get('email', ''))
     password = str(data.get('password', ''))
     if not email or not password:
         return jsonify({'error': 'email/password required'}), 400
+
+    client_ip = get_client_ip()
+    if not consume_rate_limit('login', f"{client_ip}:{email}", app.config['MAX_LOGIN_ATTEMPTS_PER_10_MIN'], 600):
+        return jsonify({'error': 'Too many login attempts. Please retry later.'}), 429
 
     with engine.connect() as conn:
         user = conn.execute(
@@ -828,6 +906,10 @@ def auth_password_change():
     current_password = str(data.get('current_password', ''))
     new_password = str(data.get('new_password', ''))
 
+    client_ip = get_client_ip()
+    if not consume_rate_limit('password_change', f"{client_ip}:{user['user_id']}", 20, 1800):
+        return jsonify({'error': 'Too many password change attempts. Please retry later.'}), 429
+
     if not current_password or not new_password:
         return jsonify({'error': 'current_password and new_password are required'}), 400
 
@@ -859,9 +941,13 @@ def auth_password_change():
 @app.route('/auth/password/reset/request', methods=['POST'])
 def auth_password_reset_request():
     data = request.get_json() or {}
-    email = str(data.get('email', '')).strip()
+    email = normalize_email(data.get('email', ''))
     if not email:
         return jsonify({'error': 'email is required'}), 400
+
+    client_ip = get_client_ip()
+    if not consume_rate_limit('password_reset_request', f"{client_ip}:{email}", app.config['MAX_RESET_ATTEMPTS_PER_30_MIN'], 1800):
+        return jsonify({'error': 'Too many reset attempts. Please retry later.'}), 429
 
     reset_token = None
     with engine.connect() as conn:
@@ -878,7 +964,7 @@ def auth_password_reset_request():
                 user_id=row['id'],
                 expiry_minutes=30
             )
-            app.logger.info('password-reset-token-issued email=%s delivery_method=%s', row['email'], delivery_result.get('delivery_method', 'unknown'))
+            app.logger.info('password-reset-token-issued email=%s delivery_method=%s', mask_email(row['email']), delivery_result.get('delivery_method', 'unknown'))
 
     response_payload = {
         'message': 'If the account exists, reset instructions have been generated',
@@ -895,6 +981,10 @@ def auth_password_reset_confirm():
     data = request.get_json() or {}
     token = str(data.get('token', '')).strip()
     new_password = str(data.get('new_password', ''))
+
+    client_ip = get_client_ip()
+    if not consume_rate_limit('password_reset_confirm', client_ip, app.config['MAX_RESET_ATTEMPTS_PER_30_MIN'], 1800):
+        return jsonify({'error': 'Too many reset attempts. Please retry later.'}), 429
 
     if not token or not new_password:
         return jsonify({'error': 'token and new_password are required'}), 400
