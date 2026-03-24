@@ -3813,11 +3813,44 @@
             location.replace(`http://${location.host}${location.pathname}`);
         }
 
-        const API_BASES = [
-            location.port === '8000' ? '' : null,
-            'http://127.0.0.1:8000',
-            'http://localhost:8000'
-        ].filter(Boolean);
+        function buildApiBases() {
+            const query = new URLSearchParams(location.search);
+            const override = (
+                query.get('apiBase') ||
+                localStorage.getItem('edulink_api_base') ||
+                window.EDULINK_API_BASE ||
+                ''
+            ).trim();
+
+            const bases = [];
+            const addBase = (base) => {
+                if (typeof base !== 'string') return;
+                const normalized = base.trim();
+                if (!normalized || bases.includes(normalized)) return;
+                bases.push(normalized);
+            };
+
+            // 1) Explicit override for staging/prod troubleshooting.
+            if (override) {
+                addBase(override.replace(/\/$/, ''));
+            }
+
+            // 2) Same-origin API is the default in production.
+            addBase('');
+
+            // 3) Local fallback endpoints for local development only.
+            const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
+            if (isLocalHost) {
+                if (location.port !== '8000') {
+                    addBase('http://127.0.0.1:8000');
+                    addBase('http://localhost:8000');
+                }
+            }
+
+            return bases;
+        }
+
+        const API_BASES = buildApiBases();
         let token = localStorage.getItem('token') || null;
         let currentUser = null;
         const modalCloseTimers = {};
