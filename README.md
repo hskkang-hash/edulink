@@ -76,6 +76,52 @@ npx wrangler login
 npm run build
 ```
 
+Before build, configure production domain and AdSense Publisher ID in `public-site.config.json`:
+
+```json
+{
+	"siteUrl": "https://your-domain.com",
+	"adsPublisherId": "pub-1234567890123456",
+	"adsRelation": "DIRECT",
+	"adsCertificationId": "f08c47fec0942fa0"
+}
+```
+
+Or configure via command:
+
+```bash
+npm run configure:public -- --siteUrl https://your-domain.com --adsPublisherId pub-1234567890123456
+```
+
+The build script auto-generates:
+- `frontend/robots.txt`
+- `frontend/sitemap.xml`
+- `frontend/ads.txt`
+
+AdSense readiness content assets:
+- `frontend/content-hub.html`
+- `frontend/content/*.html` (20 public articles)
+
+and copies them into `dist/`.
+
+Validate public launch readiness:
+
+```bash
+npm run validate:public
+```
+
+Strict mode (fails if placeholders remain):
+
+```bash
+npm run validate:public:strict
+```
+
+Release build with strict validation:
+
+```bash
+npm run build:release
+```
+
 Build output is generated in `dist/`.
 
 ### 5) Deploy

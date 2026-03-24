@@ -2,6 +2,43 @@
 
 Last Updated: 2026-03-24
 
+## Stage 19 상용화/애드센스 준비 (신규)
+
+목표:
+- PRD 기능 완성도를 상용 운영 기준으로 전환
+- 애드센스 심사 필수 공개 자산을 서비스 URL에서 접근 가능 상태로 확보
+
+진행 현황:
+- [x] 정책/신뢰 페이지 생성: about, privacy, terms, contact, adsense disclosure
+- [x] 심사 필수 파일 생성: ads.txt, robots.txt, sitemap.xml
+- [x] 메인 화면 정책 링크 노출(사용자 접근성 강화)
+- [x] 백엔드 공개 라우트 추가(정책/심사 파일 직접 접근)
+- [x] 빌드 자동 치환 도입(public-site.config.json 기반 도메인/Publisher ID 생성)
+- [x] 콘텐츠 허브 + 공개 문서 20건 생성(indexable HTML)
+- [x] 실제 도메인 값 입력(public-site.config.json: https://edulinks.pro)
+- [ ] Google Publisher ID 실값 입력(public-site.config.json)
+- [x] 애드센스 신청 전 콘텐츠 20건 이상 게시
+- [ ] 검색 콘솔 색인 점검 및 sitemap 제출
+
+판정:
+- Stage 19는 "기술 자산 준비 완료, 운영값 치환 대기" 상태
+
+## Stage 20 배포 전 품질 게이트 자동화 (진행중)
+
+목표:
+- 운영값 누락과 심사 파일 불일치를 배포 전에 자동 차단
+
+진행 현황:
+- [x] public-site 검증 스크립트 추가(scripts/validate-public-site.mjs)
+- [x] npm 품질 게이트 추가(validate:public, validate:public:strict, build:release)
+- [x] 운영값 설정 자동화 추가(scripts/configure-public-site.mjs, configure:public)
+- [x] 상용 배포 커맨드 추가(release:public)
+- [x] 콘텐츠 페이지 최소 개수(20) 및 sitemap 포함 여부 자동 검사
+- [ ] 실제 운영값 입력 후 strict 검증 통과 (현재 adsPublisherId 미입력)
+
+판정:
+- Stage 20은 자동화 구축 완료, 운영값 입력 대기 상태
+
 ## Stage 13-17 완료 현황 (사용자 요청 반영)
 
 | Stage | 상태 | 완료 요약 |

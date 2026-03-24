@@ -492,6 +492,68 @@ def serve_assets(filename):
     return send_from_directory(str(assets_dir), filename)
 
 
+def _serve_frontend_public_file(filename):
+    frontend_dir = Path(__file__).resolve().parent.parent / 'frontend'
+    target = frontend_dir / filename
+    if not target.exists():
+        return jsonify({'error': 'not found'}), 404
+    return send_from_directory(str(frontend_dir), filename)
+
+
+@app.route('/privacy.html')
+def privacy_page():
+    return _serve_frontend_public_file('privacy.html')
+
+
+@app.route('/terms.html')
+def terms_page():
+    return _serve_frontend_public_file('terms.html')
+
+
+@app.route('/contact.html')
+def contact_page():
+    return _serve_frontend_public_file('contact.html')
+
+
+@app.route('/about.html')
+def about_page():
+    return _serve_frontend_public_file('about.html')
+
+
+@app.route('/adsense-disclosure.html')
+def adsense_disclosure_page():
+    return _serve_frontend_public_file('adsense-disclosure.html')
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    return _serve_frontend_public_file('robots.txt')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    return _serve_frontend_public_file('sitemap.xml')
+
+
+@app.route('/ads.txt')
+def ads_txt():
+    return _serve_frontend_public_file('ads.txt')
+
+
+@app.route('/content-hub.html')
+def content_hub_page():
+    return _serve_frontend_public_file('content-hub.html')
+
+
+@app.route('/content/<path:filename>')
+def content_pages(filename):
+    frontend_content_dir = Path(__file__).resolve().parent.parent / 'frontend' / 'content'
+    target = frontend_content_dir / filename
+    if not target.exists():
+        return jsonify({'error': 'not found'}), 404
+    return send_from_directory(str(frontend_content_dir), filename)
+
+
 @app.route('/health')
 def health():
     return jsonify({'message': 'EDULINKS API is running'})

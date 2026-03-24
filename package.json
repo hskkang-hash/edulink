@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "EduLink E2E tests with Playwright",
   "scripts": {
+    "configure:public": "node scripts/configure-public-site.mjs",
     "build": "node scripts/build-static.mjs",
+    "validate:public": "node scripts/validate-public-site.mjs",
+    "validate:public:strict": "node scripts/validate-public-site.mjs --strict",
+    "build:release": "npm run build && npm run validate:public:strict",
+    "release:public": "npm run build:release && npm run cf:deploy",
     "cf:deploy": "npm run build && npx wrangler deploy",
     "cf:deploy:dry": "npm run build && npx wrangler deploy --dry-run",
     "test:e2e": "playwright test",
