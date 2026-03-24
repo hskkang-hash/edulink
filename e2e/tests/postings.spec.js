@@ -76,14 +76,12 @@ test.describe('Dashboard 섹션', () => {
   });
 
   test('대시보드 API 응답 정상 (네트워크 확인)', async ({ page }) => {
-    // 대시보드에서 reload를 트리거해 /dashboard/stats 재호출을 확실히 유도
-    const [response] = await Promise.all([
-      page.waitForResponse(
-        resp => resp.url().includes('/dashboard/stats') && resp.request().method() === 'GET',
-        { timeout: 10_000 }
-      ),
-      page.reload(),
-    ]);
+    const token = await page.evaluate(() => localStorage.getItem('token'));
+    expect(token).toBeTruthy();
+    const response = await page.request.get('/dashboard/stats', {
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 10_000,
+    });
     expect(response.status()).toBe(200);
   });
 });

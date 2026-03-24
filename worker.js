@@ -29,6 +29,11 @@ export default {
       headers.set("x-forwarded-host", url.host);
       headers.set("x-forwarded-proto", url.protocol.replace(":", ""));
 
+      // localtunnel returns an interstitial HTML page unless this header is present.
+      if ((env.BACKEND_ORIGIN || "").includes(".loca.lt")) {
+        headers.set("bypass-tunnel-reminder", "true");
+      }
+
       const proxiedRequest = new Request(targetUrl, {
         method: request.method,
         headers,
@@ -39,6 +44,21 @@ export default {
       return fetch(proxiedRequest);
     }
 
-    return env.ASSETS.fetch(request);
+    const assetResponse = await env.ASSETS.fetch(request);
+
+    // Prevent stale HTML shell caching so clients always receive the latest frontend logic.
+    if (url.pathname === "/" || url.pathname.endsWith(".html")) {
+      const headers = new Headers(assetResponse.headers);
+      headers.set("cache-control", "no-store, no-cache, must-revalidate, max-age=0");
+      headers.set("pragma", "no-cache");
+      headers.set("expires", "0");
+      return new Response(assetResponse.body, {
+        status: assetResponse.status,
+        statusText: assetResponse.statusText,
+        headers,
+      });
+    }
+
+    return assetResponse;
   },
 };

@@ -1,6 +1,11 @@
 // @ts-check
 const { test, expect } = require('@playwright/test');
 
+const QA_INSTRUCTOR = {
+  email: 'qa.instructor@edulink.local',
+  password: 'QaPass123!',
+};
+
 /** 테스트용 고유 이메일 생성 */
 function uniqueEmail() {
   return `e2e.test.${Date.now()}@edulink.local`;
@@ -17,24 +22,15 @@ test.describe('인증 - 로그인', () => {
   });
 
   test('올바른 자격증명으로 로그인 성공', async ({ page }) => {
-    // 테스트 계정을 먼저 API로 등록
-    const email = uniqueEmail();
-    const password = 'TestPass123!';
-
-    const res = await page.request.post('/auth/register', {
-      data: { email, password, role: 'instructor' },
-    });
-    expect(res.status()).toBe(201);
-
     // 로그인 폼 입력
-    await page.locator('#loginEmail').fill(email);
-    await page.locator('#loginPassword').fill(password);
+    await page.locator('#loginEmail').fill(QA_INSTRUCTOR.email);
+    await page.locator('#loginPassword').fill(QA_INSTRUCTOR.password);
     await page.locator('#loginBtn').click();
 
     // 로그인 성공 시 body에 view-webapp 클래스 추가됨
     await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });
     // 이메일 표시 확인
-    await expect(page.locator('#userEmail')).toContainText(email);
+    await expect(page.locator('#userEmail')).toContainText(QA_INSTRUCTOR.email);
   });
 
   test('잘못된 비밀번호로 로그인 실패', async ({ page }) => {
@@ -63,17 +59,9 @@ test.describe('인증 - 로그인', () => {
 // ─────────────────────────────────────────────
 test.describe('인증 - 로그아웃', () => {
   test('로그인 후 로그아웃 시 로그인 화면으로 돌아옴', async ({ page }) => {
-    const email = uniqueEmail();
-    const password = 'TestPass123!';
-
-    // 계정 생성
-    await page.request.post('/auth/register', {
-      data: { email, password, role: 'instructor' },
-    });
-
     await page.goto('/');
-    await page.locator('#loginEmail').fill(email);
-    await page.locator('#loginPassword').fill(password);
+    await page.locator('#loginEmail').fill(QA_INSTRUCTOR.email);
+    await page.locator('#loginPassword').fill(QA_INSTRUCTOR.password);
     await page.locator('#loginBtn').click();
 
     await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });

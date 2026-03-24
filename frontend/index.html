@@ -3006,10 +3006,10 @@
                     <input type="email" id="registerEmail" placeholder="Email">
                     <input type="password" id="registerPassword" placeholder="Password">
                     <select id="registerRole">
-                        <option value="instructor">강사 (Instructor)</option>
-                        <option value="institution">기관 운영자 (Institution)</option>
-                        <option value="district">교육청 (District)</option>
-                        <option value="admin">플랫폼 운영자 (Platform Admin)</option>
+                        <option value="instructor">강사 (Instructor) - 프리랜서 수업 운영</option>
+                        <option value="institution">기관 운영자 (Institution) - 공고/심사/정산</option>
+                        <option value="district">교육청 (District) - 지역 모니터링/예산</option>
+                        <option value="admin">플랫폼 운영자 (Platform Admin) - 회원/컴플라이언스</option>
                     </select>
                     <button id="registerBtn">Register</button>
                     <p id="registerStatus" class="muted"></p>
@@ -3057,9 +3057,11 @@
                         <p class="muted" style="font-size:12px;">Reset your password if you've forgotten it.</p>
                         <input type="email" id="resetEmail" placeholder="Your registered email">
                         <button id="resetRequestBtn">Request Reset Token</button>
-                        <input type="text" id="resetToken" placeholder="Enter reset token from email" style="margin-top:8px;">
-                        <input type="password" id="resetNewPassword" placeholder="New password">
-                        <button id="resetConfirmBtn">Confirm Reset</button>
+                        <div id="resetConfirmGroup" style="display:none;margin-top:8px;">
+                            <input type="text" id="resetToken" placeholder="Enter reset token from email" style="margin-bottom:6px;">
+                            <input type="password" id="resetNewPassword" placeholder="New password" style="margin-bottom:6px;">
+                            <button id="resetConfirmBtn">Confirm Reset</button>
+                        </div>
                         <p id="resetStatus" class="muted" style="font-size:12px;margin-top:8px;"></p>
                     </div>
 
@@ -3483,6 +3485,8 @@
                     </div>
                     <div class="admin-inline">
                         <input type="number" id="adminAuditLimitInput" placeholder="Audit limit" min="1" max="100" value="20">
+                        <input type="date" id="adminAuditFromInput" title="From date">
+                        <input type="date" id="adminAuditToInput" title="To date">
                         <button id="adminLoadAuditsBtn">Load Rule Audits</button>
                     </div>
                     <div class="audit-list" id="adminRuleAuditList"></div>
@@ -3606,6 +3610,7 @@
                         <button onclick="loadDistrictInstitutions()">기관 목록</button>
                         <button onclick="loadDistrictComparison()">지역 비교</button>
                         <button onclick="loadDistrictBudget()">예산 현황</button>
+                        <button onclick="loadDistrictBriefing()">정책 브리핑 생성</button>
                     </div>
                     <div class="tax-grid" id="districtKpiGrid" style="display:none;">
                         <div class="tax-card">
@@ -3629,6 +3634,7 @@
                     <div id="districtInstitutionList"></div>
                     <div id="districtComparisonList"></div>
                     <div id="districtBudgetList"></div>
+                    <div id="districtBriefingPanel" class="tax-status" style="margin-top:12px;white-space:pre-line;">정책 브리핑 대기 중.</div>
                 </div>
 
                 <!-- ===== Sprint 9: 전자계약 섹션 ===== -->
@@ -3815,31 +3821,90 @@
 
         function buildApiBases() {
             const query = new URLSearchParams(location.search);
-            const override = (
-                query.get('apiBase') ||
-                localStorage.getItem('edulink_api_base') ||
-                window.EDULINK_API_BASE ||
-                ''
-            ).trim();
+            const queryOverride = (query.get('apiBase') || '').trim();
+            const storageOverride = (localStorage.getItem('edulink_api_base') || '').trim();
+            const windowOverride = (window.EDULINK_API_BASE || '').trim();
+            const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
+
+            const normalizeOverride = (candidate) => {
+                if (!candidate) {
+                    return '';
+                }
+                if (isLocalHost) {
+                    return candidate;
+                }
+                if (candidate.startsWith('/')) {
+                    return candidate.replace(/\/$/, '');
+                }
+
+                try {
+                    const parsed = new URL(candidate, location.origin);
+                    if (parsed.origin !== location.origin) {
+                        return '';
+                    }
+                    const normalizedPath = parsed.pathname && parsed.pathname !== '/'
+                        ? parsed.pathname.replace(/\/$/, '')
+                        : '';
+                    return `${parsed.origin}${normalizedPath}`;
+                } catch (_error) {
+                    return '';
+                }
+            };
+
+            const resolveSafeOverride = () => {
+                const byQuery = normalizeOverride(queryOverride);
+                if (byQuery) {
+                    return byQuery;
+                }
+
+                const byStorage = normalizeOverride(storageOverride);
+                if (byStorage) {
+                    return byStorage;
+                }
+
+                const byWindow = normalizeOverride(windowOverride);
+                if (byWindow) {
+                    return byWindow;
+                }
+
+                if (queryOverride && !isLocalHost) {
+                    const cleaned = new URL(window.location.href);
+                    cleaned.searchParams.delete('apiBase');
+                    history.replaceState({}, '', `${cleaned.pathname}${cleaned.search}${cleaned.hash}`);
+                }
+
+                if ((storageOverride || windowOverride) && !isLocalHost) {
+                    localStorage.removeItem('edulink_api_base');
+                }
+
+                return '';
+            };
+
+            const override = resolveSafeOverride();
 
             const bases = [];
             const addBase = (base) => {
                 if (typeof base !== 'string') return;
                 const normalized = base.trim();
-                if (!normalized || bases.includes(normalized)) return;
+                if (normalized === '') {
+                    if (!bases.includes('')) {
+                        bases.push('');
+                    }
+                    return;
+                }
+                if (bases.includes(normalized)) return;
                 bases.push(normalized);
             };
 
-            // 1) Explicit override for staging/prod troubleshooting.
+            // 1) Same-origin API is the safest default in every environment.
+            addBase('');
+
+            // 2) Explicit override for staging/prod troubleshooting.
             if (override) {
                 addBase(override.replace(/\/$/, ''));
             }
 
-            // 2) Same-origin API is the default in production.
-            addBase('');
-
             // 3) Local fallback endpoints for local development only.
-            const isLocalHost = ['localhost', '127.0.0.1'].includes(location.hostname);
             if (isLocalHost) {
                 if (location.port !== '8000') {
                     addBase('http://127.0.0.1:8000');
@@ -3871,10 +3936,17 @@
         let activityCacheByPeriod = {};
         let applicationsFilter = 'all';
         let applicationsCache = [];
+        let appCountsCache = { all: 0, pending: 0, approved: 0, rejected: 0 };
         let applicationsSearchQuery = '';
         let applicationsSort = 'newest';
         let applicationsPostingFilterId = null;
         let applicationsSearchDebounceTimer = null;
+        let districtSnapshot = {
+            institutions: [],
+            comparison: [],
+            budget: null,
+            loadedAt: null
+        };
         let showOnlyMine = false;
         let latestTaxSubmissionId = null;
         let taxPollingTimer = null;
@@ -4037,7 +4109,13 @@
                 sortOldest: 'Sort: Oldest',
                 sortStatus: 'Sort: Status',
                 themeLabel: 'Light',
-                langLabel: 'KO'
+                langLabel: 'KO',
+                sessionExpired: 'Session expired. Please login again.',
+                invalidCredentials: 'Invalid email or password.',
+                emailAlreadyRegistered: 'This email is already registered.',
+                resetTokenSent: 'Reset token has been sent. Enter the token below to set a new password.',
+                resetTokenRequired: 'Token and new password are required.',
+                weakPassword: 'Password must be at least 8 characters.'
             },
             ko: {
                 heroTitle: '교육 인력 운영을 위한 통합 화면 설계.',
@@ -4124,7 +4202,13 @@
                 sortOldest: '정렬: 오래된순',
                 sortStatus: '정렬: 상태',
                 themeLabel: '다크',
-                langLabel: 'EN'
+                langLabel: 'EN',
+                sessionExpired: '세션이 만료되었습니다. 다시 로그인해 주세요.',
+                invalidCredentials: '이메일 또는 비밀번호가 올바르지 않습니다.',
+                emailAlreadyRegistered: '이미 등록된 이메일입니다.',
+                resetTokenSent: '재설정 토큰이 발급되었습니다. 아래에서 토큰을 입력하고 새 비밀번호를 설정하세요.',
+                resetTokenRequired: '토큰과 새 비밀번호를 입력해 주세요.',
+                weakPassword: '비밀번호는 8자 이상이어야 합니다.'
             }
         };
 
@@ -6967,18 +7051,25 @@
                 return;
             }
             badge.classList.remove('ok', 'warn', 'danger');
-            if ((ratio || 0) > 0.35) {
+            const ratioValue = (ratio || 0);
+            const ratioText = `${(ratioValue * 100).toFixed(2)}%`;
+            if (ratioValue > 0.42) {
                 badge.classList.add('danger');
-                badge.textContent = 'High Risk';
+                badge.textContent = `Critical (${ratioText})`;
                 return;
             }
-            if ((ratio || 0) >= 0.30) {
+            if (ratioValue > 0.35) {
+                badge.classList.add('danger');
+                badge.textContent = `High Risk (${ratioText})`;
+                return;
+            }
+            if (ratioValue >= 0.30) {
                 badge.classList.add('warn');
-                badge.textContent = 'Warning';
+                badge.textContent = `Warning (${ratioText})`;
                 return;
             }
             badge.classList.add('ok');
-            badge.textContent = 'Low Risk';
+            badge.textContent = `Low Risk (${ratioText})`;
         }
 
         function setNetworkValues({ gamma, c_total, limit, ratio }) {
@@ -7112,7 +7203,25 @@
                 return;
             }
 
-            container.innerHTML = items.map((item) => {
+            const fromEl = document.getElementById('adminAuditFromInput');
+            const toEl = document.getElementById('adminAuditToInput');
+            const fromDate = fromEl && fromEl.value ? new Date(`${fromEl.value}T00:00:00`) : null;
+            const toDate = toEl && toEl.value ? new Date(`${toEl.value}T23:59:59`) : null;
+            const filtered = items.filter((item) => {
+                if (!fromDate && !toDate) return true;
+                if (!item.created_at) return false;
+                const createdAt = new Date(item.created_at);
+                if (fromDate && createdAt < fromDate) return false;
+                if (toDate && createdAt > toDate) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="admin-item">No audits match selected date range.</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map((item) => {
                 let parsed = null;
                 try {
                     parsed = JSON.parse(item.rules_json || '{}');
@@ -7308,16 +7417,44 @@
             }).join('');
         }
 
+        function handleSessionExpired() {
+            if (!token && !currentUser) return;
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            showToast(t('sessionExpired'));
+            hideSections();
+        }
+
         async function apiFetch(path, options = {}) {
+            const isAuthOnly = path === '/auth/login' || path === '/auth/register';
+            const hasAuthHeader = (() => {
+                const headers = options && options.headers;
+                if (!headers) return false;
+                if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+                    return headers.has('Authorization') || headers.has('authorization');
+                }
+                if (Array.isArray(headers)) {
+                    return headers.some(([k]) => String(k || '').toLowerCase() === 'authorization');
+                }
+                if (typeof headers === 'object') {
+                    return Object.keys(headers).some((k) => k.toLowerCase() === 'authorization');
+                }
+                return false;
+            })();
             let lastError = null;
             for (const base of API_BASES) {
                 try {
-                    return await fetch(`${base}${path}`, options);
+                    const response = await fetch(`${base}${path}`, options);
+                    if (response.status === 401 && token && hasAuthHeader && !isAuthOnly) {
+                        handleSessionExpired();
+                    }
+                    return response;
                 } catch (error) {
                     lastError = error;
                 }
             }
-            throw lastError || new Error('Network request failed. Check that backend is running on :8000.');
+            throw lastError || new Error('Network request failed. Please retry or refresh this page.');
         }
 
         async function parseJsonSafe(response) {
@@ -7474,9 +7611,12 @@
         }
 
         function activateScreen(sectionId, options = {}) {
-            const { scroll = true, clearPreset = true } = options;
+            const { scroll = true, clearPreset = true, silentUnauthorized = false } = options;
             const allowed = getAllowedScreens();
             const nextScreen = allowed.includes(sectionId) ? sectionId : getDefaultScreen();
+            if (currentUser && !allowed.includes(sectionId) && !silentUnauthorized) {
+                showToast(lt('You do not have access to this screen.', '해당 화면에 접근 권한이 없습니다.'));
+            }
             activeScreenId = nextScreen;
             if (clearPreset) {
                 activeDesignPresetId = '';
@@ -7731,7 +7871,7 @@
             document.getElementById('myPostingsToggleWrap').style.display =
                 currentUser && currentUser.role === 'instructor' ? 'inline-flex' : 'none';
             activeScreenId = getAllowedScreens().includes(activeScreenId) ? activeScreenId : getDefaultScreen();
-            activateScreen(activeScreenId, { scroll: false });
+            activateScreen(activeScreenId, { scroll: false, silentUnauthorized: true });
             updateApplicationsViewMeta();
         }
 
@@ -7847,6 +7987,12 @@
         }
 
         function updateApplicationsFilterControls() {
+            const labelMap = {
+                all:      { en: 'All',      ko: '전체' },
+                pending:  { en: 'Pending',  ko: '대기' },
+                approved: { en: 'Approved', ko: '승인' },
+                rejected: { en: 'Rejected', ko: '거절' }
+            };
             const mapping = {
                 all: 'applicationsAllBtn',
                 pending: 'applicationsPendingBtn',
@@ -7856,14 +8002,16 @@
 
             Object.entries(mapping).forEach(([filter, id]) => {
                 const button = document.getElementById(id);
-                if (!button) {
-                    return;
-                }
+                if (!button) return;
                 if (applicationsFilter === filter) {
                     button.classList.add('active');
                 } else {
                     button.classList.remove('active');
                 }
+                const lbl = labelMap[filter];
+                const label = currentLang === 'ko' ? lbl.ko : lbl.en;
+                const count = appCountsCache[filter] ?? 0;
+                button.textContent = `${label} (${count})`;
             });
         }
 
@@ -7936,10 +8084,10 @@
             });
             const data = await parseJsonSafe(response);
             if (!response.ok) {
-                token = null;
-                currentUser = null;
-                localStorage.removeItem('token');
-                throw new Error(data.error || 'Session expired. Please login again.');
+                if (response.status === 401) {
+                    handleSessionExpired();
+                }
+                throw new Error(data.error || t('sessionExpired'));
             }
 
             currentUser = data;
@@ -9408,6 +9556,8 @@
                 actionBtn = `<button class="session-gps-btn" onclick="gpsCheckin(${s.id})" id="gps-btn-${s.id}">📍 ${lt('GPS Check-in','GPS 체크인')}</button>`;
             } else if (isInstructor && (s.status === 'in_progress' || s.status === 'checkedin')) {
                 actionBtn = `<button onclick="openInlineJournal(${s.id})" style="font-size:12px;padding:7px 12px;background:rgba(93,238,192,0.15);border:1px solid rgba(93,238,192,0.3);border-radius:6px;color:var(--ok);cursor:pointer;">📝 ${lt('Write Journal & Complete','수업 일지 작성')}</button>`;
+            } else if (role === 'institution' && s.status === 'completed' && s.instructor_id) {
+                actionBtn = `<button onclick="prefillReviewFromSession(${s.id}, ${s.instructor_id})" style="font-size:12px;padding:7px 12px;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.4);border-radius:6px;color:#93c5fd;cursor:pointer;">⭐ ${lt('Write Review','리뷰 작성')}</button>`;
             }
 
             // P2-2: journal display for completed sessions
@@ -9428,7 +9578,7 @@
                   </div>` : '';
 
             return `
-                <div class="session-card-v2" data-session-id="${s.id}">
+                <div class="session-card-v2" data-session-id="${s.id}" data-instructor-id="${s.instructor_id || ''}">
                     <div class="session-card-header">
                         <div>
                             <strong style="font-size:15px;">#${s.id} ${escapeHtml(s.title || s.subject || lt('Session', '수업'))}</strong>
@@ -9476,6 +9626,20 @@
         function openSessionComplete() {
             const f = document.getElementById('sessionsCompleteForm');
             f.style.display = f.style.display === 'none' ? '' : 'none';
+        }
+
+        function prefillReviewFromSession(sessionId, instructorId) {
+            if (!sessionId || !instructorId) {
+                showToast(lt('Missing session or instructor info.', '세션 또는 강사 정보가 누락되었습니다.'));
+                return;
+            }
+            activateScreen('reviewsSection');
+            const form = document.getElementById('reviewsWriteForm');
+            if (form) form.style.display = '';
+            document.getElementById('reviewSessionId').value = String(sessionId);
+            document.getElementById('reviewInstructorId').value = String(instructorId);
+            document.getElementById('reviewComment').focus();
+            showToast(lt('Review form pre-filled from session.', '세션 정보로 리뷰 작성폼이 채워졌습니다.'));
         }
 
         function prefillSessionCheckin(id) {
@@ -9935,6 +10099,8 @@
                 if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
                 const institutions = Array.isArray(data) ? data : (data.institutions || []);
+                districtSnapshot.institutions = institutions;
+                districtSnapshot.loadedAt = new Date().toISOString();
                 const kpiGrid = document.getElementById('districtKpiGrid');
                 kpiGrid.style.display = '';
                 document.getElementById('districtInstitutionCount').textContent = institutions.length;
@@ -9959,6 +10125,8 @@
                 if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
                 const regions = Array.isArray(data) ? data : (data.regions || []);
+                districtSnapshot.comparison = regions;
+                districtSnapshot.loadedAt = new Date().toISOString();
                 document.getElementById('districtComparisonList').innerHTML = `<h4>지역 비교</h4>` + regions.slice(0, 10).map(r => `
                     <div class="admin-item" style="margin-bottom:4px;">
                         <strong>${escapeHtml(r.region || r.name || '-')}</strong>
@@ -9978,6 +10146,13 @@
                 const used = data.total_used_budget ?? data.used_budget ?? 0;
                 const total = data.total_budget ?? data.budget ?? 0;
                 const rate = total > 0 ? `${Math.round(used / total * 100)}%` : '-';
+                districtSnapshot.budget = {
+                    total,
+                    used,
+                    rate,
+                    raw: data
+                };
+                districtSnapshot.loadedAt = new Date().toISOString();
                 document.getElementById('districtBudgetRate').textContent = rate;
                 document.getElementById('districtBudgetList').innerHTML = `
                     <h4>예산 현황</h4>
@@ -9989,6 +10164,38 @@
             } catch (e) {
                 document.getElementById('districtBudgetList').innerHTML = `<p class="muted">예산 조회 오류: ${e.message}</p>`;
             }
+        }
+
+        function loadDistrictBriefing() {
+            const panel = document.getElementById('districtBriefingPanel');
+            if (!panel) return;
+
+            const institutions = districtSnapshot.institutions || [];
+            const comparison = districtSnapshot.comparison || [];
+            const budget = districtSnapshot.budget || { total: 0, used: 0, rate: '-' };
+
+            if (!institutions.length && !comparison.length && !districtSnapshot.budget) {
+                panel.textContent = lt('No district data loaded yet. Load institutions, comparison, and budget first.', '아직 교육청 데이터가 없습니다. 기관/지역비교/예산을 먼저 조회해 주세요.');
+                return;
+            }
+
+            const topRegion = comparison
+                .slice()
+                .sort((a, b) => (b.institution_count || 0) - (a.institution_count || 0))[0];
+            const lowCoverage = comparison
+                .slice()
+                .sort((a, b) => (a.instructor_count || 0) - (b.instructor_count || 0))[0];
+
+            const briefingKo = [
+                `기준 시각: ${districtSnapshot.loadedAt ? districtSnapshot.loadedAt.slice(0, 16).replace('T', ' ') : '-'}`,
+                `관할 기관 수: ${institutions.length}개`,
+                `예산 집행률: ${budget.rate} (총 ${formatWon(budget.total || 0)} / 집행 ${formatWon(budget.used || 0)})`,
+                `기관 밀집 상위 지역: ${topRegion ? (topRegion.region || topRegion.name || '-') : '-'}`,
+                `강사 커버리지 취약 지역: ${lowCoverage ? (lowCoverage.region || lowCoverage.name || '-') : '-'}`,
+                '권고: 취약 지역 중심으로 강사 배정 인센티브 및 긴급 매칭 풀을 확대하세요.'
+            ].join('\n');
+
+            panel.textContent = briefingKo;
         }
 
         // ===== Sprint 9: 전자계약 =====
@@ -10656,7 +10863,13 @@
                 const data = await parseJsonSafe(response);
 
                 if (!response.ok) {
-                    setStatus('registerStatus', data.error || 'Register failed');
+                    const errMsg = data.error || '';
+                    const normalized = /already|exist|registered|duplicate/i.test(errMsg)
+                        ? t('emailAlreadyRegistered')
+                        : /password.*8|too short|weak/i.test(errMsg)
+                            ? t('weakPassword')
+                            : errMsg || lt('Registration failed. Please retry.', '회원가입에 실패했습니다. 다시 시도해 주세요.');
+                    setStatus('registerStatus', normalized);
                     return;
                 }
 
@@ -10687,7 +10900,11 @@
                 const data = await parseJsonSafe(response);
 
                 if (!response.ok || !data.access_token) {
-                    setStatus('loginStatus', data.error || 'Login failed');
+                    const errMsg = data.error || '';
+                    const normalized = /invalid|incorrect|wrong|password|credentials/i.test(errMsg)
+                        ? t('invalidCredentials')
+                        : errMsg || lt('Login failed. Please retry.', '로그인에 실패했습니다. 다시 시도해 주세요.');
+                    setStatus('loginStatus', normalized);
                     return;
                 }
 
@@ -10759,13 +10976,13 @@
                     return;
                 }
 
+                const confirmGroup = document.getElementById('resetConfirmGroup');
+                if (confirmGroup) confirmGroup.style.display = '';
                 if (data.reset_token) {
                     document.getElementById('resetToken').value = data.reset_token;
-                    setStatus('resetStatus', data.message || lt('Reset request completed.', '재설정 요청이 완료되었습니다.'));
-                } else {
-                    setStatus('resetStatus', lt('Reset requested. Check mock delivery log for token in this MVP.', '재설정이 요청되었습니다. MVP 환경에서는 mock 전달 로그에서 토큰을 확인하세요.'));
                 }
-                showToast(lt('Reset request completed', '재설정 요청 완료'));
+                setStatus('resetStatus', t('resetTokenSent'));
+                showToast(lt('Reset token ready', '재설정 토큰 준비 완료'));
             } catch (error) {
                 setStatus('resetStatus', `Error: ${error.message}`);
             }
@@ -10775,7 +10992,7 @@
             const resetToken = document.getElementById('resetToken').value.trim();
             const newPassword = document.getElementById('resetNewPassword').value;
             if (!resetToken || !newPassword) {
-                setStatus('resetStatus', lt('Reset token and new password are required.', '재설정 토큰과 새 비밀번호를 입력해 주세요.'));
+                setStatus('resetStatus', t('resetTokenRequired'));
                 return;
             }
 
@@ -10793,6 +11010,9 @@
 
                 setStatus('resetStatus', lt('Password reset completed. You can login now.', '비밀번호 재설정이 완료되었습니다. 이제 로그인할 수 있습니다.'));
                 document.getElementById('resetNewPassword').value = '';
+                document.getElementById('resetToken').value = '';
+                const confirmGroup2 = document.getElementById('resetConfirmGroup');
+                if (confirmGroup2) confirmGroup2.style.display = 'none';
                 showToast(lt('Password reset complete', '비밀번호 재설정 완료'));
             } catch (error) {
                 setStatus('resetStatus', `Error: ${error.message}`);
@@ -11114,6 +11334,7 @@
                     counts[item.status] += 1;
                 }
             });
+            appCountsCache = { ...counts };
 
             const cardLabels = {
                 instructor: { all: lt('Total', '\uc804\uccb4'), pending: lt('Pending', '\ub300\uae30'), approved: lt('Approved', '\uc2b9\uc778'), rejected: lt('Rejected', '\uac70\uc808') },
@@ -11720,6 +11941,14 @@
             renderSimulationSponsorImpact(items);
         });
         document.getElementById('adminLoadAuditsBtn').addEventListener('click', loadAdminRuleAudits);
+        const adminAuditFromEl = document.getElementById('adminAuditFromInput');
+        const adminAuditToEl = document.getElementById('adminAuditToInput');
+        if (adminAuditFromEl) {
+            adminAuditFromEl.addEventListener('change', loadAdminRuleAudits);
+        }
+        if (adminAuditToEl) {
+            adminAuditToEl.addEventListener('change', loadAdminRuleAudits);
+        }
         document.getElementById('langToggleBtn').addEventListener('click', toggleLanguage);
         document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
         document.getElementById('applyFiltersBtn').addEventListener('click', async () => {
