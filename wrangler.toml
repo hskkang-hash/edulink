@@ -1,5 +1,9 @@
+main = "worker.js"
 name = "edulink"
 compatibility_date = "2026-03-23"
 
 [assets]
 directory = "./dist"
+
+[vars]
+BACKEND_ORIGIN = "https://kind-peas-mate.loca.lt"
