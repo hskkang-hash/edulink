@@ -6,34 +6,34 @@ from werkzeug.security import generate_password_hash
 
 USERS = [
     {
-        "email": "ui.instructor@edulink.local",
-        "password": "Pass1234!",
+        "email": "qa.instructor@edulink.local",
+        "password": "QaPass123!",
         "role": "instructor",
-        "organization": "Instructor Team",
+        "organization": "QA Instructor Team",
     },
     {
-        "email": "ui.student@edulink.local",
-        "password": "Pass1234!",
-        "role": "student",
-        "organization": "Student Team",
+        "email": "qa.institution@edulink.local",
+        "password": "QaPass123!",
+        "role": "institution",
+        "organization": "QA Institution Team",
     },
     {
-        "email": "ui.admin@edulink.local",
-        "password": "Pass1234!",
+        "email": "qa.district@edulink.local",
+        "password": "QaPass123!",
+        "role": "district",
+        "organization": "QA District Office",
+    },
+    {
+        "email": "qa.admin@edulink.local",
+        "password": "QaPass123!",
         "role": "admin",
-        "organization": "Admin Team",
-    },
-    {
-        "email": "ui.superadmin@edulink.local",
-        "password": "Pass1234!",
-        "role": "super_admin",
-        "organization": "Super Admin Team",
+        "organization": "QA Admin Team",
     },
 ]
 
 
 def main() -> None:
-    engine = create_engine("sqlite:///./edulink.db", echo=False)
+    engine = create_engine("sqlite:///./edulinks.db", echo=False)
 
     with engine.begin() as conn:
         for user in USERS:
@@ -76,7 +76,7 @@ def main() -> None:
 
     print("Seeded UI users:")
     for user in USERS:
-        print(f"- {user['email']} ({user['role']}) / Pass1234!")
+        print(f"- {user['email']} ({user['role']}) / QaPass123!")
 
 
 if __name__ == "__main__":

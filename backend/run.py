@@ -17,9 +17,9 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     debug = os.getenv("DEBUG", "false").lower() == "true"
     
-    print(f"🚀 Starting EduLink on http://localhost:{port}")
-    print(f"📝 API Docs: http://localhost:{port}/docs (if Swagger available)")
-    print(f"🏥 Health Check: http://localhost:{port}/health")
+    print(f"Starting EduLink on http://localhost:{port}")
+    print(f"API Docs: http://localhost:{port}/docs (if Swagger available)")
+    print(f"Health Check: http://localhost:{port}/health")
     
     app.run(
         host="0.0.0.0",

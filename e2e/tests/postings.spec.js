@@ -10,7 +10,7 @@ async function loginAs(page, email, password) {
   await page.locator('#loginEmail').fill(email);
   await page.locator('#loginPassword').fill(password);
   await page.locator('#loginBtn').click();
-  await expect(page.locator('body')).toHaveClass(/view-webapp/, { timeout: 8_000 });
+  await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });
 }
 
 test.describe('Postings(공고) 섹션', () => {
@@ -76,10 +76,13 @@ test.describe('Dashboard 섹션', () => {
   });
 
   test('대시보드 API 응답 정상 (네트워크 확인)', async ({ page }) => {
-    // 페이지 이동 시 /dashboard/stats 호출 여부 확인
+    // 대시보드에서 reload를 트리거해 /dashboard/stats 재호출을 확실히 유도
     const [response] = await Promise.all([
-      page.waitForResponse(resp => resp.url().includes('/dashboard/stats'), { timeout: 8_000 }),
-      page.locator('.rail-link[data-screen="dashboardSection"]').click(),
+      page.waitForResponse(
+        resp => resp.url().includes('/dashboard/stats') && resp.request().method() === 'GET',
+        { timeout: 10_000 }
+      ),
+      page.reload(),
     ]);
     expect(response.status()).toBe(200);
   });

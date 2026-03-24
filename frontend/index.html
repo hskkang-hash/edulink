@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EDULINK - Instructor Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
@@ -1228,6 +1229,89 @@
             color: #d7dced;
         }
 
+        .settlement-detail-board {
+            margin-top: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .settlement-detail-head {
+            display: grid;
+            grid-template-columns: 1.5fr 0.8fr 0.8fr 1fr 0.8fr;
+            gap: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--muted);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-weight: 700;
+        }
+
+        .settlement-detail-row {
+            display: grid;
+            grid-template-columns: 1.5fr 0.8fr 0.8fr 1fr 0.8fr;
+            gap: 8px;
+            padding: 9px 12px;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .settlement-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .settlement-badge {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            width: fit-content;
+        }
+
+        .settlement-badge.paid {
+            color: #5deec0;
+            border-color: rgba(93, 238, 192, 0.35);
+            background: rgba(93, 238, 192, 0.12);
+        }
+
+        .settlement-badge.pending {
+            color: #ffd38d;
+            border-color: rgba(255, 211, 141, 0.35);
+            background: rgba(255, 211, 141, 0.12);
+        }
+
+        .refund-flow-board {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+
+        .refund-step {
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 8px;
+            font-size: 11px;
+            color: var(--muted);
+            background: rgba(255, 255, 255, 0.03);
+            text-align: center;
+        }
+
+        .refund-step.active {
+            color: var(--brand);
+            border-color: rgba(165, 140, 255, 0.35);
+            background: rgba(165, 140, 255, 0.12);
+            font-weight: 700;
+        }
+
+        .refund-step.done {
+            color: #5deec0;
+            border-color: rgba(93, 238, 192, 0.35);
+            background: rgba(93, 238, 192, 0.1);
+            font-weight: 700;
+        }
+
         .network-inline {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -2267,25 +2351,470 @@
                 padding: 9px 6px;
             }
         }
+
+        /* ===== SPRINTS 1-10 ENHANCED UI STYLES ===== */
+
+        /* Sprint 1: Enhanced Dashboard KPI */
+        .kpi-delta {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 11px; font-weight: 700; margin-top: 6px;
+            padding: 2px 8px; border-radius: 999px;
+        }
+        .kpi-delta.up { background: rgba(93,238,192,0.15); color: #5deec0; }
+        .kpi-delta.down { background: rgba(255,111,135,0.15); color: #ff6f87; }
+        .kpi-delta.neutral { background: rgba(138,146,168,0.15); color: #8a92a8; }
+        .kpi-sparkline { display: flex; gap: 3px; align-items: flex-end; margin-top: 8px; height: 26px; }
+        .kpi-sparkline-bar { flex: 1; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, rgba(165,140,255,0.5), rgba(99,214,255,0.3)); min-width: 4px; }
+        .dashboard-quick-actions {
+            display: flex; gap: 10px; flex-wrap: wrap;
+            margin-top: 14px; padding: 14px; border-radius: 16px;
+            background: rgba(165,140,255,0.06); border: 1px solid rgba(165,140,255,0.18);
+        }
+        .quick-action-btn {
+            display: flex; align-items: center; gap: 8px;
+            padding: 9px 14px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.05); color: inherit;
+            font-size: 12px; letter-spacing: 0.04em; font-weight: 700;
+            cursor: pointer; transition: all 0.15s ease;
+        }
+        .quick-action-btn:hover {
+            border-color: rgba(165,140,255,0.55); background: rgba(165,140,255,0.14);
+            transform: translateY(-1px);
+        }
+
+        /* Sprint 2: Posting Cards Enhanced */
+        .posting-tags { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+        .posting-tag {
+            display: inline-block; padding: 3px 10px; border-radius: 999px;
+            font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+        }
+        .tag-subject { background: rgba(165,140,255,0.15); color: #c4b4ff; border: 1px solid rgba(165,140,255,0.25); }
+        .tag-region { background: rgba(96,212,255,0.12); color: #7dd8ff; border: 1px solid rgba(96,212,255,0.22); }
+        .tag-status-open { background: rgba(93,238,192,0.12); color: #8df1d4; border: 1px solid rgba(93,238,192,0.22); }
+        .tag-status-closed { background: rgba(255,111,135,0.12); color: #ff6f87; border: 1px solid rgba(255,111,135,0.22); }
+        .posting-rate-display {
+            font-family: 'Space Grotesk', sans-serif; font-size: 20px; font-weight: 700;
+            letter-spacing: -0.02em; color: #a58cff;
+        }
+        .posting-deadline { font-size: 12px; color: var(--muted); margin-top: 4px; }
+        .posting-deadline.urgent { color: #ffb199; }
+        .posting-meta-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+        .filter-chip {
+            padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.05); color: #c5cbdb; font-size: 12px;
+            font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: all 0.14s ease;
+        }
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--brand-soft); border-color: rgba(165,140,255,0.55); color: #fff;
+        }
+
+        /* Sprint 3: Profile Completeness Ring */
+        .profile-completeness-card {
+            display: flex; align-items: center; gap: 16px;
+            padding: 16px 20px; border-radius: 16px;
+            background: rgba(165,140,255,0.07); border: 1px solid rgba(165,140,255,0.2);
+            margin-bottom: 18px;
+        }
+        .profile-completeness-ring { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+        .profile-completeness-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .profile-completeness-pct {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700;
+        }
+        .profile-completeness-info h4 { margin: 0 0 4px; font-size: 15px; }
+        .profile-completeness-info p { margin: 0; font-size: 12px; color: var(--muted); }
+        .profile-step-list { display: grid; gap: 6px; margin-top: 10px; }
+        .profile-step-item {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 13px; padding: 8px 12px; border-radius: 10px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+        }
+        .profile-step-icon { font-size: 14px; flex-shrink: 0; }
+
+        /* Sprint 4: Application Status Timeline */
+        .app-timeline {
+            display: flex; align-items: center; gap: 0;
+            margin: 10px 0; padding: 12px 14px;
+            background: rgba(255,255,255,0.03); border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .app-timeline-step { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        .app-step-dot {
+            width: 28px; height: 28px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+            border: 2px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+            transition: all 0.2s ease;
+        }
+        .app-step-dot.done { background: rgba(93,238,192,0.2); border-color: #5deec0; color: #5deec0; }
+        .app-step-dot.active { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
+        .app-step-dot.fail { background: rgba(255,111,135,0.2); border-color: #ff6f87; color: #ff6f87; }
+        .app-step-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-align: center; font-weight: 700; }
+        .app-timeline-line { height: 2px; flex: 0.4; background: rgba(255,255,255,0.08); margin-bottom: 18px; }
+        .app-timeline-line.done { background: rgba(93,238,192,0.35); }
+
+        /* Sprint 5: Session Enhanced Cards */
+        .session-card-v2 {
+            padding: 14px 16px; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: linear-gradient(160deg, rgba(24,26,38,0.95), rgba(14,17,26,0.95));
+            margin-bottom: 10px; transition: border-color 0.15s ease, transform 0.15s ease;
+        }
+        .session-card-v2:hover { border-color: rgba(165,140,255,0.3); transform: translateY(-1px); }
+        .session-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+        .session-status-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+            letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0;
+        }
+        .pill-scheduled { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.25); }
+        .pill-checkedin { background: rgba(167,139,250,0.15); color: #a78bfa; border: 1px solid rgba(167,139,250,0.25); }
+        .pill-completed { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+        .pill-cancelled { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.25); }
+        .session-meta-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+        .session-amount-highlight { font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: #5deec0; }
+        .session-progress-bar { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); margin-top: 10px; overflow: hidden; }
+        .session-progress-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #a58cff, #63d6ff); }
+
+        /* Sprint 6: Contract & Escrow Status Stepper */
+        .status-stepper { display: flex; align-items: center; gap: 0; margin: 12px 0; }
+        .stepper-step { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+        .stepper-dot {
+            width: 22px; height: 22px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04);
+            display: flex; align-items: center; justify-content: center; font-size: 10px;
+        }
+        .stepper-dot.done { background: rgba(93,238,192,0.2); border-color: #5deec0; }
+        .stepper-dot.active { background: var(--brand-soft); border-color: var(--brand); box-shadow: 0 0 8px rgba(165,140,255,0.4); }
+        .stepper-line { height: 2px; flex: 0.5; background: rgba(255,255,255,0.08); margin-bottom: 16px; }
+        .stepper-line.done { background: rgba(93,238,192,0.4); }
+        .stepper-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); text-align: center; font-weight: 700; }
+        .contract-card-v2, .escrow-card-v2 {
+            padding: 14px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(160deg, rgba(22,25,36,0.95), rgba(13,16,23,0.95));
+            margin-bottom: 10px;
+        }
+        .escrow-amount-badge {
+            display: inline-block; padding: 6px 14px; border-radius: 999px;
+            font-family: 'Space Grotesk', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.02em;
+        }
+        .escrow-held { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.25); }
+        .escrow-released { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+        .escrow-refunded { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.25); }
+
+        /* Sprint 7: Reviews Star Rating */
+        .stars-row { display: flex; gap: 2px; align-items: center; }
+        .star-icon { font-size: 16px; line-height: 1; }
+        .star-icon.filled { color: #fbbf24; }
+        .star-icon.empty { color: rgba(255,255,255,0.2); }
+        .review-card-v2 {
+            padding: 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.07);
+            background: rgba(255,255,255,0.03); margin-bottom: 10px;
+        }
+        .review-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+        .rating-aggregate {
+            display: flex; gap: 12px; align-items: center;
+            padding: 12px 16px; background: rgba(251,191,36,0.06);
+            border-radius: 12px; border: 1px solid rgba(251,191,36,0.12); margin-bottom: 14px;
+        }
+        .rating-big-score { font-family: 'Space Grotesk', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: -0.03em; color: #fbbf24; }
+        .rating-bar-list { display: grid; gap: 4px; flex: 1; }
+        .rating-bar-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+        .rating-bar-track { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .rating-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .star-rating-input { display: flex; gap: 6px; margin: 8px 0; }
+        .star-input-btn {
+            width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04); font-size: 20px; cursor: pointer;
+            transition: all 0.14s ease; display: flex; align-items: center; justify-content: center; padding: 0;
+        }
+        .star-input-btn.selected { background: rgba(251,191,36,0.2); border-color: rgba(251,191,36,0.5); transform: scale(1.1); }
+
+        /* Sprint 8: SOS Alerts */
+        .sos-urgent-card {
+            padding: 14px 16px; border-radius: 16px;
+            background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(239,68,68,0.06));
+            border: 1px solid rgba(249,115,22,0.35); margin-bottom: 10px;
+            position: relative; overflow: hidden;
+        }
+        .sos-urgent-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0;
+            height: 3px; background: linear-gradient(90deg, #f97316, #ef4444);
+        }
+        .sos-urgency-badge {
+            display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+            border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .sos-open { background: rgba(249,115,22,0.2); color: #fb923c; border: 1px solid rgba(249,115,22,0.35); }
+        .sos-accepted { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.25); }
+        .sos-closed { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid rgba(255,255,255,0.1); }
+        .sos-countdown { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700; color: #ffb199; }
+        .sos-accept-btn { background: linear-gradient(90deg, rgba(249,115,22,0.3), rgba(239,68,68,0.2)); border: 1px solid rgba(249,115,22,0.5); color: #fdba74; }
+        .sos-accept-btn:hover { background: linear-gradient(90deg, rgba(249,115,22,0.5), rgba(239,68,68,0.35)); }
+
+        /* Sprint 8: Notification Bell */
+        .notif-bell-wrap { position: relative; display: inline-flex; align-items: center; }
+        .notif-bell-btn {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
+            font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            padding: 0; transition: all 0.14s ease;
+        }
+        .notif-bell-btn:hover { background: rgba(165,140,255,0.15); border-color: rgba(165,140,255,0.4); }
+        .notif-badge {
+            position: absolute; top: -3px; right: -3px; width: 16px; height: 16px;
+            border-radius: 50%; background: #ff6f87; font-size: 9px; font-weight: 700;
+            align-items: center; justify-content: center; color: #fff; display: none;
+            animation: notifPulse 1.5s ease infinite;
+        }
+        .notif-badge.visible { display: flex; }
+        .notif-dropdown {
+            position: fixed; z-index: 100; top: 60px; right: 20px; width: 320px;
+            background: linear-gradient(160deg, #1a1d2a, #11141e);
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 16px;
+            padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+            display: none; max-height: 400px; overflow-y: auto;
+        }
+        .notif-dropdown.open { display: block; animation: reveal 0.2s ease; }
+        .notif-dropdown h4 { margin: 0 0 12px; font-size: 14px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+        .notif-item {
+            padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.03); margin-bottom: 6px; cursor: pointer;
+            transition: all 0.14s ease;
+        }
+        .notif-item:hover { background: rgba(165,140,255,0.1); border-color: rgba(165,140,255,0.25); }
+        .notif-item.unread { border-left: 3px solid var(--brand); }
+        .notif-item-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+        .notif-item-time { font-size: 11px; color: var(--muted); }
+
+        /* Sprint 9: Chart Containers */
+        .chart-container {
+            position: relative; padding: 16px; border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(165deg, rgba(24,27,40,0.95), rgba(13,16,24,0.95));
+            margin-bottom: 14px;
+        }
+        .chart-container h4 { margin: 0 0 12px; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+        .chart-canvas-wrap { position: relative; height: 200px; }
+
+        /* Sprint 10: Mobile & Accessibility */
+        .mobile-menu-toggle {
+            display: none; position: fixed; top: 16px; left: 16px; z-index: 200;
+            width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(12,14,22,0.92); cursor: pointer; align-items: center;
+            justify-content: center; font-size: 18px; backdrop-filter: blur(8px);
+        }
+        .side-rail-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6); z-index: 150; backdrop-filter: blur(3px);
+        }
+        .skip-to-content {
+            position: absolute; top: -100%; left: 50%; transform: translateX(-50%);
+            padding: 8px 16px; background: var(--brand); color: #fff;
+            border-radius: 0 0 8px 8px; font-weight: 700; font-size: 13px;
+            z-index: 999; transition: top 0.2s ease; text-decoration: none;
+        }
+        .skip-to-content:focus { top: 0; }
+        :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+
+        @keyframes notifPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,111,135,0.4); }
+            50% { box-shadow: 0 0 0 4px rgba(255,111,135,0); }
+        }
+
+        /* Light theme overrides for new components */
+        :root[data-theme='light'] .kpi-delta.up { background: rgba(5,150,105,0.12); color: #047857; }
+        :root[data-theme='light'] .kpi-delta.down { background: rgba(220,38,38,0.1); color: #dc2626; }
+        :root[data-theme='light'] .sos-urgent-card { background: linear-gradient(135deg, rgba(249,115,22,0.07), rgba(239,68,68,0.04)); border-color: rgba(249,115,22,0.25); }
+        :root[data-theme='light'] .notif-dropdown { background: linear-gradient(160deg, #ffffff, #f5f7ff); border-color: rgba(17,24,39,0.1); }
+        :root[data-theme='light'] .session-card-v2 { background: linear-gradient(160deg, #ffffff, #f3f6ff); border-color: rgba(17,24,39,0.08); }
+        :root[data-theme='light'] .contract-card-v2, :root[data-theme='light'] .escrow-card-v2 { background: linear-gradient(160deg, #ffffff, #f3f6ff); border-color: rgba(17,24,39,0.08); }
+        :root[data-theme='light'] .review-card-v2 { background: rgba(17,24,39,0.03); border-color: rgba(17,24,39,0.07); }
+        :root[data-theme='light'] .chart-container { background: linear-gradient(165deg, #ffffff, #f5f7ff); border-color: rgba(17,24,39,0.08); }
+        :root[data-theme='light'] .filter-chip { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #364057; }
+        :root[data-theme='light'] .profile-completeness-card { background: rgba(96,69,215,0.06); border-color: rgba(96,69,215,0.18); }
+        :root[data-theme='light'] .dashboard-quick-actions { background: rgba(96,69,215,0.05); border-color: rgba(96,69,215,0.16); }
+        :root[data-theme='light'] .posting-tag.tag-subject { background: rgba(96,69,215,0.1); color: #6045d7; border-color: rgba(96,69,215,0.2); }
+        :root[data-theme='light'] .app-timeline { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); }
+
+        /* ===== DYNAMIC SIDEBAR: PRD Feature Nav ===== */
+        .rail-group-header {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 14px 14px 4px;
+            margin-top: 4px;
+            opacity: 0.7;
+            pointer-events: none;
+            user-select: none;
+        }
+        .rail-link.wip {
+            opacity: 0.38;
+            cursor: not-allowed;
+            position: relative;
+            font-style: italic;
+            color: var(--muted) !important;
+        }
+        .rail-link.wip:hover { background: transparent !important; color: var(--muted) !important; }
+        .rail-link.wip::after {
+            content: attr(data-sprint);
+            font-size: 9px;
+            font-style: normal;
+            background: rgba(165,140,255,0.18);
+            color: var(--brand);
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-left: auto;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .rail-link.wip { display: flex !important; align-items: center; justify-content: space-between; }
+        :root[data-theme='light'] .rail-link.wip::after { background: rgba(96,69,215,0.12); color: #6045d7; }
+
+        /* ===== SPRINT TRACKER WIDGET ===== */
+        .sprint-tracker-panel {
+            margin-top: auto;
+            padding: 10px 10px 14px;
+            border-top: 1px solid rgba(255,255,255,0.07);
+            flex-shrink: 0;
+        }
+        :root[data-theme='light'] .sprint-tracker-panel { border-top-color: rgba(0,0,0,0.07); }
+        .sprint-tracker-title {
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 7px;
+            opacity: 0.7;
+        }
+        .sprint-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3px 4px;
+        }
+        .sprint-pill {
+            font-size: 9px;
+            font-weight: 600;
+            padding: 3px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: default;
+            line-height: 1.3;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .sprint-pill.done {
+            background: rgba(93,238,192,0.15);
+            color: #5deec0;
+            border: 1px solid rgba(93,238,192,0.22);
+        }
+        .sprint-pill.next {
+            background: rgba(165,140,255,0.2);
+            color: var(--brand);
+            border: 1px solid rgba(165,140,255,0.35);
+            animation: notifPulse 2s infinite;
+        }
+        .sprint-pill.todo {
+            background: rgba(255,255,255,0.04);
+            color: rgba(138,146,168,0.7);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        :root[data-theme='light'] .sprint-pill.done { background: rgba(5,150,105,0.1); color: #047857; border-color: rgba(5,150,105,0.2); }
+        :root[data-theme='light'] .sprint-pill.next { background: rgba(96,69,215,0.12); color: #6045d7; border-color: rgba(96,69,215,0.25); }
+        :root[data-theme='light'] .sprint-pill.todo { background: rgba(0,0,0,0.03); color: #8a92a8; border-color: rgba(0,0,0,0.08); }
+        .sprint-pill-icon { flex-shrink: 0; }
+        .sprint-progress-bar-wrap {
+            margin-top: 7px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            height: 4px;
+            overflow: hidden;
+        }
+        .sprint-progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #5deec0, #a58cff);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        :root[data-theme='light'] .sprint-progress-bar-wrap { background: rgba(0,0,0,0.06); }
+        .sprint-progress-label {
+            font-size: 9px;
+            color: var(--muted);
+            margin-top: 4px;
+            text-align: right;
+            opacity: 0.75;
+        }
+
+        /* P2-2: GPS Check-in + Inline Session Journal */
+        .session-card-v2 { position: relative; }
+        .session-gps-btn { display: inline-flex; align-items: center; gap: 5px; }
+        .session-gps-btn.loading { opacity: 0.7; pointer-events: none; }
+        .gps-accuracy-badge { font-size: 10px; color: var(--ok); background: rgba(93,238,192,0.12); border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+        .inline-journal-panel { margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; display: none; animation: fadeIn 0.2s ease; }
+        .inline-journal-panel.open { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+        .journal-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .journal-textarea { width: 100%; min-height: 80px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; color: var(--fg); padding: 10px; font-size: 13px; resize: vertical; line-height: 1.55; box-sizing: border-box; }
+        .journal-textarea:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 2px rgba(165,140,255,0.18); }
+        .journal-char-count { font-size: 10px; color: var(--muted); text-align: right; margin-top: 2px; }
+        .journal-actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+        .journal-duration-input { width: 80px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: var(--fg); padding: 7px 10px; font-size: 13px; }
+        .journal-submit-btn { background: var(--ok); color: #0a1628; border: none; border-radius: 6px; padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 0.02em; }
+        .journal-submit-btn:hover { opacity: 0.85; }
+        .journal-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .journal-next-input { flex: 1; min-width: 120px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: var(--fg); padding: 7px 10px; font-size: 12px; }
+        .journal-display { margin-top: 8px; padding: 8px 12px; background: rgba(255,255,255,0.04); border-radius: 6px; font-size: 12px; color: var(--muted); border-left: 3px solid var(--brand); white-space: pre-wrap; line-height: 1.5; }
+        :root[data-theme='light'] .journal-textarea { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.15); }
+        :root[data-theme='light'] .journal-display { background: rgba(0,0,0,0.03); }
+
+        /* Sprint 10: Responsiveness */
+        @media (max-width: 680px) {
+            .mobile-menu-toggle { display: flex; }
+            .app-shell { grid-template-columns: 1fr !important; }
+            .side-rail {
+                position: fixed; left: -260px; top: 0; height: 100vh;
+                z-index: 160; transition: left 0.25s ease; display: flex !important;
+            }
+            .side-rail.open { left: 0; }
+            .side-rail-overlay.open { display: block; }
+            .main-pane { padding: 14px 14px 88px !important; }
+            .kpi-sparkline { display: none; }
+            .app-timeline-line { flex: 0.15; }
+            .posting-tags { flex-wrap: wrap; }
+            .posting-rate-display { font-size: 16px; }
+            .rating-aggregate { flex-direction: column; align-items: flex-start; }
+            .dashboard-quick-actions { flex-direction: column; }
+            .sprint-tracker-panel { display: none; }
+        }
+
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-to-content">Skip to main content</a>
+    <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu">☰</button>
+    <div class="side-rail-overlay" id="sideRailOverlay"></div>
+    <div class="notif-dropdown" id="notifDropdown" role="dialog" aria-label="Notifications">
+        <h4>🔔 Notifications</h4>
+        <div id="notifList"><p class="muted" style="font-size:13px;">No new notifications.</p></div>
+    </div>
     <div class="app-shell">
         <aside class="side-rail">
             <div class="brand-lockup">
                 <img src="./assets/edulink-logo.svg" alt="Edulink logo">
             </div>
-            <a class="rail-link is-active" href="#" data-screen="dashboardSection">Overview</a>
-            <a class="rail-link" href="#" data-screen="postingsSection">Analytics</a>
-            <a class="rail-link" href="#" data-screen="taxSection">Settlements</a>
-            <a class="rail-link" href="#" data-screen="applicationsSection">Applicants</a>
-            <a class="rail-link" href="#" data-screen="instructorOnboardingSection">My Profile</a>
-            <a class="rail-link" href="#" data-screen="networkSection">Network</a>
-            <a class="rail-link" href="#" data-screen="securitySection">My Page</a>
-            <button class="rail-cta" type="button" data-screen="createPostingSection">Create Posting</button>
+            <nav id="railNavContainer" aria-label="Main navigation" style="flex:1;overflow-y:auto;overflow-x:hidden;"></nav>
+            <div id="sprintTrackerWidget" class="sprint-tracker-panel"></div>
         </aside>
 
-        <main class="main-pane">
+        <main class="main-pane" id="main-content">
             <div class="container">
                 <div class="masthead">
                     <div>
@@ -2301,6 +2830,10 @@
                             <span data-screen="securitySection">My Page</span>
                         </div>
                         <div class="quick-controls">
+                            <div class="notif-bell-wrap">
+                                <button type="button" class="notif-bell-btn" id="notifBellBtn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">🔔</button>
+                                <span class="notif-badge" id="notifBadge" aria-live="polite"></span>
+                            </div>
                             <button type="button" class="quick-toggle" id="langToggleBtn">KO</button>
                             <button type="button" class="quick-toggle" id="themeToggleBtn">Light</button>
                         </div>
@@ -2548,12 +3081,26 @@
                             <input type="checkbox" id="myPostingsToggle"> My postings only
                         </label>
                     </div>
+                    <div class="filter-chips" id="subjectFilterChips">
+                        <button class="filter-chip active" data-subject="">All Subjects</button>
+                        <button class="filter-chip" data-subject="math">📐 Math</button>
+                        <button class="filter-chip" data-subject="english">📖 English</button>
+                        <button class="filter-chip" data-subject="science">🔬 Science</button>
+                        <button class="filter-chip" data-subject="music">🎵 Music</button>
+                        <button class="filter-chip" data-subject="coding">💻 Coding</button>
+                        <button class="filter-chip" data-subject="art">🎨 Art</button>
+                        <button class="filter-chip" data-subject="korean">📝 Korean</button>
+                    </div>
                     <div class="filters">
                         <select id="filterSubject">
                             <option value="">All Subjects</option>
                             <option value="math">Math</option>
                             <option value="english">English</option>
                             <option value="science">Science</option>
+                            <option value="music">Music</option>
+                            <option value="coding">Coding</option>
+                            <option value="art">Art</option>
+                            <option value="korean">Korean</option>
                         </select>
                         <input type="text" id="filterRegion" placeholder="Region">
                         <input type="number" id="filterMinRate" placeholder="Min rate">
@@ -2571,6 +3118,7 @@
                 <div class="section" id="dashboardSection" style="display: none;">
                     <h2>Dashboard</h2>
                     <div class="stats-grid" id="statsGrid"></div>
+                    <div class="dashboard-quick-actions" id="dashboardQuickActions" style="display:none;"></div>
                     <div class="stats-grid" id="dashboardDetailPanels" style="margin-top:16px;"></div>
                     <h3 style="margin-top:14px;">Recent Activity</h3>
                     <div class="activity-toolbar" id="activityToolbar">
@@ -2601,6 +3149,10 @@
                     <div class="tax-inline">
                         <input type="number" id="taxYearInput" placeholder="Year" min="2020" max="2100">
                         <input type="number" id="taxFeeRateInput" placeholder="Fee rate (0.20~0.25)" min="0.2" max="0.25" step="0.01" value="0.22">
+                    </div>
+                    <div class="tax-inline">
+                        <input type="month" id="taxSettlementMonthInput" placeholder="Settlement month (YYYY-MM)">
+                        <button id="taxSettlementDetailBtn" type="button">Load Settlement Detail</button>
                     </div>
                     <div class="tax-actions">
                         <button id="taxOnboardBtn">Save Tax Profile</button>
@@ -2645,6 +3197,8 @@
                         </div>
                     </div>
                     <div class="tax-status" id="taxStatusBox">Tax workflow is idle.</div>
+                    <div class="refund-flow-board" id="taxRefundFlowBoard" style="display:none;"></div>
+                    <div class="tax-history" id="taxSettlementDetailList"></div>
                     <div class="tax-history" id="taxEventsList"></div>
                 </div>
 
@@ -3118,6 +3672,85 @@
                     <div id="escrowChargeList"></div>
                 </div>
 
+                <!-- ===== Phase2: P2-5 강사 가용 일정 ===== -->
+                <div class="section" id="availabilitySection" style="display:none;">
+                    <h2>강사 가용 일정 캘린더</h2>
+                    <p class="muted">가용 시간대를 등록하고 기관에 공개합니다.</p>
+                    <div class="tax-inline">
+                        <select id="availDay">
+                            <option value="Mon">Mon</option><option value="Tue">Tue</option><option value="Wed">Wed</option>
+                            <option value="Thu">Thu</option><option value="Fri">Fri</option><option value="Sat">Sat</option><option value="Sun">Sun</option>
+                        </select>
+                        <input type="time" id="availStart" value="18:00">
+                    </div>
+                    <div class="tax-inline">
+                        <input type="time" id="availEnd" value="19:00">
+                        <button onclick="saveAvailabilitySlot()">가용 슬롯 저장</button>
+                    </div>
+                    <div class="tax-status" id="availabilityStatus">가용 슬롯 대기 중.</div>
+                    <div id="availabilityList"></div>
+                </div>
+
+                <!-- ===== Phase2: P2-6 즉시 예약 ===== -->
+                <div class="section" id="instantBookingSection" style="display:none;">
+                    <h2>즉시 예약 센터</h2>
+                    <p class="muted">기관이 가용 슬롯을 선택해 즉시 예약을 요청합니다.</p>
+                    <div class="tax-actions">
+                        <button onclick="loadInstantBookingSlots()">가용 슬롯 불러오기</button>
+                    </div>
+                    <div class="tax-status" id="instantBookingStatus">즉시 예약 대기 중.</div>
+                    <div id="instantBookingList"></div>
+                </div>
+
+                <!-- ===== Phase2: P2-7 강사 비교 ===== -->
+                <div class="section" id="compareSection" style="display:none;">
+                    <h2>강사 비교 & 랭킹</h2>
+                    <p class="muted">기관의 지원자 비교 및 추천 순위 확인</p>
+                    <div class="tax-actions">
+                        <button onclick="loadInstructorComparison()">비교표 생성</button>
+                    </div>
+                    <div class="tax-status" id="compareStatus">비교 데이터 대기 중.</div>
+                    <div id="compareList"></div>
+                </div>
+
+                <!-- ===== Phase2: P2-8 MLM 35% 게이지 ===== -->
+                <div class="section" id="mlmGaugeSection" style="display:none;">
+                    <h2>MLM 35% 컴플라이언스 게이지</h2>
+                    <p class="muted">방판법 35% 상한 대비 현재 보상비율을 추적합니다.</p>
+                    <div class="tax-actions">
+                        <button onclick="loadMlmComplianceGauge()">게이지 새로고침</button>
+                    </div>
+                    <div class="tax-status" id="mlmGaugeStatus">컴플라이언스 데이터 대기 중.</div>
+                    <div id="mlmGaugeView"></div>
+                </div>
+
+                <!-- ===== Phase2: P2-9 교육청 커버리지 맵 ===== -->
+                <div class="section" id="coverageMapSection" style="display:none;">
+                    <h2>예산/커버리지 맵</h2>
+                    <p class="muted">교육청 지역별 예산 집행 및 커버리지 현황</p>
+                    <div class="tax-actions">
+                        <button onclick="loadCoverageMapBoard()">맵/리스트 로드</button>
+                    </div>
+                    <div class="tax-status" id="coverageMapStatus">커버리지 데이터 대기 중.</div>
+                    <div id="coverageMapList"></div>
+                </div>
+
+                <!-- ===== Phase2: P2-10 핀테크/게이미피케이션 ===== -->
+                <div class="section" id="fintechSection" style="display:none;">
+                    <h2>핀테크 & 게이미피케이션</h2>
+                    <p class="muted">선정산 시뮬레이션, 보상 배지, 등급 가시화</p>
+                    <div class="tax-inline">
+                        <input type="number" id="advanceBaseAmount" placeholder="정산 예상액" value="500000">
+                        <input type="number" id="advanceRate" placeholder="선정산 비율(%)" value="70">
+                    </div>
+                    <div class="tax-actions">
+                        <button onclick="simulateAdvancePay()">선정산 시뮬레이션</button>
+                        <button onclick="renderBadgePreview()">배지 미리보기</button>
+                    </div>
+                    <div class="tax-status" id="fintechStatus">핀테크 시뮬레이션 대기 중.</div>
+                    <div id="fintechResult"></div>
+                </div>
+
             </div>
         </main>
 
@@ -3213,6 +3846,7 @@
         let latestTaxSubmissionId = null;
         let taxPollingTimer = null;
         let lastPolledTaxStatus = null;
+        let refundFlowStep = 'idle';
         let lastAdminTrendUserId = null;
         let lastAdminSimulationResult = null;
         let simImpactSortMode = 'abs_desc';
@@ -3240,7 +3874,13 @@
             'reviewsSection',
             'districtSection',
             'contractsSection',
-            'escrowSection'
+            'escrowSection',
+            'availabilitySection',
+            'instantBookingSection',
+            'compareSection',
+            'mlmGaugeSection',
+            'coverageMapSection',
+            'fintechSection'
         ];
         const PRELOGIN_HIDE_SECTIONS = [
             'demoMenuSection',
@@ -3256,12 +3896,12 @@
             'screenStateSection'
         ];
         const ROLE_SCREEN_ACCESS = {
-            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'instructorOnboardingSection', 'securitySection', 'taxSection', 'networkSection', 'sessionsSection', 'reviewsSection', 'contractsSection', 'sosSection'],
-            institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection', 'sessionsSection', 'sosSection', 'reviewsSection', 'contractsSection', 'escrowSection'],
+            instructor: ['dashboardSection', 'postingsSection', 'applicationsSection', 'instructorOnboardingSection', 'securitySection', 'taxSection', 'networkSection', 'sessionsSection', 'reviewsSection', 'contractsSection', 'sosSection', 'availabilitySection', 'fintechSection'],
+            institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection', 'sessionsSection', 'sosSection', 'reviewsSection', 'contractsSection', 'escrowSection', 'instantBookingSection', 'compareSection'],
             student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection'],
-            district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection', 'districtSection'],
-            admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection'],
-            super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection']
+            district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection', 'districtSection', 'coverageMapSection'],
+            admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection', 'mlmGaugeSection', 'fintechSection'],
+            super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection', 'mlmGaugeSection', 'fintechSection']
         };
         const ROLE_DEFAULT_SCREEN = {
             instructor: 'dashboardSection',
@@ -6249,6 +6889,31 @@
             document.getElementById('taxFeeValue').textContent = formatWon(service_fee_amount);
         }
 
+        function renderRefundFlowProgress() {
+            const board = document.getElementById('taxRefundFlowBoard');
+            if (!board) return;
+            if (!isRole('instructor')) {
+                board.style.display = 'none';
+                return;
+            }
+
+            const order = ['estimate', 'submit', 'status', 'fee'];
+            const labels = {
+                estimate: lt('1) Estimate', '1) 조회'),
+                submit: lt('2) Submit', '2) 제출'),
+                status: lt('3) Track', '3) 상태확인'),
+                fee: lt('4) CMS Fee', '4) 수수료정산')
+            };
+            const idx = order.indexOf(refundFlowStep);
+            board.style.display = '';
+            board.innerHTML = order.map((step, i) => {
+                let klass = 'refund-step';
+                if (idx > i) klass += ' done';
+                if (idx === i) klass += ' active';
+                return `<div class="${klass}">${labels[step]}</div>`;
+            }).join('');
+        }
+
         function setNetworkStatus(message) {
             const box = document.getElementById('networkStatusBox');
             if (box) {
@@ -7301,7 +7966,8 @@
                     taxStatusBtn: true,
                     taxCmsChargeBtn: true,
                     taxEventsBtn: true,
-                    taxSettlementCsvBtn: false,
+                    taxSettlementDetailBtn: true,
+                    taxSettlementCsvBtn: true,
                     taxPollingBtn: true
                 },
                 institution: {
@@ -7312,6 +7978,7 @@
                     taxStatusBtn: false,
                     taxCmsChargeBtn: false,
                     taxEventsBtn: true,
+                    taxSettlementDetailBtn: true,
                     taxSettlementCsvBtn: true,
                     taxPollingBtn: false
                 }
@@ -7327,14 +7994,23 @@
 
             // Show/hide tax card labels by role
             const taxCards = document.querySelectorAll('.tax-card .stat-title');
+            const monthInput = document.getElementById('taxSettlementMonthInput');
+            if (monthInput && !monthInput.value) {
+                monthInput.value = new Date().toISOString().slice(0, 7);
+            }
             if (role === 'institution') {
                 const labels = [lt('Total Settled', '\uc815\uc0b0 \ucd1d\uc561'), lt('Platform Fee', '\ud50c\ub7ab\ud3fc \uc218\uc218\ub8cc'), lt('Net Payout', '\uc2e4\uc9c0\uae09\uc561'), lt('Pending Sessions', '\ub300\uae30 \uc218\uc5c5')];
                 taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
-                loadInstitutionSettlementSummary();
+                loadSettlementDetail();
+            } else if (role === 'instructor') {
+                const labels = [lt('Gross Income', '\ucd1d \uc218\uc785'), lt('Withholding 3.3%', '\uc6d0\uccb4\uc9d5\uc218 3.3%'), lt('Net Income', '\uc2e4\uc218\ub839\uc561'), lt('Completed Sessions', '\uc644\ub8cc \uc218\uc5c5')];
+                taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
+                loadSettlementDetail();
             } else if (role === 'district') {
                 const labels = [lt('Total Budget', '\uc804\uccb4 \uc608\uc0b0'), lt('Allocated', '\ube48\ubc30'), lt('Remaining', '\uc794\uc5ec'), lt('Utilization', '\uc9d1\ud589\ub960')];
                 taxCards.forEach((el, i) => { if (labels[i]) el.textContent = labels[i]; });
             }
+            renderRefundFlowProgress();
         }
 
         function resolveTaxInputs() {
@@ -7397,6 +8073,8 @@
                 service_fee_amount: Math.round((data.estimated_refund || 0) * feeRate)
             });
             setTaxStatus(lt(`Tax estimate loaded for ${year}.`, `${year}년 세금 추정치를 불러왔습니다.`));
+            refundFlowStep = 'estimate';
+            renderRefundFlowProgress();
         }
 
         async function loadTaxEstimateRange() {
@@ -7435,16 +8113,78 @@
             setTaxStatus(lt('Loaded yearly estimates for 2022-2025.', '2022-2025 연도별 추정치를 불러왔습니다.'));
         }
 
+        function getSelectedSettlementMonth() {
+            const monthValue = (document.getElementById('taxSettlementMonthInput')?.value || '').trim();
+            return monthValue || new Date().toISOString().slice(0, 7);
+        }
+
+        function renderInstitutionSettlementDetail(items) {
+            const target = document.getElementById('taxSettlementDetailList');
+            if (!target) return;
+            if (!items.length) {
+                target.innerHTML = `<div class="empty-state muted">${lt('No settlement data for this month.', '해당 월 정산 데이터가 없습니다.')}</div>`;
+                return;
+            }
+            const rows = items.map((item) => `
+                <div class="settlement-detail-row">
+                    <div>${escapeHtml(item.instructor_email || '#')}</div>
+                    <div>${item.approved_sessions || 0}</div>
+                    <div>${item.pending_sessions || 0}</div>
+                    <div>${formatWon(item.total_payment || 0)}</div>
+                    <div><span class="settlement-badge ${item.payout_status === 'paid' ? 'paid' : 'pending'}">${escapeHtml(item.payout_status || 'pending')}</span></div>
+                </div>
+            `).join('');
+            target.innerHTML = `
+                <div class="settlement-detail-board">
+                    <div class="settlement-detail-head">
+                        <div>${lt('Instructor', '강사')}</div>
+                        <div>${lt('Done', '완료')}</div>
+                        <div>${lt('Pending', '대기')}</div>
+                        <div>${lt('Payment', '지급액')}</div>
+                        <div>${lt('Status', '상태')}</div>
+                    </div>
+                    ${rows}
+                </div>
+            `;
+        }
+
+        function renderInstructorSettlementDetail(items) {
+            const target = document.getElementById('taxSettlementDetailList');
+            if (!target) return;
+            if (!items.length) {
+                target.innerHTML = `<div class="empty-state muted">${lt('No completed sessions in this month.', '해당 월 완료된 수업이 없습니다.')}</div>`;
+                return;
+            }
+            const rows = items.map((s) => `
+                <div class="settlement-detail-row">
+                    <div>#${s.id} ${escapeHtml(s.title || s.subject || lt('Session', '수업'))}</div>
+                    <div>1</div>
+                    <div>0</div>
+                    <div>${formatWon(s.net_amount || 0)}</div>
+                    <div><span class="settlement-badge paid">${lt('paid', '지급')}</span></div>
+                </div>
+            `).join('');
+            target.innerHTML = `
+                <div class="settlement-detail-board">
+                    <div class="settlement-detail-head">
+                        <div>${lt('Session', '수업')}</div>
+                        <div>${lt('Done', '완료')}</div>
+                        <div>${lt('Pending', '대기')}</div>
+                        <div>${lt('Net', '순수령')}</div>
+                        <div>${lt('Status', '상태')}</div>
+                    </div>
+                    ${rows}
+                </div>
+            `;
+        }
+
         async function loadInstitutionSettlementSummary() {
             if (!token || !isRole('institution', 'student')) {
                 return;
             }
 
-            const monthInput = (document.getElementById('taxYearInput').value || '').trim();
-            const month = monthInput ? `${monthInput}-01`.slice(0, 7) : '';
-            const monthQuery = month ? `?month=${encodeURIComponent(month)}` : '';
-
-            const response = await apiFetch(`/postings/settlement-summary${monthQuery}`, {
+            const month = getSelectedSettlementMonth();
+            const response = await apiFetch(`/postings/settlement-summary?month=${encodeURIComponent(month)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await parseJsonSafe(response);
@@ -7460,60 +8200,359 @@
                 estimated_refund: Math.max(0, (data.total_settled || 0) - (data.platform_fee || 0)),
                 service_fee_amount: data.pending_count || 0
             });
+            renderInstitutionSettlementDetail(Array.isArray(data.items) ? data.items : []);
+            setTaxStatus(lt(`Settlement detail loaded for ${month}.`, `${month} 정산 상세를 불러왔습니다.`));
+        }
 
-            const eventsList = document.getElementById('taxEventsList');
-            const items = Array.isArray(data.items) ? data.items : [];
-            if (!items.length) {
-                eventsList.innerHTML = `<div class="empty-state muted">${lt('No approved settlements yet.', '승인된 정산 내역이 없습니다.')}</div>`;
-            } else {
-                eventsList.innerHTML = items.map((item) => `
-                    <div class="posting" style="margin-bottom:8px;">
-                        <strong>${escapeHtml(item.instructor_email || '#')}</strong>
-                        <p>${lt('Approved Sessions', '승인 수업')}: ${item.approved_sessions} | ${lt('Pending Sessions', '대기 수업')}: ${item.pending_sessions || 0}</p>
-                        <p>${lt('Total Payment', '총 지급액')}: ${formatWon(item.total_payment)} | ${lt('Payout Status', '지급 상태')}: ${escapeHtml(item.payout_status || 'pending')}</p>
-                    </div>
-                `).join('');
+        async function loadInstructorSettlementSummary() {
+            if (!token || !isRole('instructor')) {
+                return;
             }
 
-            setTaxStatus(lt('Settlement summary loaded.', '정산 요약을 불러왔습니다.'));
+            const month = getSelectedSettlementMonth();
+            const response = await apiFetch('/sessions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await parseJsonSafe(response);
+            if (!response.ok || !Array.isArray(data)) {
+                setTaxStatus(lt('Failed to load instructor sessions.', '강사 수업 정보를 불러오지 못했습니다.'));
+                return;
+            }
+
+            const completed = data.filter((s) => {
+                const raw = (s.completed_at || s.scheduled_at || s.created_at || '').toString();
+                return s.status === 'completed' && raw.slice(0, 7) === month;
+            });
+
+            const totalGross = completed.reduce((sum, s) => sum + (Number(s.gross_amount || 0) || 0), 0);
+            const totalWithholding = completed.reduce((sum, s) => sum + (Number(s.withholding_amount || 0) || 0), 0);
+            const totalNet = completed.reduce((sum, s) => sum + (Number(s.net_amount || 0) || 0), 0);
+
+            setTaxValues({
+                gross_income: totalGross,
+                withholding_amount: totalWithholding,
+                estimated_refund: totalNet,
+                service_fee_amount: completed.length
+            });
+            renderInstructorSettlementDetail(completed);
+            setTaxStatus(lt(`Settlement detail loaded for ${month}.`, `${month} 정산 상세를 불러왔습니다.`));
+        }
+
+        async function loadSettlementDetail() {
+            if (isRole('institution', 'student')) {
+                await loadInstitutionSettlementSummary();
+                return;
+            }
+            if (isRole('instructor')) {
+                await loadInstructorSettlementSummary();
+                return;
+            }
+            const target = document.getElementById('taxSettlementDetailList');
+            if (target) {
+                target.innerHTML = `<div class="empty-state muted">${lt('Settlement detail is available for instructor/institution roles.', '정산 상세는 강사/기관 역할에서 확인할 수 있습니다.')}</div>`;
+            }
+        }
+
+        // ===== Phase2 P2-5 ~ P2-10 lightweight implementations =====
+        function getAvailabilitySlots() {
+            try {
+                const raw = localStorage.getItem('edulink_availability_slots') || '[]';
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveAvailabilitySlots(slots) {
+            localStorage.setItem('edulink_availability_slots', JSON.stringify(slots));
+        }
+
+        function renderAvailabilityList() {
+            const list = document.getElementById('availabilityList');
+            if (!list) return;
+            const slots = getAvailabilitySlots();
+            if (!slots.length) {
+                list.innerHTML = `<div class="empty-state muted">${lt('No availability slots yet.', '등록된 가용 슬롯이 없습니다.')}</div>`;
+                return;
+            }
+            list.innerHTML = slots.map((slot, idx) => `
+                <div class="posting" style="margin-bottom:8px;">
+                    <strong>${escapeHtml(slot.day)} ${escapeHtml(slot.start)} - ${escapeHtml(slot.end)}</strong>
+                    <div class="actions" style="margin-top:6px;">
+                        <button onclick="removeAvailabilitySlot(${idx})">${lt('Remove','삭제')}</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveAvailabilitySlot() {
+            const day = document.getElementById('availDay')?.value;
+            const start = document.getElementById('availStart')?.value;
+            const end = document.getElementById('availEnd')?.value;
+            if (!day || !start || !end) {
+                const st = document.getElementById('availabilityStatus');
+                if (st) st.textContent = lt('Please fill all fields.', '모든 항목을 입력해주세요.');
+                return;
+            }
+            if (start >= end) {
+                const st = document.getElementById('availabilityStatus');
+                if (st) st.textContent = lt('End time must be later than start time.', '종료 시간이 시작 시간보다 늦어야 합니다.');
+                return;
+            }
+            const slots = getAvailabilitySlots();
+            slots.push({ day, start, end, created_at: new Date().toISOString() });
+            saveAvailabilitySlots(slots);
+            renderAvailabilityList();
+            const st = document.getElementById('availabilityStatus');
+            if (st) st.textContent = lt('Availability slot saved.', '가용 슬롯이 저장되었습니다.');
+        }
+
+        function removeAvailabilitySlot(index) {
+            const slots = getAvailabilitySlots();
+            slots.splice(index, 1);
+            saveAvailabilitySlots(slots);
+            renderAvailabilityList();
+        }
+
+        function loadInstantBookingSlots() {
+            const list = document.getElementById('instantBookingList');
+            const st = document.getElementById('instantBookingStatus');
+            if (!list || !st) return;
+            const slots = getAvailabilitySlots();
+            if (!slots.length) {
+                list.innerHTML = `<div class="empty-state muted">${lt('No public slots from instructors yet.', '공개된 강사 가용 슬롯이 없습니다.')}</div>`;
+                st.textContent = lt('Waiting for availability data.', '가용 데이터 대기 중입니다.');
+                return;
+            }
+            list.innerHTML = slots.map((slot, idx) => `
+                <div class="posting" style="margin-bottom:8px;">
+                    <strong>${escapeHtml(slot.day)} ${escapeHtml(slot.start)}-${escapeHtml(slot.end)}</strong>
+                    <p>${lt('Suggested instructor slot', '추천 강사 슬롯')}</p>
+                    <button onclick="requestInstantBooking(${idx})">${lt('Request Booking','즉시 예약 요청')}</button>
+                </div>
+            `).join('');
+            st.textContent = lt(`Loaded ${slots.length} available slots.`, `${slots.length}개 가용 슬롯을 불러왔습니다.`);
+        }
+
+        function requestInstantBooking(slotIndex) {
+            const st = document.getElementById('instantBookingStatus');
+            if (st) st.textContent = lt(`Booking request sent for slot #${slotIndex + 1}.`, `${slotIndex + 1}번 슬롯 예약 요청을 전송했습니다.`);
+            showToast(lt('Instant booking requested', '즉시 예약 요청 완료'));
+        }
+
+        async function loadInstructorComparison() {
+            const box = document.getElementById('compareList');
+            const st = document.getElementById('compareStatus');
+            if (!box || !st || !token) return;
+
+            const [appRes, revRes] = await Promise.all([
+                apiFetch('/applications', { headers: { 'Authorization': `Bearer ${token}` } }),
+                apiFetch('/reviews', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            const apps = await parseJsonSafe(appRes);
+            const reviews = await parseJsonSafe(revRes);
+            if (!appRes.ok || !Array.isArray(apps)) {
+                st.textContent = lt('Failed to load applications for comparison.', '비교를 위한 지원자 데이터를 불러오지 못했습니다.');
+                return;
+            }
+
+            const scoreByStudent = new Map();
+            apps.forEach((a) => {
+                const sid = Number(a.student_id || 0);
+                if (!sid) return;
+                const prev = scoreByStudent.get(sid) || { student_id: sid, pending: 0, approved: 0, rejected: 0, score: 0 };
+                prev[a.status] = (prev[a.status] || 0) + 1;
+                prev.score += a.status === 'approved' ? 3 : a.status === 'pending' ? 1 : 0;
+                scoreByStudent.set(sid, prev);
+            });
+
+            if (Array.isArray(reviews)) {
+                reviews.forEach((r) => {
+                    const sid = Number(r.instructor_id || 0);
+                    const row = scoreByStudent.get(sid);
+                    if (!row) return;
+                    row.score += Number(r.rating || 0) * 0.4;
+                });
+            }
+
+            const rows = Array.from(scoreByStudent.values()).sort((a, b) => b.score - a.score).slice(0, 12);
+            if (!rows.length) {
+                box.innerHTML = `<div class="empty-state muted">${lt('No candidates to compare yet.', '비교할 지원자가 없습니다.')}</div>`;
+                st.textContent = lt('No candidate data.', '지원자 데이터가 없습니다.');
+                return;
+            }
+            box.innerHTML = rows.map((r, idx) => `
+                <div class="posting" style="margin-bottom:8px;">
+                    <strong>#${idx + 1} ${lt('Instructor','강사')} ${r.student_id}</strong>
+                    <p>${lt('Approved','승인')}: ${r.approved || 0} | ${lt('Pending','대기')}: ${r.pending || 0} | ${lt('Rejected','거절')}: ${r.rejected || 0}</p>
+                    <p>${lt('Composite score','종합 점수')}: ${Number(r.score).toFixed(1)}</p>
+                </div>
+            `).join('');
+            st.textContent = lt('Comparison table updated.', '비교표를 업데이트했습니다.');
+        }
+
+        async function loadMlmComplianceGauge() {
+            const view = document.getElementById('mlmGaugeView');
+            const st = document.getElementById('mlmGaugeStatus');
+            if (!view || !st || !token) return;
+
+            const res = await apiFetch('/api/network/compliance', { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await parseJsonSafe(res);
+            if (!res.ok) {
+                st.textContent = data.error || lt('Failed to load compliance gauge.', '컴플라이언스 게이지 조회에 실패했습니다.');
+                return;
+            }
+            const ratio = Number(data.ratio_percent || 0);
+            const clamped = Math.max(0, Math.min(100, ratio));
+            const safe = ratio <= 35;
+            view.innerHTML = `
+                <div class="posting">
+                    <strong>${lt('Current ratio','현재 비율')}: ${ratio.toFixed(2)}%</strong>
+                    <div style="margin-top:8px;height:10px;border-radius:999px;background:rgba(255,255,255,0.08);overflow:hidden;">
+                        <div style="height:100%;width:${clamped}%;background:${safe ? 'linear-gradient(90deg,#5deec0,#7ef3d0)' : 'linear-gradient(90deg,#ff6f87,#ffb199)'};"></div>
+                    </div>
+                    <p style="margin-top:8px;">${lt('Legal cap 35%', '법정 상한 35%')} · ${safe ? lt('Within limit', '규정 준수') : lt('Over limit', '상한 초과')}</p>
+                </div>
+            `;
+            st.textContent = lt('Compliance gauge updated.', '컴플라이언스 게이지를 갱신했습니다.');
+        }
+
+        async function loadCoverageMapBoard() {
+            const list = document.getElementById('coverageMapList');
+            const st = document.getElementById('coverageMapStatus');
+            if (!list || !st || !token) return;
+            const [cmpRes, instRes] = await Promise.all([
+                apiFetch('/district/regional-comparison', { headers: { 'Authorization': `Bearer ${token}` } }),
+                apiFetch('/district/institutions', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            const cmp = await parseJsonSafe(cmpRes);
+            const inst = await parseJsonSafe(instRes);
+            if (!cmpRes.ok || !instRes.ok) {
+                st.textContent = lt('Failed to load district coverage data.', '교육청 커버리지 데이터를 불러오지 못했습니다.');
+                return;
+            }
+            const regions = Array.isArray(cmp.regions) ? cmp.regions : [];
+            const institutions = Array.isArray(inst.institutions) ? inst.institutions : [];
+            list.innerHTML = `
+                <div class="posting" style="margin-bottom:8px;"><strong>${lt('Regions tracked','추적 지역')}:</strong> ${regions.length}</div>
+                <div class="posting" style="margin-bottom:8px;"><strong>${lt('Institutions covered','커버 기관')}:</strong> ${institutions.length}</div>
+                ${regions.slice(0, 8).map((r) => `<div class="posting" style="margin-bottom:8px;"><strong>${escapeHtml(r.region || '-')}</strong> · ${lt('Postings','공고')} ${r.postings_count || 0} · ${lt('Approved','승인')} ${r.approved_count || 0}</div>`).join('')}
+            `;
+            st.textContent = lt('Coverage board loaded.', '커버리지 보드를 불러왔습니다.');
+        }
+
+        function simulateAdvancePay() {
+            const base = Number(document.getElementById('advanceBaseAmount')?.value || 0);
+            const rate = Number(document.getElementById('advanceRate')?.value || 0);
+            const result = document.getElementById('fintechResult');
+            const st = document.getElementById('fintechStatus');
+            if (!result || !st || base <= 0 || rate <= 0) {
+                if (st) st.textContent = lt('Enter valid amount and rate.', '유효한 금액과 비율을 입력해 주세요.');
+                return;
+            }
+            const advance = Math.round(base * (rate / 100));
+            const hold = base - advance;
+            result.innerHTML = `
+                <div class="posting">
+                    <strong>${lt('Advance payout','선정산 지급액')}: ${formatWon(advance)}</strong>
+                    <p>${lt('Remaining at settlement','정산 시 잔여 지급')}: ${formatWon(hold)}</p>
+                </div>
+            `;
+            st.textContent = lt('Advance pay simulation complete.', '선정산 시뮬레이션 완료.');
+        }
+
+        async function renderBadgePreview() {
+            const result = document.getElementById('fintechResult');
+            const st = document.getElementById('fintechStatus');
+            if (!result || !st || !token) return;
+            const res = await apiFetch('/sessions', { headers: { 'Authorization': `Bearer ${token}` } });
+            const sessions = await parseJsonSafe(res);
+            const completed = Array.isArray(sessions) ? sessions.filter((s) => s.status === 'completed').length : 0;
+            const tier = completed >= 20 ? 'Gold' : completed >= 8 ? 'Silver' : 'Bronze';
+            result.innerHTML = `
+                <div class="posting">
+                    <strong>${lt('Badge tier','배지 등급')}: ${tier}</strong>
+                    <p>${lt('Completed sessions','완료 수업')} ${completed}</p>
+                </div>
+            `;
+            st.textContent = lt('Badge preview updated.', '배지 미리보기를 업데이트했습니다.');
         }
 
         async function exportSettlementCsv() {
-            if (!token || !isRole('institution')) {
+            if (!token || !isRole('institution', 'student', 'instructor')) {
                 return;
             }
 
-            const monthInput = (document.getElementById('taxYearInput').value || '').trim();
-            const month = monthInput ? `${monthInput}-01`.slice(0, 7) : '';
-            const query = new URLSearchParams({ format: 'csv' });
-            if (month) {
-                query.set('month', month);
-            }
+            const month = getSelectedSettlementMonth();
+            const downloadCsv = (csvText, fileName) => {
+                const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            };
 
-            const response = await apiFetch(`/postings/settlement-summary?${query.toString()}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            if (isRole('institution', 'student')) {
+                const query = new URLSearchParams({ format: 'csv', month });
+                const response = await apiFetch(`/postings/settlement-summary?${query.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
 
-            if (!response.ok) {
-                const data = await parseJsonSafe(response);
-                setTaxStatus(data.error || lt('Failed to export settlement CSV.', '정산 CSV 내보내기에 실패했습니다.'));
+                if (!response.ok) {
+                    const data = await parseJsonSafe(response);
+                    setTaxStatus(data.error || lt('Failed to export settlement CSV.', '정산 CSV 내보내기에 실패했습니다.'));
+                    return;
+                }
+
+                const csvText = await response.text();
+                downloadCsv(csvText, `settlement_summary_${month}.csv`);
+                setTaxStatus(lt('Settlement CSV exported.', '정산 CSV 내보내기가 완료되었습니다.'));
+                showToast(lt('Settlement CSV exported', '정산 CSV 내보내기 완료'));
                 return;
             }
 
-            const csvText = await response.text();
-            const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const filenameMonth = month || new Date().toISOString().slice(0, 7);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `settlement_summary_${filenameMonth}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            if (isRole('instructor')) {
+                const response = await apiFetch('/sessions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const sessions = await parseJsonSafe(response);
+                if (!response.ok || !Array.isArray(sessions)) {
+                    setTaxStatus(lt('Failed to export instructor settlement CSV.', '강사 정산 CSV 내보내기에 실패했습니다.'));
+                    return;
+                }
 
-            setTaxStatus(lt('Settlement CSV exported.', '정산 CSV 내보내기가 완료되었습니다.'));
-            showToast(lt('Settlement CSV exported', '정산 CSV 내보내기 완료'));
+                const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+                const rows = sessions.filter((s) => {
+                    const stamp = (s.completed_at || s.scheduled_at || s.created_at || '').toString();
+                    return s.status === 'completed' && stamp.slice(0, 7) === month;
+                });
+                const header = [
+                    'month', 'session_id', 'title', 'subject', 'scheduled_at', 'completed_at',
+                    'actual_minutes', 'gross_amount', 'withholding_amount', 'net_amount', 'journal_content'
+                ];
+                const body = rows.map((s) => [
+                    month,
+                    s.id,
+                    s.title || '',
+                    s.subject || '',
+                    s.scheduled_at || '',
+                    s.completed_at || '',
+                    s.actual_duration_minutes || 0,
+                    s.gross_amount || 0,
+                    s.withholding_amount || 0,
+                    s.net_amount || 0,
+                    s.journal_content || ''
+                ].map(esc).join(','));
+                const csvText = [header.join(','), ...body].join('\n');
+                downloadCsv(csvText, `instructor_settlement_${month}.csv`);
+                setTaxStatus(lt('Instructor settlement CSV exported.', '강사 정산 CSV 내보내기가 완료되었습니다.'));
+                showToast(lt('Settlement CSV exported', '정산 CSV 내보내기 완료'));
+            }
         }
 
         async function submitTaxClaim() {
@@ -7541,6 +8580,8 @@
             document.getElementById('taxFeeValue').textContent = formatWon(data.service_fee_amount || 0);
             setTaxStatus(lt(`Claim submitted: ${latestTaxSubmissionId}`, `신청 접수: ${latestTaxSubmissionId}`));
             showToast(lt('Tax claim submitted', '세금 신청 완료'));
+            refundFlowStep = 'submit';
+            renderRefundFlowProgress();
             await loadTaxEvents();
         }
 
@@ -7580,6 +8621,10 @@
             });
             if (!silent) {
                 setTaxStatus(lt(`Claim ${latestTaxSubmissionId} status: ${data.status}`, `신청 ${latestTaxSubmissionId} 상태: ${data.status}`));
+            }
+            if (data.status) {
+                refundFlowStep = 'status';
+                renderRefundFlowProgress();
             }
 
             if (data.status && lastPolledTaxStatus && data.status !== lastPolledTaxStatus) {
@@ -7646,6 +8691,8 @@
 
             setTaxStatus(lt(`CMS charged: ${formatWon(data.amount || 0)} (code: ${data.charge_code})`, `CMS 청구 완료: ${formatWon(data.amount || 0)} (코드: ${data.charge_code})`));
             showToast(lt('CMS fee charged', 'CMS 수수료 청구 완료'));
+            refundFlowStep = 'fee';
+            renderRefundFlowProgress();
             await loadTaxEvents();
         }
 
@@ -8109,29 +9156,29 @@
 
         function renderInstructorDashboardPanels(stats) {
             const detailPanels = document.getElementById('dashboardDetailPanels');
-            if (!detailPanels) {
-                return;
-            }
+            if (!detailPanels) return;
 
             const upcomingSessions = Array.isArray(stats.upcoming_sessions) ? stats.upcoming_sessions : [];
             const upcomingMarkup = upcomingSessions.length
                 ? upcomingSessions.map((session) => `
-                    <div class="posting">
-                        <strong>${escapeHtml(session.title || lt('Untitled session', '제목 없는 수업'))}</strong>
-                        <div class="muted">${escapeHtml(session.subject || '-')} · ${escapeHtml(session.organization || lt('Unassigned', '미지정'))}</div>
-                        <div class="muted">${escapeHtml(session.scheduled_at || '-')}</div>
+                    <div class="session-card-v2">
+                        <div class="session-card-header">
+                            <strong>${escapeHtml(session.title || lt('Untitled session', '제목 없는 수업'))}</strong>
+                            <span class="session-status-pill pill-scheduled">📅 Upcoming</span>
+                        </div>
+                        <div class="session-meta-row">
+                            <span>📚 ${escapeHtml(session.subject || '-')}</span>
+                            <span>🏫 ${escapeHtml(session.organization || lt('Unassigned', '미지정'))}</span>
+                            <span>🕐 ${escapeHtml((session.scheduled_at || '').slice(0, 16))}</span>
+                        </div>
                     </div>
                 `).join('')
                 : `<div class="empty-state muted">${lt('No upcoming sessions.', '예정된 수업이 없습니다.')}</div>`;
 
-            const applicationSummary = `
-                <div class="posting">
-                    <strong>${lt('Application Pipeline', '지원 현황')}</strong>
-                    <div class="muted">${lt('Pending', '대기')}: ${stats.pending_count || 0}</div>
-                    <div class="muted">${lt('Approved', '승인')}: ${stats.approved_count || 0}</div>
-                    <div class="muted">${lt('Rejected', '거절')}: ${stats.rejected_count || 0}</div>
-                </div>
-            `;
+            const pending = stats.pending_count || 0;
+            const approved = stats.approved_count || 0;
+            const rejected = stats.rejected_count || 0;
+            const total = pending + approved + rejected || 1;
 
             detailPanels.innerHTML = `
                 <div class="stat-card" style="grid-column: span 2;">
@@ -8139,39 +9186,100 @@
                     ${upcomingMarkup}
                 </div>
                 <div class="stat-card" style="grid-column: span 2;">
-                    <div class="stat-title">🧭 ${lt('Application Summary', '지원 요약')}</div>
-                    ${applicationSummary}
+                    <div class="stat-title">🧭 ${lt('Application Pipeline', '지원 현황')}</div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;">
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(255,195,133,0.1);border:1px solid rgba(255,195,133,0.2);">
+                            <div style="font-size:24px;font-family:'Space Grotesk',sans-serif;font-weight:700;">${pending}</div>
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em;">${lt('Pending','대기')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(93,238,192,0.1);border:1px solid rgba(93,238,192,0.2);">
+                            <div style="font-size:24px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#5deec0;">${approved}</div>
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em;">${lt('Approved','승인')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(255,111,135,0.1);border:1px solid rgba(255,111,135,0.2);">
+                            <div style="font-size:24px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#ff6f87;">${rejected}</div>
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em;">${lt('Rejected','거절')}</div>
+                        </div>
+                    </div>
+                    <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:6px;">
+                        <div style="height:100%;width:${Math.round(approved/total*100)}%;background:linear-gradient(90deg,#5deec0,#63d6ff);border-radius:3px;transition:width 0.5s ease;"></div>
+                    </div>
+                    <div style="font-size:11px;color:var(--muted);margin-top:6px;">${Math.round(approved/total*100)}% ${lt('approval rate','승인률')}</div>
                 </div>
             `;
+
+            // Quick actions row
+            const quickActionsEl = document.getElementById('dashboardQuickActions');
+            if (quickActionsEl) {
+                quickActionsEl.innerHTML = `
+                    <button class="quick-action-btn" onclick="activateScreen('postingsSection')">🔍 ${lt('Browse Postings','공고 탐색')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('applicationsSection')">📋 ${lt('My Applications','내 지원')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('sessionsSection')">📅 ${lt('My Sessions','내 수업')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('reviewsSection')">⭐ ${lt('My Reviews','내 리뷰')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('instructorOnboardingSection')">🪪 ${lt('Profile','프로필')}</button>
+                `;
+                quickActionsEl.style.display = 'flex';
+            }
         }
 
         function renderInstitutionDashboardPanels(stats) {
             const detailPanels = document.getElementById('dashboardDetailPanels');
-            if (!detailPanels) {
-                return;
-            }
+            if (!detailPanels) return;
 
             const monthTotal = Number(stats.month_total_sessions || 0);
             const monthRating = Number(stats.month_avg_instructor_rating || 0);
             const monthSettlement = Number(stats.month_settlement_amount || 0);
+            const ratingPct = Math.round(monthRating / 5 * 100);
 
             detailPanels.innerHTML = `
                 <div class="stat-card" style="grid-column: span 2;">
                     <div class="stat-title">📈 ${lt('This Month Summary', '이번 달 통계')}</div>
-                    <div class="muted">${lt('Total Sessions', '총수업')}: ${monthTotal}</div>
-                    <div class="muted">${lt('Instructor Rating', '강사평점')}: ${monthRating.toFixed(2)}</div>
-                    <div class="muted">${lt('Monthly Settlement', '월정산액')}: ${formatWon(monthSettlement)}</div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0;">
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(165,140,255,0.08);border:1px solid rgba(165,140,255,0.15);">
+                            <div style="font-size:28px;font-family:'Space Grotesk',sans-serif;font-weight:700;">${monthTotal}</div>
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em;">${lt('Sessions','수업')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.15);">
+                            <div style="font-size:28px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fbbf24;">${monthRating.toFixed(1)}</div>
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em;">${lt('Avg Rating','평균평점')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(93,238,192,0.08);border:1px solid rgba(93,238,192,0.15);">
+                            <div style="font-size:18px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#5deec0;">₩${monthSettlement.toLocaleString()}</div>
+                            <div style="font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:0.06em;">${lt('Settlement','정산액')}</div>
+                        </div>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">${lt('Instructor Quality','강사 품질')} ${monthRating.toFixed(2)}/5.0</div>
+                        <div style="height:6px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden;">
+                            <div style="height:100%;width:${ratingPct}%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px;transition:width 0.5s ease;"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="stat-card" style="grid-column: span 2;">
                     <div class="stat-title">🗂 ${lt('Session Performance', '수업 실적')}</div>
                     <div class="actions" style="margin-bottom:8px;">
-                        <button type="button" onclick="loadInstitutionSessionPerformance()">${lt('Refresh Sessions', '수업 새로고침')}</button>
+                        <button type="button" onclick="loadInstitutionSessionPerformance()">${lt('Refresh', '새로고침')}</button>
+                        <button type="button" onclick="activateScreen('sessionsSection')">${lt('All Sessions', '전체 세션')}</button>
+                        <button type="button" onclick="activateScreen('contractsSection')">${lt('Contracts', '계약')}</button>
                     </div>
                     <div id="institutionSessionList" class="muted">${lt('Loading session performance...', '수업 실적을 불러오는 중...')}</div>
                 </div>
             `;
 
             loadInstitutionSessionPerformance();
+
+            // Quick actions row
+            const quickActionsEl = document.getElementById('dashboardQuickActions');
+            if (quickActionsEl) {
+                quickActionsEl.innerHTML = `
+                    <button class="quick-action-btn" onclick="activateScreen('postingsSection')">📢 ${lt('My Postings','내 공고')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('applicationsSection')">👥 ${lt('Applicants','지원자')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('sessionsSection')">📅 ${lt('Sessions','수업')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('contractsSection')">📝 ${lt('Contracts','계약')}</button>
+                    <button class="quick-action-btn" onclick="activateScreen('sosSection')">🆘 ${lt('SOS','긴급매칭')}</button>
+                `;
+                quickActionsEl.style.display = 'flex';
+            }
         }
 
         async function loadInstitutionSessionPerformance() {
@@ -8253,23 +9361,61 @@
         // ===== Sprint 3-2: 수업 세션 관리 =====
 
         function renderSessionItem(s) {
-            const statusColors = { scheduled: '#60a5fa', checkedin: '#a78bfa', completed: '#34d399', cancelled: '#f87171' };
-            const color = statusColors[s.status] || '#888';
+            const pillClass = { scheduled: 'pill-scheduled', checkedin: 'pill-checkedin', in_progress: 'pill-checkedin', completed: 'pill-completed', cancelled: 'pill-cancelled' }[s.status] || 'pill-scheduled';
+            const pillLabel = { scheduled: lt('📅 Scheduled','📅 예정'), checkedin: lt('📍 In Progress','📍 진행 중'), in_progress: lt('📍 In Progress','📍 진행 중'), completed: lt('✅ Completed','✅ 완료'), cancelled: lt('❌ Cancelled','❌ 취소') }[s.status] || s.status;
             const role = currentUser && currentUser.role;
-            const action = (role === 'instructor' && s.status === 'scheduled')
-                ? `<button onclick="prefillSessionCheckin(${s.id})" style="margin-left:6px;">GPS 체크인</button>`
-                : (role === 'instructor' && s.status === 'checkedin')
-                ? `<button onclick="prefillSessionComplete(${s.id})" style="margin-left:6px;">완료 기록</button>`
-                : '';
-            return `<div class="admin-item" style="border-left:3px solid ${color};padding-left:10px;margin-bottom:8px;">
-                <strong>#${s.id}</strong> ${escapeHtml(s.title || '')} ${s.subject ? `/ ${escapeHtml(s.subject)}` : ''}
-                <span style="color:${color};margin-left:6px;">${s.status}</span>
-                <span class="muted"> | ${(s.scheduled_at||'').slice(0,16)}</span>
-                ${s.instructor_name ? `<span class="muted"> | ${escapeHtml(s.instructor_name)}</span>` : ''}
-                ${s.actual_duration_minutes ? `<span class="muted"> | 실제: ${s.actual_duration_minutes}분</span>` : ''}
-                ${s.net_amount ? `<span class="muted"> | 순수령: ₩${s.net_amount.toLocaleString()}</span>` : ''}
-                ${action}
-            </div>`;
+            const isInstructor = role === 'instructor';
+            const scheduled = s.scheduled_duration_minutes || 60;
+            const actual = s.actual_duration_minutes || 0;
+            const progressPct = s.status === 'completed' ? Math.min(100, scheduled > 0 ? Math.round(actual / scheduled * 100) : 100) : (s.status === 'in_progress' || s.status === 'checkedin' ? 45 : 0);
+
+            // P2-2: action buttons per status
+            let actionBtn = '';
+            if (isInstructor && s.status === 'scheduled') {
+                actionBtn = `<button class="session-gps-btn" onclick="gpsCheckin(${s.id})" id="gps-btn-${s.id}">📍 ${lt('GPS Check-in','GPS 체크인')}</button>`;
+            } else if (isInstructor && (s.status === 'in_progress' || s.status === 'checkedin')) {
+                actionBtn = `<button onclick="openInlineJournal(${s.id})" style="font-size:12px;padding:7px 12px;background:rgba(93,238,192,0.15);border:1px solid rgba(93,238,192,0.3);border-radius:6px;color:var(--ok);cursor:pointer;">📝 ${lt('Write Journal & Complete','수업 일지 작성')}</button>`;
+            }
+
+            // P2-2: journal display for completed sessions
+            const journalBlock = (s.status === 'completed' && s.journal_content)
+                ? `<div class="journal-display">📝 ${escapeHtml(s.journal_content)}</div>` : '';
+
+            // P2-2: inline journal panel (shown for in_progress sessions)
+            const inlineJournal = (isInstructor && (s.status === 'in_progress' || s.status === 'checkedin'))
+                ? `<div class="inline-journal-panel" id="journal-panel-${s.id}">
+                    <div class="journal-label">📝 ${lt('Session Journal & Completion','수업 일지 및 완료 처리')}</div>
+                    <textarea class="journal-textarea" id="journal-text-${s.id}" placeholder="${lt('What was covered today? Student progress, notes for next time…','오늘 수업 내용, 학생 진도, 다음 수업 준비사항…')}" oninput="document.getElementById('journal-cc-${s.id}').textContent=this.value.length+'/500'"></textarea>
+                    <div class="journal-char-count" id="journal-cc-${s.id}">0/500</div>
+                    <div class="journal-actions">
+                        <input class="journal-duration-input" type="number" id="journal-dur-${s.id}" min="1" max="480" placeholder="${lt('Minutes','실제 분수')}" value="${scheduled}">
+                        <input class="journal-next-input" type="text" id="journal-next-${s.id}" placeholder="${lt('Next assignment (optional)','다음 과제 (선택)')}">  
+                        <button class="journal-submit-btn" onclick="submitInlineJournal(${s.id})">✅ ${lt('Save & Complete','완료 저장')}</button>
+                    </div>
+                  </div>` : '';
+
+            return `
+                <div class="session-card-v2" data-session-id="${s.id}">
+                    <div class="session-card-header">
+                        <div>
+                            <strong style="font-size:15px;">#${s.id} ${escapeHtml(s.title || s.subject || lt('Session', '수업'))}</strong>
+                            ${s.subject && s.subject !== s.title ? `<span class="posting-tag tag-subject" style="margin-left:8px;">${escapeHtml(s.subject)}</span>` : ''}
+                        </div>
+                        <span class="session-status-pill ${pillClass}">${pillLabel}</span>
+                    </div>
+                    <div class="session-meta-row">
+                        ${s.scheduled_at ? `<span>🕐 ${escapeHtml(s.scheduled_at.slice(0,16))}</span>` : ''}
+                        ${s.instructor_name ? `<span>👨‍🏫 ${escapeHtml(s.instructor_name)}</span>` : ''}
+                        <span>⏱ ${scheduled}m${actual ? ` → ${actual}m ${lt('actual','실제')}` : ''}</span>
+                        ${s.checkin_at ? `<span class="gps-accuracy-badge">📍 ${lt('GPS OK','GPS 확인')} ${escapeHtml(s.checkin_at.slice(0,16))}</span>` : ''}
+                    </div>
+                    ${s.net_amount ? `<div class="session-amount-highlight">₩${s.net_amount.toLocaleString()} <span style="font-size:12px;font-weight:400;color:var(--muted);">${lt('net','순수령')}</span></div>` : ''}
+                    ${progressPct > 0 ? `<div class="session-progress-bar"><div class="session-progress-fill" style="width:${progressPct}%;"></div></div>` : ''}
+                    ${actionBtn ? `<div class="actions" style="margin-top:10px;">${actionBtn}</div>` : ''}
+                    ${inlineJournal}
+                    ${journalBlock}
+                </div>
+            `;
         }
 
         async function loadSessions() {
@@ -8336,6 +9482,94 @@
                 await loadSessions();
             } catch (e) {
                 document.getElementById('sessionsStatus').textContent = `오류: ${e.message}`;
+            }
+        }
+
+        // P2-2: GPS auto-submit check-in
+        async function gpsCheckin(sessionId) {
+            const btn = document.getElementById(`gps-btn-${sessionId}`);
+            if (btn) { btn.classList.add('loading'); btn.textContent = lt('📡 Getting GPS…', '📡 GPS 확인 중...'); btn.disabled = true; }
+
+            const doSubmit = async (lat, lng, accuracy) => {
+                try {
+                    const res = await apiFetch(`/sessions/${sessionId}/checkin`, {
+                        method: 'POST',
+                        body: JSON.stringify({ lat, lng })
+                    });
+                    if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                    const acc = accuracy ? ` (±${Math.round(accuracy)}m)` : '';
+                    showToast(lt(`✅ GPS Check-in complete!${acc}`, `✅ GPS 체크인 완료!${acc}`));
+                    await loadSessions();
+                } catch (e) {
+                    showToast(`⚠️ ${e.message}`);
+                    const b2 = document.getElementById(`gps-btn-${sessionId}`);
+                    if (b2) { b2.classList.remove('loading'); b2.textContent = lt('📍 GPS Check-in', '📍 GPS 체크인'); b2.disabled = false; }
+                }
+            };
+
+            if (!navigator.geolocation) {
+                showToast(lt('Geolocation not available on this device.', '이 기기에서 위치 정보를 사용할 수 없습니다.'));
+                if (btn) { btn.classList.remove('loading'); btn.textContent = lt('📍 GPS Check-in', '📍 GPS 체크인'); btn.disabled = false; }
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                pos => doSubmit(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+                err => {
+                    showToast(lt(`GPS error: ${err.message}`, `GPS 오류: ${err.message}`));
+                    const b2 = document.getElementById(`gps-btn-${sessionId}`);
+                    if (b2) { b2.classList.remove('loading'); b2.textContent = lt('📍 GPS Check-in', '📍 GPS 체크인'); b2.disabled = false; }
+                },
+                { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
+            );
+        }
+
+        // P2-2: Toggle inline journal panel
+        function openInlineJournal(sessionId) {
+            const panel = document.getElementById(`journal-panel-${sessionId}`);
+            if (!panel) return;
+            const opening = !panel.classList.contains('open');
+            panel.classList.toggle('open');
+            if (opening) {
+                const ta = document.getElementById(`journal-text-${sessionId}`);
+                if (ta) setTimeout(() => ta.focus(), 80);
+            }
+        }
+
+        // P2-2: Submit inline journal + complete session
+        async function submitInlineJournal(sessionId) {
+            const journalText = (document.getElementById(`journal-text-${sessionId}`) || {}).value || '';
+            const duration = parseInt((document.getElementById(`journal-dur-${sessionId}`) || {}).value);
+            const nextAssign = (document.getElementById(`journal-next-${sessionId}`) || {}).value || '';
+            const btn = document.querySelector(`#journal-panel-${sessionId} .journal-submit-btn`);
+
+            if (!journalText.trim()) {
+                showToast(lt('Please write a session journal (required)', '수업 일지를 작성해주세요 (필수)'));
+                document.getElementById(`journal-text-${sessionId}`).focus();
+                return;
+            }
+            if (isNaN(duration) || duration < 1) {
+                showToast(lt('Enter actual class duration in minutes', '실제 수업 시간(분)을 입력하세요'));
+                return;
+            }
+
+            if (btn) { btn.disabled = true; btn.textContent = lt('Saving…', '저장 중...'); }
+            try {
+                const res = await apiFetch(`/sessions/${sessionId}/complete`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        journal_content: journalText.trim(),
+                        actual_duration_minutes: duration,
+                        next_assignment: nextAssign
+                    })
+                });
+                if (!res.ok) throw new Error((await res.json()).error || await res.text());
+                const data = await res.json();
+                const net = data.net_amount ? `₩${data.net_amount.toLocaleString()}` : '';
+                showToast(lt(`✅ Session complete! Net: ${net}`, `✅ 수업 완료! 순수령: ${net}`));
+                await loadSessions();
+            } catch (e) {
+                showToast(`⚠️ ${e.message}`);
+                if (btn) { btn.disabled = false; btn.textContent = lt('Save & Complete', '완료 저장'); }
             }
         }
 
@@ -8472,16 +9706,38 @@
             if (!alerts.length) return '<p class="muted">SOS 공고가 없습니다.</p>';
             const role = currentUser && currentUser.role;
             return alerts.map(a => {
+                const urgencyClass = { open: 'sos-open', accepted: 'sos-accepted', closed: 'sos-closed' }[a.status] || 'sos-open';
+                const urgencyIcon = a.status === 'open' ? '🚨' : a.status === 'accepted' ? '✅' : '⏹';
                 const acceptBtn = (role === 'instructor' && a.status === 'open')
-                    ? `<button onclick="acceptSosAlert(${a.id})" style="margin-left:8px;">수락</button>` : '';
-                const statusColor = a.status === 'open' ? '#f97316' : a.status === 'accepted' ? '#34d399' : '#888';
-                return `<div class="admin-item" style="border-left:3px solid ${statusColor};padding-left:10px;margin-bottom:8px;">
-                    <strong>${escapeHtml(a.title)}</strong>
-                    <span class="muted"> ${escapeHtml(a.subject)} | ${escapeHtml(a.region)}</span>
-                    <span style="color:${statusColor};margin-left:8px;">${a.status}</span>
-                    <span class="muted"> | ${(a.scheduled_at||'').slice(0,16)} | ₩${(a.rate||0).toLocaleString()}/h</span>
-                    ${acceptBtn}
-                </div>`;
+                    ? `<button class="sos-accept-btn" onclick="acceptSosAlert(${a.id})">⚡ ${lt('Accept Now','즉시 수락')}</button>` : '';
+
+                // Time until session
+                let countdown = '';
+                if (a.scheduled_at && a.status === 'open') {
+                    const diff = new Date(a.scheduled_at) - Date.now();
+                    if (diff > 0) {
+                        const h = Math.floor(diff / 3600000);
+                        const m = Math.floor((diff % 3600000) / 60000);
+                        countdown = `<span class="sos-countdown">⏰ ${h}h ${m}m ${lt('until start','후 수업')}</span>`;
+                    }
+                }
+
+                return `
+                    <div class="sos-urgent-card">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
+                            <strong style="font-size:15px;">${escapeHtml(a.title)}</strong>
+                            <span class="sos-urgency-badge ${urgencyClass}">${urgencyIcon} ${a.status.toUpperCase()}</span>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:var(--muted);margin-bottom:8px;">
+                            <span class="posting-tag tag-subject">${escapeHtml(a.subject)}</span>
+                            <span class="posting-tag tag-region">${escapeHtml(a.region)}</span>
+                            <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#a58cff;">₩${(a.rate||0).toLocaleString()}/h</span>
+                            <span>${(a.scheduled_at||'').slice(0,16)}</span>
+                        </div>
+                        ${countdown}
+                        ${acceptBtn ? `<div class="actions" style="margin-top:10px;">${acceptBtn}</div>` : ''}
+                    </div>
+                `;
             }).join('');
         }
 
@@ -8540,15 +9796,57 @@
 
         function renderReviews(reviews) {
             if (!reviews.length) return '<p class="muted">리뷰가 없습니다.</p>';
-            const stars = n => '⭐'.repeat(Math.max(0, Math.min(5, n||0)));
-            return reviews.map(r => `
-                <div class="admin-item" style="margin-bottom:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;">
-                    ${stars(r.rating)} <strong>${r.rating}점</strong>
-                    <span class="muted"> | 강사 #${r.instructor_id}</span>
-                    <span class="muted"> | ${(r.created_at||'').slice(0,10)}</span>
-                    ${r.comment ? `<p style="margin:4px 0 0 0;color:#ccc;">"${escapeHtml(r.comment)}"</p>` : ''}
-                </div>`
-            ).join('');
+
+            // Aggregate stats
+            const total = reviews.length;
+            const avg = reviews.reduce((s, r) => s + (r.rating || 0), 0) / total;
+            const counts = [0, 0, 0, 0, 0]; // 1-5 stars
+            reviews.forEach(r => { const i = Math.min(4, Math.max(0, (r.rating||1)-1)); counts[i]++; });
+
+            const aggregateHTML = `
+                <div class="rating-aggregate">
+                    <div>
+                        <div class="rating-big-score">${avg.toFixed(1)}</div>
+                        <div class="stars-row" style="margin:4px 0;">${renderStarIcons(avg)}</div>
+                        <div style="font-size:12px;color:var(--muted);">${total} ${lt('reviews','리뷰')}</div>
+                    </div>
+                    <div class="rating-bar-list">
+                        ${[5,4,3,2,1].map(star => {
+                            const cnt = counts[star-1];
+                            const pct = total > 0 ? Math.round(cnt/total*100) : 0;
+                            return `<div class="rating-bar-row">
+                                <span style="color:var(--muted);font-weight:700;">${star}★</span>
+                                <div class="rating-bar-track"><div class="rating-bar-fill" style="width:${pct}%;"></div></div>
+                                <span style="color:var(--muted);min-width:24px;text-align:right;">${cnt}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            const reviewCards = reviews.map(r => `
+                <div class="review-card-v2">
+                    <div class="review-header">
+                        <div>
+                            <div class="stars-row">${renderStarIcons(r.rating)}</div>
+                            <div style="font-size:13px;font-weight:600;margin-top:4px;">${r.rating}점 · ${lt('Instructor','강사')} #${r.instructor_id}</div>
+                        </div>
+                        <div style="font-size:11px;color:var(--muted);">${(r.created_at||'').slice(0,10)}</div>
+                    </div>
+                    ${r.comment ? `<p style="margin:6px 0 0;font-size:13px;color:#ccc;line-height:1.5;">"${escapeHtml(r.comment)}"</p>` : ''}
+                </div>
+            `).join('');
+
+            return aggregateHTML + reviewCards;
+        }
+
+        function renderStarIcons(rating) {
+            const full = Math.floor(rating || 0);
+            const half = ((rating || 0) - full) >= 0.5;
+            return [1,2,3,4,5].map(i => {
+                const cls = i <= full ? 'filled' : 'empty';
+                return `<span class="star-icon ${cls}">★</span>`;
+            }).join('');
         }
 
         async function loadReviews() {
@@ -8663,20 +9961,54 @@
         // ===== Sprint 9: 전자계약 =====
 
         function renderContract(c) {
-            const statusColors = { draft: '#60a5fa', signed: '#34d399', cancelled: '#f87171' };
-            const color = statusColors[c.status] || '#888';
+            const steps = ['draft', 'signed', 'active'];
+            const stepLabels = [lt('Draft','초안'), lt('Signed','서명완료'), lt('Active','효력발생')];
+            const stepIdx = c.status === 'signed' ? 2 : c.status === 'cancelled' ? 1 : 1;
+            const isDone = (i) => c.status === 'signed' && i <= 1;
+            const isActive = (i) => (c.status === 'draft' && i === 0) || (c.status === 'signed' && i === 2);
+
             const role = currentUser && currentUser.role;
             const mySigned = role === 'institution' ? !!c.institution_signed_at : !!c.instructor_signed_at;
-            const signBtn = !mySigned
-                ? `<button onclick="signContract(${c.id})" style="margin-left:8px;">서명하기</button>`
-                : `<span class="muted" style="margin-left:8px;">✓ 서명 완료</span>`;
-            return `<div class="admin-item" style="border-left:3px solid ${color};padding-left:10px;margin-bottom:8px;">
-                <strong>${escapeHtml(c.title)}</strong>
-                <span style="color:${color};margin-left:8px;">${c.status}</span>
-                <span class="muted"> | 강사 #${c.instructor_id}</span>
-                <span class="muted"> | ${(c.created_at||'').slice(0,10)}</span>
-                ${signBtn}
-            </div>`;
+            const signBtn = !mySigned && c.status !== 'cancelled'
+                ? `<button onclick="signContract(${c.id})" style="font-size:12px;padding:7px 12px;">✍️ ${lt('Sign Contract','서명하기')}</button>`
+                : mySigned ? `<span style="color:#5deec0;font-size:13px;">✓ ${lt('Signed','서명완료')}</span>` : '';
+
+            const stepperHTML = `
+                <div class="status-stepper">
+                    <div class="stepper-step">
+                        <div class="stepper-dot ${isDone(0) || c.status !== 'cancelled' ? 'done' : ''}">✓</div>
+                        <div class="stepper-label">${lt('Draft','초안')}</div>
+                    </div>
+                    <div class="stepper-line ${isDone(0) ? 'done' : ''}"></div>
+                    <div class="stepper-step">
+                        <div class="stepper-dot ${c.status === 'signed' ? 'done' : (c.status === 'draft' ? 'active' : '')}">✍</div>
+                        <div class="stepper-label">${lt('Signing','서명')}</div>
+                    </div>
+                    <div class="stepper-line ${c.status === 'signed' ? 'done' : ''}"></div>
+                    <div class="stepper-step">
+                        <div class="stepper-dot ${c.status === 'signed' ? 'active' : ''}">⚡</div>
+                        <div class="stepper-label">${lt('Active','효력')}</div>
+                    </div>
+                </div>
+            `;
+
+            const instSigned = c.institution_signed_at ? `✓ ${lt('Inst','기관')} ${c.institution_signed_at.slice(0,10)}` : `○ ${lt('Inst','기관')} ${lt('pending','대기')}`;
+            const instrSigned = c.instructor_signed_at ? `✓ ${lt('Instr','강사')} ${c.instructor_signed_at.slice(0,10)}` : `○ ${lt('Instr','강사')} ${lt('pending','대기')}`;
+
+            return `
+                <div class="contract-card-v2">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px;">
+                        <strong style="font-size:15px;">${escapeHtml(c.title)}</strong>
+                        <span style="font-size:11px;color:var(--muted);">#${c.id} · ${(c.created_at||'').slice(0,10)}</span>
+                    </div>
+                    ${stepperHTML}
+                    <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin:6px 0;">
+                        <span>${instSigned}</span>
+                        <span>${instrSigned}</span>
+                    </div>
+                    <div class="actions" style="margin-top:10px;">${signBtn}</div>
+                </div>
+            `;
         }
 
         async function loadContracts() {
@@ -8732,21 +10064,41 @@
         // ===== Sprint 9: 에스크로 결제 =====
 
         function renderEscrowCharge(ec) {
-            const statusColors = { held: '#f97316', released: '#34d399', refunded: '#f87171' };
-            const color = statusColors[ec.status] || '#888';
             const role = currentUser && currentUser.role;
+            const badgeClass = { held: 'escrow-held', released: 'escrow-released', refunded: 'escrow-refunded' }[ec.status] || 'escrow-held';
+            const stepperHTML = `
+                <div class="status-stepper" style="margin:10px 0 6px;">
+                    <div class="stepper-step">
+                        <div class="stepper-dot done">💰</div>
+                        <div class="stepper-label">${lt('Held','예치')}</div>
+                    </div>
+                    <div class="stepper-line ${ec.status !== 'held' ? 'done' : ''}"></div>
+                    <div class="stepper-step">
+                        <div class="stepper-dot ${ec.status === 'released' ? 'active' : (ec.status !== 'held' ? 'done' : '')}">✅</div>
+                        <div class="stepper-label">${lt('Released','지급')}</div>
+                    </div>
+                    <div class="stepper-line ${ec.status === 'refunded' ? 'done' : ''}"></div>
+                    <div class="stepper-step">
+                        <div class="stepper-dot ${ec.status === 'refunded' ? 'active' : ''}">🏦</div>
+                        <div class="stepper-label">${lt('Settled','정산')}</div>
+                    </div>
+                </div>
+            `;
             const actions = (role === 'institution' && ec.status === 'held')
-                ? `<button onclick="releaseEscrowCharge(${ec.id})" style="margin-left:6px;">지급 확정</button>
-                   <button onclick="refundEscrowCharge(${ec.id})" style="margin-left:4px;color:#f87171;">환불</button>`
+                ? `<button onclick="releaseEscrowCharge(${ec.id})" style="font-size:12px;padding:7px 12px;">✅ ${lt('Release','지급확정')}</button>
+                   <button onclick="refundEscrowCharge(${ec.id})" style="font-size:12px;padding:7px 12px;color:#f87171;background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.3);">↩ ${lt('Refund','환불')}</button>`
                 : '';
-            return `<div class="admin-item" style="border-left:3px solid ${color};padding-left:10px;margin-bottom:8px;">
-                <strong>₩${(ec.amount||0).toLocaleString()}</strong>
-                <span style="color:${color};margin-left:8px;">${ec.status}</span>
-                <span class="muted"> | Session #${ec.session_id}</span>
-                <span class="muted"> | ${(ec.created_at||'').slice(0,10)}</span>
-                ${ec.refund_reason ? `<span class="muted"> | 사유: ${escapeHtml(ec.refund_reason)}</span>` : ''}
-                ${actions}
-            </div>`;
+            return `
+                <div class="escrow-card-v2">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;">
+                        <span class="escrow-amount-badge ${badgeClass}">₩${(ec.amount||0).toLocaleString()}</span>
+                        <span style="font-size:11px;color:var(--muted);">Session #${ec.session_id} · ${(ec.created_at||'').slice(0,10)}</span>
+                    </div>
+                    ${stepperHTML}
+                    ${ec.refund_reason ? `<div style="font-size:12px;color:var(--muted);margin-top:4px;">↩ ${lt('Reason','사유')}: ${escapeHtml(ec.refund_reason)}</div>` : ''}
+                    ${actions ? `<div class="actions" style="margin-top:10px;">${actions}</div>` : ''}
+                </div>
+            `;
         }
 
         async function loadEscrowCharges() {
@@ -9796,11 +11148,12 @@
                 const showApplicant = role === 'institution' || role === 'admin';
 
                 return `
-                    <div class="posting application-item">
+                    <div class="posting application-item" data-app-status="${escapeHtml(a.status || 'pending')}">
                         <div>
                             <strong>${escapeHtml(a.posting_title || `Posting #${a.posting_id}`)}</strong>
                             ${statusBadge(a.status)}
                         </div>
+                        ${renderApplicationTimeline(a.status)}
                         <div class="application-meta">
                             <span>ID: ${a.id}</span>
                             ${showApplicant ? `<span>${lt('Applicant', '\uc9c0\uc6d0\uc790')}: ${applicantEmail}</span>` : ''}
@@ -10175,6 +11528,20 @@
         window.prefillSessionComplete = prefillSessionComplete;
         window.submitSessionCheckin = submitSessionCheckin;
         window.submitSessionComplete = submitSessionComplete;
+        // P2-2: GPS check-in + inline journal
+        window.gpsCheckin = gpsCheckin;
+        window.openInlineJournal = openInlineJournal;
+        window.submitInlineJournal = submitInlineJournal;
+        // P2-5 ~ P2-10
+        window.saveAvailabilitySlot = saveAvailabilitySlot;
+        window.removeAvailabilitySlot = removeAvailabilitySlot;
+        window.loadInstantBookingSlots = loadInstantBookingSlots;
+        window.requestInstantBooking = requestInstantBooking;
+        window.loadInstructorComparison = loadInstructorComparison;
+        window.loadMlmComplianceGauge = loadMlmComplianceGauge;
+        window.loadCoverageMapBoard = loadCoverageMapBoard;
+        window.simulateAdvancePay = simulateAdvancePay;
+        window.renderBadgePreview = renderBadgePreview;
         // Sprint 6
         window.adminLoadUsers = adminLoadUsers;
         window.adminChangeUserRole = adminChangeUserRole;
@@ -10273,6 +11640,7 @@
         document.getElementById('taxStatusBtn').addEventListener('click', checkTaxClaimStatus);
         document.getElementById('taxCmsChargeBtn').addEventListener('click', chargeCmsFee);
         document.getElementById('taxEventsBtn').addEventListener('click', loadTaxEvents);
+        document.getElementById('taxSettlementDetailBtn').addEventListener('click', loadSettlementDetail);
         document.getElementById('taxSettlementCsvBtn').addEventListener('click', exportSettlementCsv);
         document.getElementById('taxPollingBtn').addEventListener('click', toggleTaxPolling);
         document.getElementById('taxEventTypeFilter').addEventListener('change', loadTaxEvents);
@@ -10390,6 +11758,746 @@
         // Login card embedded controls
         document.getElementById('loginLangBtn').addEventListener('click', toggleLanguage);
         document.getElementById('loginThemeBtn').addEventListener('click', toggleTheme);
+        // ===== PRD FEATURE NAV + SPRINT TRACKER =====
+
+        // Phase 2 Sprint Plan — 10 sprints covering unimplemented PRD features
+        const PHASE2_SPRINTS = [
+            { id: 'P2-1', en: 'PRD Nav + Sprint UI',    ko: 'PRD 메뉴 + 스프린트 UI',  status: 'done'  },
+            { id: 'P2-2', en: 'GPS Check-in + Journal', ko: 'GPS 체크인 + 수업 일지',   status: 'done'  },
+            { id: 'P2-3', en: 'Settlement Detail',      ko: '정산 명세 상세',            status: 'done'  },
+            { id: 'P2-4', en: 'Tax Refund Flow',        ko: '세무 환급 UX',              status: 'done'  },
+            { id: 'P2-5', en: 'Availability Calendar',  ko: '강사 가용 일정',            status: 'done'  },
+            { id: 'P2-6', en: 'Instant Booking',        ko: '즉시 예약 (온디맨드)',      status: 'done'  },
+            { id: 'P2-7', en: 'Instructor Comparison',  ko: '강사 비교 + 랭킹',          status: 'done'  },
+            { id: 'P2-8', en: 'MLM 35% Gauge',          ko: 'MLM 35% 게이지 UI',         status: 'done'  },
+            { id: 'P2-9', en: 'Budget Coverage Map',    ko: '예산 집행/커버리지 맵',     status: 'done'  },
+            { id: 'P2-10',en: 'Fintech & Gamification', ko: '핀테크 + 게이미피케이션',   status: 'done'  },
+        ];
+
+        // PRD-faithful nav spec per role — implemented items link to screens, WIP items show greyed with sprint tag
+        const PRD_NAV_SPEC = {
+            instructor: [
+                {
+                    group: { en: '📊 Home', ko: '📊 홈' },
+                    items: [
+                        { screen: 'dashboardSection',            en: '🏠 Dashboard',        ko: '🏠 대시보드',          done: true  },
+                        { screen: 'instructorOnboardingSection', en: '👤 My Profile',        ko: '👤 내 프로필',          done: true  },
+                    ]
+                },
+                {
+                    group: { en: '📋 Teaching', ko: '📋 수업 운영' },
+                    items: [
+                        { screen: 'postingsSection',   en: '🔍 Find Postings',   ko: '🔍 공고 탐색',        done: true  },
+                        { screen: 'applicationsSection',en: '📥 My Applications',ko: '📥 내 지원',           done: true  },
+                        { screen: 'sessionsSection',   en: '📅 Sessions',        ko: '📅 수업 관리',         done: true  },
+                        { screen: 'sessionsSection', en: '📍 GPS Check-in',   ko: '📍 GPS 체크인',        done: true  },
+                        { screen: 'sessionsSection', en: '📝 Session Journal', ko: '📝 수업 일지',         done: true  },
+                        { screen: 'availabilitySection', en: '🗓️ Availability',   ko: '🗓️ 가용 일정',        done: true  },
+                        { screen: 'instantBookingSection', en: '⚡ Instant Request', ko: '⚡ 즉시 수락',         done: true  },
+                    ]
+                },
+                {
+                    group: { en: '💰 Finance', ko: '💰 정산/세무' },
+                    items: [
+                        { screen: 'taxSection',        en: '💴 Income & Tax',    ko: '💴 수입/세무',          done: true  },
+                        { screen: 'taxSection', en: '📊 Settlement Detail',ko:'📊 정산 명세',          done: true  },
+                        { screen: 'taxSection', en: '🔄 Tax Refund',      ko: '🔄 환급 신청',          done: true  },
+                        { screen: 'contractsSection',  en: '📜 Contracts',        ko: '📜 계약',               done: true  },
+                        { screen: 'networkSection',    en: '🌐 Network / MLM',    ko: '🌐 네트워크/MLM',        done: true  },
+                    ]
+                },
+                {
+                    group: { en: '⚡ Activity', ko: '⚡ 활동' },
+                    items: [
+                        { screen: 'sosSection',        en: '🚨 SOS Alerts',       ko: '🚨 SOS 긴급',           done: true  },
+                        { screen: 'reviewsSection',    en: '⭐ Reviews',           ko: '⭐ 리뷰/평점',           done: true  },
+                        { screen: 'fintechSection',en: '🏆 Badges',          ko: '🏆 배지/뱃지',           done: true  },
+                    ]
+                },
+                {
+                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    items: [
+                        { screen: 'securitySection',   en: '🔒 My Page',          ko: '🔒 마이페이지',          done: true  },
+                    ]
+                }
+            ],
+            institution: [
+                {
+                    group: { en: '📊 Dashboard', ko: '📊 대시보드' },
+                    items: [
+                        { screen: 'dashboardSection',  en: '🏠 Org Dashboard',    ko: '🏠 기관 대시보드',       done: true  },
+                    ]
+                },
+                {
+                    group: { en: '👥 Staffing', ko: '👥 인력 관리' },
+                    items: [
+                        { screen: 'postingsSection',   en: '📌 My Postings',      ko: '📌 내 공고',             done: true  },
+                        { screen: 'createPostingSection',en:'✏️ New Posting',      ko: '✏️ 공고 작성',           done: true  },
+                        { screen: 'applicationsSection',en: '👥 Applicants',       ko: '👥 지원자 심사',         done: true  },
+                        { screen: 'compareSection', en: '⚖️ Compare View',     ko: '⚖️ 강사 비교',           done: true  },
+                        { screen: 'compareSection', en: '🏅 Top Instructors',  ko: '🏅 강사 랭킹',           done: true  },
+                    ]
+                },
+                {
+                    group: { en: '📅 Operations', ko: '📅 수업 운영' },
+                    items: [
+                        { screen: 'sessionsSection',   en: '📅 Sessions',          ko: '📅 수업 일정',           done: true  },
+                        { screen: 'contractsSection',  en: '📜 Contracts',          ko: '📜 계약',               done: true  },
+                        { screen: 'escrowSection',     en: '💳 Escrow',             ko: '💳 에스크로',            done: true  },
+                        { screen: 'sosSection',        en: '🚨 SOS Dispatch',       ko: '🚨 SOS 배정',            done: true  },
+                        { screen: 'instantBookingSection', en: '⚡ Instant Booking',    ko: '⚡ 즉시 예약',           done: true  },
+                    ]
+                },
+                {
+                    group: { en: '💰 Finance', ko: '💰 정산' },
+                    items: [
+                        { screen: 'taxSection',        en: '💴 Settlement',         ko: '💴 정산 현황',           done: true  },
+                        { screen: 'taxSection', en: '📊 Settlement Detail',  ko: '📊 정산 명세',           done: true  },
+                        { screen: 'reviewsSection',    en: '⭐ Instructor Reviews',   ko: '⭐ 강사 리뷰',           done: true  },
+                    ]
+                },
+                {
+                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    items: [
+                        { screen: 'securitySection',   en: '🔒 My Page',             ko: '🔒 마이페이지',          done: true  },
+                    ]
+                }
+            ],
+            district: [
+                {
+                    group: { en: '📊 Region', ko: '📊 지역 현황' },
+                    items: [
+                        { screen: 'dashboardSection',  en: '🏠 Region Dashboard',    ko: '🏠 지역 대시보드',       done: true  },
+                        { screen: 'districtSection',   en: '📊 District Stats',       ko: '📊 교육청 통계',         done: true  },
+                    ]
+                },
+                {
+                    group: { en: '🏫 Institutions', ko: '🏫 기관 관리' },
+                    items: [
+                        { screen: 'applicationsSection',en: '📋 Institutions',        ko: '📋 관할 기관',           done: true  },
+                        { screen: 'coverageMapSection', en: '🗺️ Coverage Map',        ko: '🗺️ 커버리지 맵',         done: true  },
+                        { screen: 'coverageMapSection', en: '🏫 School Detail',       ko: '🏫 학교별 상세',         done: true  },
+                    ]
+                },
+                {
+                    group: { en: '💰 Budget', ko: '💰 예산' },
+                    items: [
+                        { screen: 'taxSection',        en: '💰 Budget Overview',      ko: '💰 예산 현황',           done: true  },
+                        { screen: 'coverageMapSection', en: '📊 Budget Execution',    ko: '📊 예산 집행 상세',      done: true  },
+                    ]
+                },
+                {
+                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    items: [
+                        { screen: 'securitySection',   en: '🔒 My Page',              ko: '🔒 마이페이지',          done: true  },
+                    ]
+                }
+            ],
+            admin: [
+                {
+                    group: { en: '📊 Platform', ko: '📊 플랫폼' },
+                    items: [
+                        { screen: 'dashboardSection',  en: '🏠 Platform Dashboard',   ko: '🏠 플랫폼 현황',         done: true  },
+                    ]
+                },
+                {
+                    group: { en: '👥 Members', ko: '👥 회원 관리' },
+                    items: [
+                        { screen: 'applicationsSection',en: '👥 Member List',          ko: '👥 회원 목록',           done: true  },
+                        { screen: 'adminInsightsSection',en:'⚖️ Compliance',           ko: '⚖️ 컴플라이언스',        done: true  },
+                        { screen: 'adminWebSection',   en: '⚙️ Admin Panel',           ko: '⚙️ 고급 관리',           done: true  },
+                    ]
+                },
+                {
+                    group: { en: '💰 MLM / Rewards', ko: '💰 MLM / 보상' },
+                    items: [
+                        { screen: 'networkSection',    en: '🌐 Network Ledger',        ko: '🌐 네트워크 원장',       done: true  },
+                        { screen: 'mlmGaugeSection', en: '📊 35% Compliance',       ko: '📊 35% 게이지',          done: true  },
+                        { screen: 'mlmGaugeSection', en: '🏆 Reward Tiers',         ko: '🏆 등급/보상 체계',      done: true  },
+                        { screen: 'fintechSection',en: '💳 Advance Pay',          ko: '💳 선정산 요청',         done: true  },
+                    ]
+                },
+                {
+                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    items: [
+                        { screen: 'securitySection',   en: '🔒 My Page',               ko: '🔒 마이페이지',          done: true  },
+                    ]
+                }
+            ]
+        };
+        // student role maps to instructor nav
+        PRD_NAV_SPEC.student = PRD_NAV_SPEC.instructor;
+        PRD_NAV_SPEC.super_admin = PRD_NAV_SPEC.admin;
+
+        function renderDynamicSidebar() {
+            const container = document.getElementById('railNavContainer');
+            if (!container) return;
+
+            const role = normalizeRole(getCurrentAccessRole());
+            const spec = PRD_NAV_SPEC[role] || PRD_NAV_SPEC.instructor;
+            const allowed = getAllowedScreens();
+
+            let html = '';
+            spec.forEach(group => {
+                html += `<div class="rail-group-header">${lt(group.group.en, group.group.ko)}</div>`;
+                group.items.forEach(item => {
+                    if (item.done && item.screen) {
+                        const isActive = activeScreenId === item.screen;
+                        const isAllowed = allowed.includes(item.screen);
+                        if (!isAllowed) return; // skip screens not allowed for this role
+                        html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${lt(item.en, item.ko)}</a>`;
+                    } else if (!item.done) {
+                        const sprintLabel = item.sprint || '';
+                        html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${lt(item.en, item.ko)}</a>`;
+                    }
+                });
+            });
+
+            // CTA button for institution role
+            const roleRaw = getCurrentAccessRole();
+            if (roleRaw === 'institution' || roleRaw === 'student') {
+                html += `<button class="rail-cta" type="button" data-screen="createPostingSection" style="margin:10px 10px 0;">${lt('+ New Posting', '+ 공고 작성')}</button>`;
+            }
+
+            container.innerHTML = html;
+
+            // Bind click events to newly generated links
+            container.querySelectorAll('.rail-link:not(.wip)').forEach(node => {
+                node.addEventListener('click', e => {
+                    e.preventDefault();
+                    const screenId = node.getAttribute('data-screen');
+                    if (screenId && currentUser) activateScreen(screenId);
+                });
+            });
+            container.querySelectorAll('.rail-cta').forEach(node => {
+                node.addEventListener('click', e => {
+                    e.preventDefault();
+                    const screenId = node.getAttribute('data-screen');
+                    if (screenId && currentUser) activateScreen(screenId);
+                });
+            });
+            container.querySelectorAll('.rail-link.wip').forEach(node => {
+                node.addEventListener('click', e => {
+                    e.preventDefault();
+                    const sprint = node.getAttribute('data-sprint');
+                    if (sprint) showToast(lt(`Coming in ${sprint} — stay tuned!`, `${sprint} 스프린트에서 개발 예정입니다!`));
+                });
+            });
+
+            renderSprintTracker();
+        }
+
+        function updateSidebarActiveState() {
+            const container = document.getElementById('railNavContainer');
+            if (!container) return;
+            container.querySelectorAll('.rail-link[data-screen]').forEach(node => {
+                node.classList.toggle('is-active', node.getAttribute('data-screen') === activeScreenId);
+            });
+        }
+
+        function renderSprintTracker() {
+            const widget = document.getElementById('sprintTrackerWidget');
+            if (!widget) return;
+
+            const doneCount = PHASE2_SPRINTS.filter(s => s.status === 'done').length;
+            const pct = Math.round(doneCount / PHASE2_SPRINTS.length * 100);
+
+            const pillsHtml = PHASE2_SPRINTS.map(s => {
+                const icon = s.status === 'done' ? '✅' : s.status === 'next' ? '▶' : '○';
+                const label = lt(s.id, s.id);
+                return `<div class="sprint-pill ${s.status}" title="${lt(s.en, s.ko)}">${icon} ${label}</div>`;
+            }).join('');
+
+            widget.innerHTML = `
+                <div class="sprint-tracker-title">📋 ${lt('Dev Progress (Phase 2)', '개발 현황 (Phase 2)')}</div>
+                <div class="sprint-grid">${pillsHtml}</div>
+                <div class="sprint-progress-bar-wrap">
+                    <div class="sprint-progress-bar-fill" style="width:${pct}%;"></div>
+                </div>
+                <div class="sprint-progress-label">${doneCount}/${PHASE2_SPRINTS.length} ${lt('sprints done', '스프린트 완료')} (${pct}%)</div>
+            `;
+        }
+
+        // ===== SPRINTS 1-10: ENHANCED FEATURE IMPLEMENTATIONS =====
+
+        // Sprint 3: Profile Completeness Ring
+        function renderProfileCompleteness(profile) {
+            if (!profile) return '';
+            const fields = [
+                { key: 'full_name', label: lt('Full Name','이름'), done: !!profile.full_name },
+                { key: 'phone', label: lt('Phone','전화번호'), done: !!profile.phone },
+                { key: 'subjects', label: lt('Subjects','과목'), done: !!profile.subjects },
+                { key: 'regions', label: lt('Regions','지역'), done: !!profile.regions },
+                { key: 'education_level', label: lt('Education','학력'), done: !!profile.education_level },
+                { key: 'bank_name', label: lt('Bank Info','계좌'), done: !!profile.bank_name },
+                { key: 'withholding_consent', label: lt('Consent','원천징수동의'), done: !!profile.withholding_consent },
+                { key: 'background_check_consent', label: lt('Background','신원확인'), done: !!profile.background_check_consent },
+            ];
+            const done = fields.filter(f => f.done).length;
+            const pct = Math.round(done / fields.length * 100);
+            const circumference = 2 * Math.PI * 26; // r=26
+            const dashOffset = circumference * (1 - pct / 100);
+            const color = pct === 100 ? '#5deec0' : pct >= 70 ? '#a58cff' : pct >= 40 ? '#ffb199' : '#ff6f87';
+
+            return `
+                <div class="profile-completeness-card">
+                    <div class="profile-completeness-ring">
+                        <svg viewBox="0 0 60 60">
+                            <defs>
+                                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:${color};stop-opacity:1"/>
+                                    <stop offset="100%" style="stop-color:#63d6ff;stop-opacity:1"/>
+                                </linearGradient>
+                            </defs>
+                            <circle class="ring-bg" cx="30" cy="30" r="26" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="6"/>
+                            <circle cx="30" cy="30" r="26" fill="none" stroke="url(#ringGrad)" stroke-width="6" stroke-linecap="round"
+                                stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}"
+                                style="transition:stroke-dashoffset 0.5s ease;"/>
+                        </svg>
+                        <div class="profile-completeness-pct" style="color:${color};">${pct}%</div>
+                    </div>
+                    <div class="profile-completeness-info">
+                        <h4>${lt('Profile Completeness','프로필 완성도')} ${done}/${fields.length}</h4>
+                        <p>${pct === 100 ? lt('Profile complete! Ready for matching.','프로필 완성! 매칭 준비 완료.') : lt('Complete your profile to improve matching.','프로필을 완성하여 매칭율을 높이세요.')}</p>
+                        <div class="profile-step-list" style="margin-top:8px;">
+                            ${fields.map(f => `
+                                <div class="profile-step-item">
+                                    <span class="profile-step-icon">${f.done ? '✅' : '○'}</span>
+                                    <span style="${f.done ? '' : 'color:var(--muted);'}">${f.label}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Sprint 4: Application Status Timeline
+        function renderApplicationTimeline(status) {
+            const steps = [
+                { key: 'pending', label: lt('Applied','지원'), icon: '📤' },
+                { key: 'reviewing', label: lt('Review','검토'), icon: '🔍' },
+                { key: 'approved', label: lt('Decision','결정'), icon: '⚡' },
+            ];
+            const statusOrder = { pending: 0, approved: 2, rejected: 2 };
+            const activeIdx = statusOrder[status] !== undefined ? statusOrder[status] : 0;
+
+            const stepsHTML = steps.map((step, i) => {
+                const isDone = i < activeIdx || (i === 2 && status === 'approved');
+                const isActive = i === activeIdx;
+                const isFail = i === 2 && status === 'rejected';
+                const dotClass = isFail ? 'fail' : isDone ? 'done' : isActive ? 'active' : '';
+                return `
+                    ${i > 0 ? `<div class="app-timeline-line${isDone || (isActive && i > 0) ? ' done' : ''}"></div>` : ''}
+                    <div class="app-timeline-step">
+                        <div class="app-step-dot ${dotClass}">${isFail ? '✗' : isDone ? '✓' : step.icon}</div>
+                        <div class="app-step-label">${step.label}</div>
+                    </div>
+                `;
+            }).join('');
+
+            return `<div class="app-timeline">${stepsHTML}</div>`;
+        }
+
+        // Sprint 2 & 4: Enhanced posting card rendering (inject rich metadata)
+        const _originalLoadPostings = loadPostings;
+
+        // Sprint 2: Subject filter chip click handler
+        function initSubjectFilterChips() {
+            const chips = document.querySelectorAll('#subjectFilterChips .filter-chip');
+            chips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    chips.forEach(c => c.classList.remove('active'));
+                    chip.classList.add('active');
+                    const subject = chip.getAttribute('data-subject') || '';
+                    const filterSelect = document.getElementById('filterSubject');
+                    if (filterSelect) filterSelect.value = subject;
+                    postingFilters.subject = subject;
+                    loadPostings();
+                });
+            });
+        }
+
+        // Sprint 3: Profile completeness injection into onboarding section
+        async function injectProfileCompletenessWidget() {
+            try {
+                const res = await apiFetch('/instructor/profile');
+                if (!res.ok) return;
+                const profile = await res.json();
+                const container = document.getElementById('onboardingStatusPanel');
+                if (!container) return;
+                const widget = document.createElement('div');
+                widget.id = 'profileCompletenessWidget';
+                widget.innerHTML = renderProfileCompleteness(profile);
+                const existingWidget = document.getElementById('profileCompletenessWidget');
+                if (existingWidget) existingWidget.remove();
+                container.parentElement.insertBefore(widget, container.nextSibling);
+                container.style.display = 'block';
+            } catch (e) {
+                // Non-fatal
+            }
+        }
+
+        // Sprint 8: Notification system
+        let notifItems = [];
+        let notifPollingInterval = null;
+
+        function updateNotifBadge(count) {
+            const badge = document.getElementById('notifBadge');
+            if (!badge) return;
+            if (count > 0) {
+                badge.textContent = count > 9 ? '9+' : String(count);
+                badge.classList.add('visible');
+                document.getElementById('notifBellBtn').setAttribute('aria-label', `Notifications (${count} new)`);
+            } else {
+                badge.classList.remove('visible');
+                document.getElementById('notifBellBtn').setAttribute('aria-label', 'Notifications');
+            }
+        }
+
+        function renderNotifDropdown() {
+            const list = document.getElementById('notifList');
+            if (!list) return;
+            if (!notifItems.length) {
+                list.innerHTML = '<p class="muted" style="font-size:13px;">No new notifications.</p>';
+                return;
+            }
+            list.innerHTML = notifItems.slice(0, 10).map(item => `
+                <div class="notif-item ${item.unread ? 'unread' : ''}" onclick="handleNotifClick('${escapeHtml(item.screen || '')}')">
+                    <div class="notif-item-title">${escapeHtml(item.icon || '📌')} ${escapeHtml(item.title || '')}</div>
+                    <div class="notif-item-time">${item.time || ''}</div>
+                </div>
+            `).join('');
+        }
+
+        function handleNotifClick(screen) {
+            if (screen) activateScreen(screen);
+            toggleNotifDropdown(false);
+        }
+
+        function toggleNotifDropdown(forceState) {
+            const dd = document.getElementById('notifDropdown');
+            const btn = document.getElementById('notifBellBtn');
+            if (!dd || !btn) return;
+            const isOpen = dd.classList.contains('open');
+            const newOpen = forceState !== undefined ? forceState : !isOpen;
+            dd.classList.toggle('open', newOpen);
+            btn.setAttribute('aria-expanded', String(newOpen));
+            if (newOpen) renderNotifDropdown();
+        }
+
+        async function pollNotifications() {
+            if (!token) return;
+            try {
+                const res = await apiFetch('/dashboard/activity?period=today');
+                if (!res.ok) return;
+                const items = await parseJsonSafe(res);
+                if (!Array.isArray(items)) return;
+
+                const typeIcon = { posting_created: '📌', application_received: '📥', session_scheduled: '📅', session_completed: '✅', profile_submitted: '🪪', profile_reviewed: '🎓' };
+
+                function formatRelativeTime(val) {
+                    if (!val) return '';
+                    const d = new Date(val.includes('T') ? val : val.replace(' ', 'T'));
+                    const sec = Math.floor((Date.now() - d) / 1000);
+                    if (sec < 60) return `${sec}s ago`;
+                    const min = Math.floor(sec / 60);
+                    if (min < 60) return `${min}m ago`;
+                    return `${Math.floor(min / 60)}h ago`;
+                }
+
+                const prev = notifItems.length;
+                notifItems = items.map(item => ({
+                    icon: typeIcon[item.type] || '📝',
+                    title: item.title || item.type,
+                    time: formatRelativeTime(item.created_at),
+                    screen: item.type && item.type.includes('application') ? 'applicationsSection' : (item.type && item.type.includes('session') ? 'sessionsSection' : 'dashboardSection'),
+                    unread: true,
+                }));
+                const newCount = notifItems.filter(n => n.unread).length;
+                updateNotifBadge(newCount);
+            } catch (e) {
+                // Non-fatal
+            }
+        }
+
+        function startNotificationPolling() {
+            if (notifPollingInterval) clearInterval(notifPollingInterval);
+            pollNotifications();
+            notifPollingInterval = setInterval(pollNotifications, 30000);
+        }
+
+        // Sprint 9: District/Admin Chart rendering
+        let districtChartInstance = null;
+        let adminChartInstance = null;
+
+        function renderDistrictCharts(regions) {
+            const container = document.getElementById('districtComparisonList');
+            if (!container || !Array.isArray(regions) || !regions.length) return;
+
+            const chartDiv = `
+                <div class="chart-container" id="districtChartContainer">
+                    <h4>📊 ${lt('Regional Comparison','지역별 비교')}</h4>
+                    <div class="chart-canvas-wrap"><canvas id="districtRegionChart"></canvas></div>
+                </div>
+            `;
+            container.insertAdjacentHTML('afterbegin', chartDiv);
+
+            requestAnimationFrame(() => {
+                const canvas = document.getElementById('districtRegionChart');
+                if (!canvas || !window.Chart) return;
+                if (districtChartInstance) districtChartInstance.destroy();
+                const isDark = !document.documentElement.getAttribute('data-theme');
+                districtChartInstance = new Chart(canvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: regions.slice(0, 8).map(r => r.region || r.name || '-'),
+                        datasets: [{
+                            label: lt('Postings','공고'),
+                            data: regions.slice(0, 8).map(r => r.posting_count || r.postings_count || 0),
+                            backgroundColor: 'rgba(165,140,255,0.6)',
+                            borderColor: '#a58cff',
+                            borderWidth: 1,
+                            borderRadius: 6,
+                        }, {
+                            label: lt('Instructors','강사'),
+                            data: regions.slice(0, 8).map(r => r.instructor_count || 0),
+                            backgroundColor: 'rgba(99,214,255,0.5)',
+                            borderColor: '#63d6ff',
+                            borderWidth: 1,
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { labels: { color: isDark ? '#d7dced' : '#364057', font: { family: 'Manrope', size: 11 } } }
+                        },
+                        scales: {
+                            x: { ticks: { color: isDark ? '#8a92a8' : '#5b647e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            y: { ticks: { color: isDark ? '#8a92a8' : '#5b647e', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
+                    }
+                });
+            });
+        }
+
+        function renderAdminPlatformCharts(data) {
+            const container = document.querySelector('#adminWebKpiGrid');
+            if (!container || !data) return;
+
+            const chartHTML = `
+                <div class="chart-container" id="adminPlatformChartContainer" style="grid-column:1/-1;margin-top:14px;">
+                    <h4>📊 ${lt('Platform Activity','활동 현황')}</h4>
+                    <div class="chart-canvas-wrap"><canvas id="adminPlatformChart"></canvas></div>
+                </div>
+            `;
+
+            const existing = document.getElementById('adminPlatformChartContainer');
+            if (!existing) {
+                container.insertAdjacentHTML('afterend', chartHTML);
+            }
+
+            requestAnimationFrame(() => {
+                const canvas = document.getElementById('adminPlatformChart');
+                if (!canvas || !window.Chart) return;
+                if (adminChartInstance) adminChartInstance.destroy();
+                const isDark = !document.documentElement.getAttribute('data-theme');
+                adminChartInstance = new Chart(canvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: [lt('Approved','승인'), lt('Pending','대기'), lt('Rejected','거절')],
+                        datasets: [{
+                            data: [
+                                data.platform?.applications_approved || 0,
+                                data.platform?.applications_pending || 0,
+                                data.platform?.applications_rejected || 0,
+                            ],
+                            backgroundColor: ['rgba(93,238,192,0.75)', 'rgba(255,195,133,0.75)', 'rgba(255,111,135,0.75)'],
+                            borderColor: ['#5deec0', '#ffc385', '#ff6f87'],
+                            borderWidth: 1,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: isDark ? '#d7dced' : '#364057', font: { family: 'Manrope', size: 11 }, padding: 16 } }
+                        }
+                    }
+                });
+            });
+        }
+
+        // Patch loadDistrictComparison to also render charts
+        const _origLoadDistrictComparison = loadDistrictComparison;
+        loadDistrictComparison = async function() {
+            await _origLoadDistrictComparison();
+            try {
+                const res = await apiFetch('/district/regional-comparison');
+                if (!res.ok) return;
+                const data = await parseJsonSafe(res);
+                const regions = Array.isArray(data) ? data : (data.regions || []);
+                if (regions.length) renderDistrictCharts(regions);
+            } catch(e) {}
+        };
+
+        // Patch adminLoadPlatformSummary to also render chart
+        const _origAdminLoadPlatformSummary = adminLoadPlatformSummary;
+        adminLoadPlatformSummary = async function() {
+            await _origAdminLoadPlatformSummary();
+            try {
+                const res = await apiFetch('/admin/platform-summary');
+                if (!res.ok) return;
+                const data = await parseJsonSafe(res);
+                renderAdminPlatformCharts(data);
+            } catch(e) {}
+        };
+
+        // Sprint 4: Patch renderDashboardActivity to include timelines on application items
+        const _origRenderDashboardActivity = renderDashboardActivity;
+        // (timelines injected via loadApplications — see below)
+
+        // Sprint 4: Patch loadApplications to add timeline to application items
+        async function enhanceApplicationsList() {
+            const list = document.getElementById('applicationsList');
+            if (!list) return;
+            const items = list.querySelectorAll('[data-app-status]');
+            // Already rendered — inject timelines
+            items.forEach(el => {
+                const status = el.getAttribute('data-app-status') || 'pending';
+                if (!el.querySelector('.app-timeline')) {
+                    const timelineEl = document.createElement('div');
+                    timelineEl.innerHTML = renderApplicationTimeline(status);
+                    el.insertBefore(timelineEl.firstChild, el.firstChild.nextSibling);
+                }
+            });
+        }
+
+        // Sprint 10: Mobile Navigation
+        function initMobileMenu() {
+            const toggle = document.getElementById('mobileMenuToggle');
+            const overlay = document.getElementById('sideRailOverlay');
+            const rail = document.querySelector('.side-rail');
+            if (!toggle || !overlay || !rail) return;
+
+            toggle.addEventListener('click', () => {
+                rail.classList.toggle('open');
+                overlay.classList.toggle('open');
+            });
+
+            overlay.addEventListener('click', () => {
+                rail.classList.remove('open');
+                overlay.classList.remove('open');
+            });
+
+            // Close mobile menu on nav link click
+            rail.querySelectorAll('.rail-link, .rail-cta').forEach(link => {
+                link.addEventListener('click', () => {
+                    rail.classList.remove('open');
+                    overlay.classList.remove('open');
+                });
+            });
+        }
+
+        // Sprint 10: Accessibility - close notification dropdown on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                toggleNotifDropdown(false);
+                const mobileRail = document.querySelector('.side-rail.open');
+                if (mobileRail) {
+                    mobileRail.classList.remove('open');
+                    document.getElementById('sideRailOverlay')?.classList.remove('open');
+                }
+            }
+        });
+
+        // Close notif dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const dd = document.getElementById('notifDropdown');
+            const bell = document.getElementById('notifBellBtn');
+            if (dd && bell && !dd.contains(e.target) && !bell.contains(e.target)) {
+                toggleNotifDropdown(false);
+            }
+        });
+
+        // Sprint 2: Enhanced posting card render — inject rich tags into rendered posting HTML
+        const _origLoadPostingsOuter = window.loadPostings;
+
+        // Sprint 8: Hook notification bell
+        document.addEventListener('DOMContentLoaded', () => {
+            const bellBtn = document.getElementById('notifBellBtn');
+            if (bellBtn) bellBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleNotifDropdown(); });
+        });
+
+        // Sprint 10: Init mobile menu after DOM ready
+        document.addEventListener('DOMContentLoaded', initMobileMenu);
+
+        // Sprint 2: Subject chip init after DOM ready  
+        document.addEventListener('DOMContentLoaded', initSubjectFilterChips);
+
+        // Hook into showSections to start notifications + render PRD sidebar after login
+        const _origShowSections = showSections;
+        showSections = function() {
+            _origShowSections();
+            startNotificationPolling();
+            initSubjectFilterChips();
+            renderDynamicSidebar();
+        };
+
+        // Sprint 3 + PRD nav active-state sync on screen change
+        const _origActivateScreen = activateScreen;
+        activateScreen = function(screenId) {
+            _origActivateScreen(screenId);
+            if (screenId === 'instructorOnboardingSection' && token) {
+                setTimeout(injectProfileCompletenessWidget, 300);
+            }
+            if (screenId === 'availabilitySection') {
+                renderAvailabilityList();
+            }
+            if (screenId === 'instantBookingSection') {
+                loadInstantBookingSlots();
+            }
+            if (screenId === 'compareSection') {
+                loadInstructorComparison();
+            }
+            if (screenId === 'mlmGaugeSection') {
+                loadMlmComplianceGauge();
+            }
+            if (screenId === 'coverageMapSection') {
+                loadCoverageMapBoard();
+            }
+            if (screenId === 'fintechSection') {
+                renderBadgePreview();
+            }
+            updateSidebarActiveState();
+        };
+
+        // Sprint 9: Also patch loadDistrictDashboard to call charts
+        const _origLoadDistrictDashboard = loadDistrictDashboard;
+        loadDistrictDashboard = async function() {
+            await _origLoadDistrictDashboard();
+        };
+
+        // Sprint 1: Clear quick actions div on logout/section hide
+        const _origHideSections = hideSections;
+        hideSections = function() {
+            _origHideSections();
+            if (notifPollingInterval) {
+                clearInterval(notifPollingInterval);
+                notifPollingInterval = null;
+            }
+            updateNotifBadge(0);
+            const qa = document.getElementById('dashboardQuickActions');
+            if (qa) qa.style.display = 'none';
+        };
+
+        // Sprint 10: Mobile menu init (not DOMContentLoaded-gated for late scripts)
+        initMobileMenu();
+        initSubjectFilterChips();
+
     </script>
 
 </body>

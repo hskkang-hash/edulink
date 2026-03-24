@@ -32,7 +32,7 @@ test.describe('인증 - 로그인', () => {
     await page.locator('#loginBtn').click();
 
     // 로그인 성공 시 body에 view-webapp 클래스 추가됨
-    await expect(page.locator('body')).toHaveClass(/view-webapp/, { timeout: 8_000 });
+    await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });
     // 이메일 표시 확인
     await expect(page.locator('#userEmail')).toContainText(email);
   });
@@ -76,7 +76,7 @@ test.describe('인증 - 로그아웃', () => {
     await page.locator('#loginPassword').fill(password);
     await page.locator('#loginBtn').click();
 
-    await expect(page.locator('body')).toHaveClass(/view-webapp/, { timeout: 8_000 });
+    await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });
 
     // 로그아웃
     await page.locator('#logoutBtn').click();

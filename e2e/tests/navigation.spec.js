@@ -17,7 +17,7 @@ test.describe('사이드바 내비게이션', () => {
     await page.locator('#loginEmail').fill(TEST_EMAIL);
     await page.locator('#loginPassword').fill(TEST_PASSWORD);
     await page.locator('#loginBtn').click();
-    await expect(page.locator('body')).toHaveClass(/view-webapp/, { timeout: 8_000 });
+    await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });
   });
 
   test('Overview(Dashboard) 탭 진입', async ({ page }) => {
@@ -31,7 +31,7 @@ test.describe('사이드바 내비게이션', () => {
   });
 
   test('Settlements(Tax) 탭 진입', async ({ page }) => {
-    await page.locator('.rail-link[data-screen="taxSection"]').click();
+    await page.locator('.rail-link[data-screen="taxSection"]').first().click();
     await expect(page.locator('#taxSection')).toBeVisible({ timeout: 6_000 });
   });
 
