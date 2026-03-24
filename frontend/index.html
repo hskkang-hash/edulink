@@ -1066,6 +1066,16 @@
             background: rgba(125, 184, 255, 0.22);
         }
 
+        :root[data-theme='light'] #openSignupFlowBtn {
+            background: rgba(37, 99, 235, 0.08);
+            border-color: rgba(37, 99, 235, 0.22);
+            color: #2451b8;
+        }
+
+        :root[data-theme='light'] #openSignupFlowBtn:hover {
+            background: rgba(37, 99, 235, 0.14);
+        }
+
         /* ── Pre-login layout overrides ── */
         body.view-prelogin #identityLandingSection {
             grid-column: 1 / 7;
@@ -1135,6 +1145,23 @@
             color: inherit;
             cursor: pointer;
             transition: background 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .login-ctrl-btn .ctrl-icon {
+            width: 15px;
+            height: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: currentColor;
+            flex-shrink: 0;
+        }
+
+        .login-ctrl-btn .ctrl-label {
+            line-height: 1;
         }
 
         .login-ctrl-btn:hover {
@@ -2158,6 +2185,12 @@
             padding: 8px 10px;
         }
 
+        :root[data-theme='light'] .close-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #1f2937;
+        }
+
         .modal-actions {
             margin-top: 12px;
             display: flex;
@@ -2955,9 +2988,9 @@
                     <div class="identity-brand">
                         <img src="./assets/edulink-logo.svg" alt="Edulink logo">
                     </div>
-                    <h2 id="identityTitle">Edulink Identity</h2>
-                    <p class="identity-slogan" id="identitySlogan">Connected Classrooms, Trusted Staffing.</p>
-                    <p class="identity-caption" id="identityCaption">Edulink links instructors, institutions, and education operations into one reliable execution network.</p>
+                    <h2 id="identityTitle">EDULINK Identity</h2>
+                    <p class="identity-slogan" id="identitySlogan">Edulink — Connecting Instructors, Powering Operations</p>
+                    <p class="identity-caption" id="identityCaption">EduLink is more than a simple instructor recruitment platform — it is an all-in-one service that integrates matching, operations, and settlement. With a mobile-first app for instructors and dedicated management web portals for institutions and education offices, it supports both on-site execution and administrative control. EduLink is building a new standard operating system for the public and private education markets.</p>
                     <div class="identity-visual">
                         <img src="./assets/edulink-hero.svg" alt="Edulink service concept image">
                     </div>
@@ -4140,8 +4173,8 @@
                 heroTitle: 'Unified operations for education staffing.',
                 heroCopy: 'Design the full product surface first for instructors, institutions, districts, and platform operators, then connect each workflow in order.',
                 identityTitle: 'EDULINK Identity',
-                identitySlogan: 'Connected Classrooms, Trusted Staffing.',
-                identityCaption: 'Edulink connects instructors, institutions, districts, and operators into one education operations cloud.',
+                identitySlogan: 'Edulink — Connecting Instructors, Powering Operations',
+                identityCaption: 'EduLink is more than a simple instructor recruitment platform — it is an all-in-one service that integrates matching, operations, and settlement. With a mobile-first app for instructors and dedicated management web portals for institutions and education offices, it supports both on-site execution and administrative control. EduLink is building a new standard operating system for the public and private education markets.',
                 mastheadSub: 'Unified Operations Platform',
                 navDashboard: 'Role Views',
                 navApplicants: 'Screen Map',
@@ -4233,8 +4266,8 @@
                 heroTitle: '교육 인력 운영을 위한 통합 화면 설계.',
                 heroCopy: '강사, 학교·기관, 교육청, 운영자 관점의 전체 제품 화면을 먼저 설계하고 그 위에 기능을 순차적으로 연결합니다.',
                 identityTitle: 'EDULINK 아이덴티티',
-                identitySlogan: '연결된 교실, 신뢰 가능한 인력 운영.',
-                identityCaption: 'Edulink는 강사, 학교·기관, 교육청, 운영자를 하나의 교육 운영 클라우드로 연결합니다.',
+                identitySlogan: 'EduLink 강사를 연결하고, 운영을 완성하다',
+                identityCaption: 'EduLink는 단순한 강사 구인 플랫폼이 아니라 매칭·운영·정산을 통합한 올인원 서비스입니다. 모바일 중심의 강사용 앱과 기관·교육청용 관리 웹으로 현장과 행정을 동시에 지원합니다. 공공교육과 사교육 시장의 새로운 표준 운영 체계를 만들어갑니다.',
                 mastheadSub: '통합 운영 플랫폼',
                 navDashboard: '역할 화면',
                 navApplicants: '화면 맵',
@@ -5937,14 +5970,7 @@
             if (themeBtn) {
                 themeBtn.textContent = t('themeLabel');
             }
-            const preloginLangBtn = document.getElementById('preloginLangBtn');
-            if (preloginLangBtn) preloginLangBtn.textContent = t('langLabel');
-            const preloginThemeBtn = document.getElementById('preloginThemeBtn');
-            if (preloginThemeBtn) preloginThemeBtn.textContent = t('themeLabel');
-            const loginLangBtn = document.getElementById('loginLangBtn');
-            if (loginLangBtn) loginLangBtn.textContent = t('langLabel');
-            const loginThemeBtnL = document.getElementById('loginThemeBtn');
-            if (loginThemeBtnL) loginThemeBtnL.textContent = t('themeLabel');
+            updateLoginControlButtons();
             const loginTitleEl = document.getElementById('loginSectionTitle');
             if (loginTitleEl) loginTitleEl.textContent = t('loginTitle');
 
@@ -6036,6 +6062,8 @@
                 const sunSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
                 quickThemeBtn.innerHTML = currentTheme === 'dark' ? sunSvg : moonSvg;
             }
+
+            updateLoginControlButtons();
         }
 
         function toggleLanguage() {
@@ -6053,6 +6081,35 @@
 
         function getDemoText(en, ko) {
             return currentLang === 'ko' ? ko : en;
+        }
+
+        function getControlIconMarkup(type, label) {
+            const globeSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3a15.3 15.3 0 0 1 4 9 15.3 15.3 0 0 1-4 9 15.3 15.3 0 0 1-4-9 15.3 15.3 0 0 1 4-9z"></path></svg>`;
+            const sunSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"></circle><path d="M12 2v2.2"></path><path d="M12 19.8V22"></path><path d="M4.93 4.93l1.56 1.56"></path><path d="M17.51 17.51l1.56 1.56"></path><path d="M2 12h2.2"></path><path d="M19.8 12H22"></path><path d="M4.93 19.07l1.56-1.56"></path><path d="M17.51 6.49l1.56-1.56"></path></svg>`;
+            const moonSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.9 8.9 0 1 1 11.2 3a7.1 7.1 0 0 0 9.8 9.8z"></path></svg>`;
+            const icon = type === 'lang' ? globeSvg : (currentTheme === 'dark' ? sunSvg : moonSvg);
+            return `<span class="ctrl-icon" aria-hidden="true">${icon}</span><span class="ctrl-label">${label}</span>`;
+        }
+
+        function updateLoginControlButtons() {
+            const langLabel = t('langLabel');
+            const themeLabel = currentTheme === 'dark'
+                ? (currentLang === 'ko' ? '라이트' : 'Light')
+                : (currentLang === 'ko' ? '다크' : 'Dark');
+
+            ['preloginLangBtn', 'loginLangBtn'].forEach((id) => {
+                const button = document.getElementById(id);
+                if (button) {
+                    button.innerHTML = getControlIconMarkup('lang', langLabel);
+                }
+            });
+
+            ['preloginThemeBtn', 'loginThemeBtn'].forEach((id) => {
+                const button = document.getElementById(id);
+                if (button) {
+                    button.innerHTML = getControlIconMarkup('theme', themeLabel);
+                }
+            });
         }
 
         function renderRoleToggleRow() {
@@ -6570,6 +6627,11 @@
             const canvasGrid = document.getElementById('activeScreenCanvasGrid');
 
             if (!section) {
+                return;
+            }
+
+            if (!currentUser && document.body.classList.contains('view-prelogin')) {
+                section.style.display = 'none';
                 return;
             }
 
