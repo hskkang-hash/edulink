@@ -26,6 +26,25 @@ async function loginAs(page, email, password = QA_PASSWORD) {
 }
 
 test.describe('역할별 로그인 + 핵심 기능 플로우', () => {
+  test.beforeAll(async ({ request }) => {
+    const toRegister = [
+      { email: USERS.instructor, role: 'instructor' },
+      { email: USERS.institution, role: 'institution' },
+      { email: USERS.district, role: 'district' },
+      { email: USERS.admin, role: 'admin' },
+    ];
+
+    for (const user of toRegister) {
+      await request.post('/auth/register', {
+        data: {
+          email: user.email,
+          password: QA_PASSWORD,
+          role: user.role,
+        },
+      });
+    }
+  });
+
   test('강사: 가용일정 저장 + 핀테크 진입', async ({ page }) => {
     await loginAs(page, USERS.instructor);
 

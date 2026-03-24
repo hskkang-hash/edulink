@@ -1028,11 +1028,31 @@
             grid-row: 1;
         }
 
+        body.view-prelogin .app-shell {
+            grid-template-columns: 1fr;
+        }
+
+        body.view-prelogin .side-rail {
+            display: none;
+        }
+
         body.view-prelogin #loginSection {
             grid-column: 7 / -1;
             grid-row: 1;
             align-self: start;
             padding-top: 40px;
+        }
+
+        body.view-prelogin .hero-logo {
+            display: none;
+        }
+
+        body.view-prelogin .masthead .quick-controls {
+            display: none;
+        }
+
+        body.view-prelogin #preloginBar {
+            display: none !important;
         }
 
         /* Hide hero image on landing so identity section stays compact */
@@ -1115,6 +1135,48 @@
             border-color: rgba(0,0,0,0.14);
             background: rgba(0,0,0,0.05);
             color: #1a1a1a;
+        }
+
+        .policy-card {
+            padding: 14px 16px;
+        }
+
+        .policy-card-title {
+            display: block;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .policy-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .policy-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--surface-border);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 12px;
+            transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+        }
+
+        .policy-link:hover {
+            border-color: rgba(165, 140, 255, 0.42);
+            background: var(--brand-soft);
+            transform: translateY(-1px);
+        }
+
+        :root[data-theme='light'] .policy-link {
+            background: rgba(0, 0, 0, 0.03);
         }
 
         .signup-flow-section {
@@ -2845,15 +2907,15 @@
                 </div>
                 <h1>Welcome back.</h1>
                 <p class="hero-copy">Manage postings, student applications, and payout activity through one streamlined premium panel.</p>
-                <div class="section" id="publicTrustLinksSection" style="padding:14px 16px;">
-                    <strong style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);">Public & Policy</strong>
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
-                        <a href="/content-hub.html" target="_blank" rel="noopener">Content Hub</a>
-                        <a href="/about.html" target="_blank" rel="noopener">About</a>
-                        <a href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
-                        <a href="/terms.html" target="_blank" rel="noopener">Terms</a>
-                        <a href="/contact.html" target="_blank" rel="noopener">Contact</a>
-                        <a href="/adsense-disclosure.html" target="_blank" rel="noopener">Ads & Cookies</a>
+                <div class="section policy-card" id="publicTrustLinksSection">
+                    <strong class="policy-card-title">Public & Policy</strong>
+                    <div class="policy-links">
+                        <a class="policy-link" href="/content-hub.html" target="_blank" rel="noopener">Content Hub</a>
+                        <a class="policy-link" href="/about.html" target="_blank" rel="noopener">About</a>
+                        <a class="policy-link" href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
+                        <a class="policy-link" href="/terms.html" target="_blank" rel="noopener">Terms</a>
+                        <a class="policy-link" href="/contact.html" target="_blank" rel="noopener">Contact</a>
+                        <a class="policy-link" href="/adsense-disclosure.html" target="_blank" rel="noopener">Ads & Cookies</a>
                     </div>
                 </div>
 
@@ -7918,9 +7980,28 @@
             document.getElementById('topbar').style.display = 'none';
             document.getElementById('myPostingsToggleWrap').style.display = 'none';
             const preloginBar = document.getElementById('preloginBar');
-            if (preloginBar) preloginBar.style.display = 'flex';
+            if (preloginBar) preloginBar.style.display = 'none';
             document.body.classList.add('view-prelogin');
             updatePrimaryNavigation();
+        }
+
+        function normalizeLoginError(response, data) {
+            const status = response ? Number(response.status || 0) : 0;
+            const rawError = String((data && data.error) || '');
+            const tunnelDown = /tunnel unavailable|localtunnel|service unavailable/i.test(rawError);
+
+            if (status === 503 || tunnelDown) {
+                return lt(
+                    'Backend is temporarily unavailable (503). Please retry in a moment.',
+                    '백엔드 연결이 일시적으로 불안정합니다(503). 잠시 후 다시 시도해 주세요.'
+                );
+            }
+
+            if (/invalid|incorrect|wrong|password|credentials/i.test(rawError)) {
+                return t('invalidCredentials');
+            }
+
+            return rawError || lt('Login failed. Please retry.', '로그인에 실패했습니다. 다시 시도해 주세요.');
         }
 
         function setSignupFlowVisible(visible) {
@@ -10911,10 +10992,7 @@
                 const data = await parseJsonSafe(response);
 
                 if (!response.ok || !data.access_token) {
-                    const errMsg = data.error || '';
-                    const normalized = /invalid|incorrect|wrong|password|credentials/i.test(errMsg)
-                        ? t('invalidCredentials')
-                        : errMsg || lt('Login failed. Please retry.', '로그인에 실패했습니다. 다시 시도해 주세요.');
+                    const normalized = normalizeLoginError(response, data);
                     setStatus('loginStatus', normalized);
                     return;
                 }
