@@ -27,5 +27,8 @@ RUN echo '#!/bin/bash\ncurl -f http://localhost:5000/health || exit 1' > /health
 # 포트 노출
 EXPOSE 5000
 
+ENV PORT=5000
+ENV DEBUG=false
+
 # Flask 애플리케이션 실행
-CMD ["python", "app_jwt.py"]
+CMD ["python", "run.py"]

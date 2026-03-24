@@ -3117,12 +3117,6 @@ def network_admin_rules_simulate():
         'within_limit': simulated_ratio <= 0.35 if simulated_gamma > 0 else True,
         'sponsor_deltas': sponsor_deltas[:10]
     })
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
-
-
 # ===== 강사 프로필 온보딩 API =====
 
 @app.route('/instructor/profile', methods=['POST'])
@@ -4084,5 +4078,9 @@ def refund_escrow_charge(charge_id):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    import os
+
+    port = int(os.getenv('PORT', '8000'))
+    debug = os.getenv('DEBUG', 'false').lower() == 'true'
+    app.run(host='0.0.0.0', port=port, debug=debug)
 
