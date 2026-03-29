@@ -17,8 +17,15 @@
 param(
     [string]$step = 'all',           # all, docker, health, release, test
     [switch]$continueLoop = $false,  # 무한 반복 모드
-    [int]$intervalMinutes = 15       # 반복 주기 (분)
+    [int]$intervalMinutes = 15,      # 반복 주기 (분)
+    [switch]$forceLegacyLoop = $false
 )
+
+if ($continueLoop -and -not $forceLegacyLoop) {
+    Write-Host "Legacy continueLoop mode is disabled for this project." -ForegroundColor Yellow
+    Write-Host "Run one-shot steps only, or pass -forceLegacyLoop intentionally." -ForegroundColor Yellow
+    exit 0
+}
 
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BACKEND_DIR = Join-Path $SCRIPT_DIR "backend"

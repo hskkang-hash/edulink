@@ -17,8 +17,15 @@
 
 param(
     [int]$interval = 15,    # 분 단위 주기 (기본 15분)
-    [switch]$once = $false  # 1회만 실행
+    [switch]$once = $false,  # 1회만 실행
+    [switch]$forceLegacyLoop = $false
 )
+
+if (-not $forceLegacyLoop) {
+    Write-Host "Legacy Auto-Dev daemon loop is disabled for this project." -ForegroundColor Yellow
+    Write-Host "Use current manual development flow only." -ForegroundColor Yellow
+    exit 0
+}
 
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $LOG_FILE = Join-Path $SCRIPT_DIR "auto-dev-daemon.log"

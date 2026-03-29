@@ -1,5 +1,11 @@
 # 🤖 EduLink 무인 자동 개발 모드 - 활성화 완료
 
+## v2.0 데모 개발 진행 현황 바로가기
+
+- 상세항목 진행 문서: `docs/v2-demo-progress-live-2026-03-29.md`
+- 시나리오 기반 10 Sprint 계획: `docs/v2-demo-scenario-sprint-plan-2026-03-29.md`
+- 실행 기준 계획: `docs/v2-sprint-1-10-execution-plan-2026-03-26.md`
+
 **시작 시간:** 2026-03-22 22:25:17  
 **상태:** ✅ **활성 운영 중**
 

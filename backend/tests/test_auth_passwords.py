@@ -19,6 +19,18 @@ class AuthPasswordFlowTest(unittest.TestCase):
                     created_at TEXT
                 )
             '''))
+            conn.execute(text('''
+                CREATE TABLE social_identities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER,
+                    provider TEXT,
+                    provider_user_id TEXT,
+                    provider_email TEXT,
+                    created_at TEXT,
+                    updated_at TEXT,
+                    UNIQUE(provider, provider_user_id)
+                )
+            '''))
 
         self.original_engine = app_jwt.engine
         app_jwt.engine = self.engine
@@ -147,6 +159,49 @@ class AuthPasswordFlowTest(unittest.TestCase):
 
         login_new = self.client.post('/auth/login', json={'email': 'reset@test.com', 'password': 'Reset1234'})
         self.assertEqual(login_new.status_code, 200)
+
+    def test_social_login_creates_user_for_google(self):
+        response = self.client.post('/auth/social-login', json={
+            'provider': 'google',
+            'access_token': 'google-test-token-123456',
+            'provider_user_id': 'g-1001',
+            'email': 'social.google@test.com',
+            'role': 'instructor'
+        })
+        self.assertEqual(response.status_code, 200)
+        payload = response.get_json()
+        self.assertTrue(payload.get('created'))
+        self.assertEqual(payload.get('provider'), 'google')
+
+    def test_social_login_reuses_existing_identity(self):
+        first = self.client.post('/auth/social-login', json={
+            'provider': 'kakao',
+            'access_token': 'kakao-test-token-123456',
+            'provider_user_id': 'k-1001',
+            'email': 'social.kakao@test.com',
+            'role': 'school'
+        })
+        self.assertEqual(first.status_code, 200)
+
+        second = self.client.post('/auth/social-login', json={
+            'provider': 'kakao',
+            'access_token': 'kakao-test-token-654321',
+            'provider_user_id': 'k-1001',
+            'email': 'social.kakao@test.com',
+            'role': 'school'
+        })
+        self.assertEqual(second.status_code, 200)
+        self.assertFalse(second.get_json().get('created'))
+
+    def test_social_login_blocks_privileged_role(self):
+        response = self.client.post('/auth/social-login', json={
+            'provider': 'google',
+            'access_token': 'google-test-token-123456',
+            'provider_user_id': 'g-admin',
+            'email': 'social.admin@test.com',
+            'role': 'admin'
+        })
+        self.assertEqual(response.status_code, 403)
 
 
 if __name__ == '__main__':

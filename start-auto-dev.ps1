@@ -18,8 +18,16 @@
 param(
     [switch]$console = $false,   # 콘솔에서 실행 (백그라운드 아님)
     [int]$interval = 15,         # 주기 (분)
-    [switch]$once = $false       # 1회만
+    [switch]$once = $false,      # 1회만
+    [switch]$forceLegacyLoop = $false
 )
+
+if (-not $forceLegacyLoop) {
+    Write-Host "Legacy Auto-Dev Loop is disabled for this project." -ForegroundColor Yellow
+    Write-Host "Proceed with current manual development only." -ForegroundColor Yellow
+    Write-Host "If you intentionally need the legacy loop, run with -forceLegacyLoop." -ForegroundColor DarkYellow
+    exit 0
+}
 
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Path
 $DAEMON_SCRIPT = Join-Path $SCRIPT_DIR "auto-dev-daemon.ps1"

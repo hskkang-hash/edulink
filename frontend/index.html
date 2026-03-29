@@ -926,6 +926,42 @@
             flex: 1;
         }
 
+        .social-login-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .social-login-btn {
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+        }
+
+        .social-login-btn:hover {
+            transform: translateY(-1px);
+            border-color: rgba(165, 140, 255, 0.52);
+        }
+
+        .social-login-btn.google {
+            background: rgba(255, 255, 255, 0.94);
+            color: #1f2432;
+        }
+
+        .social-login-btn.kakao {
+            background: #fee500;
+            color: #202020;
+        }
+
+        :root[data-theme='light'] .social-login-btn.google {
+            border-color: rgba(17, 24, 39, 0.16);
+        }
+
         .login-policy-row {
             display: flex;
             gap: 8px;
@@ -3172,6 +3208,10 @@
                     <div class="login-action-row">
                         <button id="loginBtn">Login</button>
                         <button type="button" id="openSignupFlowBtn">Sign Up</button>
+                    </div>
+                    <div class="social-login-row">
+                        <button type="button" class="social-login-btn google" id="socialGoogleBtn">Google Login</button>
+                        <button type="button" class="social-login-btn kakao" id="socialKakaoBtn">Kakao Login</button>
                     </div>
                     <p id="loginStatus" class="muted"></p>
                     <div class="login-policy-row" id="publicTrustLinksSection">
@@ -11173,6 +11213,51 @@
             }
         }
 
+        async function loginWithSocial(provider) {
+            const email = document.getElementById('loginEmail').value.trim();
+            const roleSelect = document.getElementById('registerRole');
+            const role = roleSelect ? roleSelect.value : 'instructor';
+            const normalizedProvider = String(provider || '').toLowerCase();
+
+            if (!email) {
+                setStatus('loginStatus', lt('Enter your email first for social login demo.', '소셜 로그인 데모를 위해 이메일을 먼저 입력해 주세요.'));
+                return;
+            }
+
+            const providerUserId = `${normalizedProvider}-${email.toLowerCase()}`;
+            const pseudoToken = `${normalizedProvider}-demo-token-${Date.now()}`;
+
+            try {
+                const response = await apiFetch('/auth/social-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: normalizedProvider,
+                        access_token: pseudoToken,
+                        provider_user_id: providerUserId,
+                        email,
+                        role
+                    })
+                });
+                const data = await parseJsonSafe(response);
+
+                if (!response.ok || !data.access_token) {
+                    setStatus('loginStatus', (data && data.error) || lt('Social login failed.', '소셜 로그인에 실패했습니다.'));
+                    return;
+                }
+
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                await loadUserInfo();
+                const msg = data.created
+                    ? lt(`New account created via ${normalizedProvider}.`, `${normalizedProvider} 계정으로 신규 가입 후 로그인되었습니다.`)
+                    : lt(`Logged in via ${normalizedProvider}.`, `${normalizedProvider} 계정으로 로그인되었습니다.`);
+                setStatus('loginStatus', msg);
+            } catch (error) {
+                setStatus('loginStatus', `Error: ${error.message}`);
+            }
+        }
+
         async function changePassword() {
             if (!token) {
                 setStatus('securityStatus', lt('Login required.', '로그인이 필요합니다.'));
@@ -12102,6 +12187,8 @@
             setSignupFlowVisible(false);
         });
         document.getElementById('loginBtn').addEventListener('click', login);
+        document.getElementById('socialGoogleBtn').addEventListener('click', () => loginWithSocial('google'));
+        document.getElementById('socialKakaoBtn').addEventListener('click', () => loginWithSocial('kakao'));
         document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
         document.getElementById('resetRequestBtn').addEventListener('click', requestResetToken);
         document.getElementById('resetConfirmBtn').addEventListener('click', confirmResetPassword);

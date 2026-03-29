@@ -49,6 +49,22 @@ python app_jwt.py
 http://localhost:8000
 ```
 
+### 4) Seed v2 demo data (1000 users)
+```bash
+cd backend
+python seed_demo_v2.py
+```
+
+Seeded demo roles:
+- instructor: 10
+- school: 5
+- institution: 5
+- admin(system operator): 2
+- student: 978
+
+Demo user password:
+- `DemoPass123!`
+
 ---
 
 ## Cloudflare Deployment (Wrangler)

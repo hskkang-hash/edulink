@@ -1,9 +1,6 @@
-name: Auto-Dev Loop (15min Interval)
+name: Auto-Dev Loop (Disabled)
 
 on:
-  schedule:
-    # 15분마다 자동 실행
-    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       phase:
@@ -19,10 +16,16 @@ on:
 
 jobs:
   auto-dev:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     name: Auto Dev Pipeline
 
     steps:
+      - name: Disabled
+        run: |
+          echo "Legacy auto-dev loop is disabled by project decision."
+          echo "Use current manual development flow only."
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:

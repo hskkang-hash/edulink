@@ -21,6 +21,7 @@ app.config['ALLOW_PRIVILEGED_SELF_REGISTER'] = os.getenv('ALLOW_PRIVILEGED_SELF_
 app.config['MAX_LOGIN_ATTEMPTS_PER_10_MIN'] = int(os.getenv('MAX_LOGIN_ATTEMPTS_PER_10_MIN', '20'))
 app.config['MAX_RESET_ATTEMPTS_PER_30_MIN'] = int(os.getenv('MAX_RESET_ATTEMPTS_PER_30_MIN', '8'))
 app.config['MAX_REGISTER_ATTEMPTS_PER_10_MIN'] = int(os.getenv('MAX_REGISTER_ATTEMPTS_PER_10_MIN', '15'))
+app.config['SOCIAL_LOGIN_DEMO_MODE'] = os.getenv('SOCIAL_LOGIN_DEMO_MODE', 'true').lower() == 'true'
 
 allowed_origins_env = os.getenv(
     'ALLOWED_CORS_ORIGINS',
@@ -144,6 +145,25 @@ with engine.begin() as conn:
             owner_id INTEGER
         )
     '''))
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS posting_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            owner_id INTEGER,
+            name TEXT,
+            title TEXT,
+            subject TEXT,
+            region TEXT,
+            rate INTEGER,
+            default_deadline_days INTEGER DEFAULT 14,
+            required_fields TEXT,
+            recurrence_type TEXT,
+            recurrence_days TEXT,
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT,
+            updated_at TEXT
+        )
+    '''))
     conn.execute(text('''
         CREATE TABLE IF NOT EXISTS applications (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,6 +171,19 @@ with engine.begin() as conn:
             student_id INTEGER,
             status TEXT DEFAULT 'pending',
             created_at TEXT
+        )
+    '''))
+
+    conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS social_identities (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            provider TEXT,
+            provider_user_id TEXT,
+            provider_email TEXT,
+            created_at TEXT,
+            updated_at TEXT,
+            UNIQUE(provider, provider_user_id)
         )
     '''))
 
@@ -358,6 +391,17 @@ with engine.begin() as conn:
     '''))
 
     conn.execute(text('''
+        CREATE TABLE IF NOT EXISTS session_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id INTEGER,
+            event_type TEXT,
+            actor_user_id INTEGER,
+            payload TEXT,
+            created_at TEXT
+        )
+    '''))
+
+    conn.execute(text('''
         CREATE TABLE IF NOT EXISTS reviews (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id INTEGER,
@@ -477,6 +521,10 @@ def validate_password_policy(password):
 
 def normalize_email(value):
     return str(value or '').strip().lower()
+
+
+def normalize_social_provider(provider):
+    return str(provider or '').strip().lower()
 
 
 def mask_email(value):
@@ -705,6 +753,141 @@ def login():
     return jsonify({'access_token': token, 'token_type': 'bearer', 'user': {'id': user['id'], 'email': user['email'], 'role': user['role']}})
 
 
+@app.route('/auth/social-login', methods=['POST'])
+def social_login():
+    data = request.get_json() or {}
+
+    provider = normalize_social_provider(data.get('provider', ''))
+    access_token = str(data.get('access_token', '')).strip()
+    provider_user_id = str(data.get('provider_user_id', '')).strip()
+    email = normalize_email(data.get('email', ''))
+    role = normalize_role(data.get('role', 'instructor'))
+    organization = str(data.get('organization', '')).strip()
+
+    if provider not in {'google', 'kakao'}:
+        return jsonify({'error': 'provider must be one of: google, kakao'}), 400
+
+    if not access_token:
+        return jsonify({'error': 'access_token required'}), 400
+
+    if not provider_user_id:
+        synthetic = str(data.get('id_token', '') or access_token)
+        provider_user_id = synthetic[:48] if synthetic else ''
+    if not provider_user_id:
+        return jsonify({'error': 'provider_user_id required'}), 400
+
+    if role not in ALLOWED_PUBLIC_REGISTER_ROLES:
+        return jsonify({'error': 'Invalid role'}), 400
+    if role in PRIVILEGED_REGISTER_ROLES:
+        return jsonify({'error': 'Privileged role registration is blocked'}), 403
+
+    if not app.config.get('SOCIAL_LOGIN_DEMO_MODE') and len(access_token) < 16:
+        return jsonify({'error': 'Invalid social token'}), 401
+
+    if not email:
+        email = f"{provider}.{provider_user_id[:20]}@social.edulink.local"
+
+    created = False
+    now = now_iso()
+    with engine.begin() as conn:
+        identity = conn.execute(
+            text('''
+                SELECT user_id
+                FROM social_identities
+                WHERE provider = :provider
+                  AND provider_user_id = :provider_user_id
+            '''),
+            {'provider': provider, 'provider_user_id': provider_user_id}
+        ).mappings().first()
+
+        user = None
+        if identity:
+            user = conn.execute(
+                text('SELECT id, email, role FROM users WHERE id = :id'),
+                {'id': identity['user_id']}
+            ).mappings().first()
+
+        if not user:
+            user = conn.execute(
+                text('SELECT id, email, role FROM users WHERE email = :email'),
+                {'email': email}
+            ).mappings().first()
+
+        if not user:
+            created = True
+            conn.execute(
+                text('''
+                    INSERT INTO users (email, password, role, organization, created_at)
+                    VALUES (:email, :password, :role, :organization, :created_at)
+                '''),
+                {
+                    'email': email,
+                    'password': generate_password_hash(f"social-{provider}-{uuid.uuid4().hex}"),
+                    'role': role,
+                    'organization': organization,
+                    'created_at': now,
+                }
+            )
+            user = conn.execute(
+                text('SELECT id, email, role FROM users WHERE email = :email'),
+                {'email': email}
+            ).mappings().first()
+
+        existing_identity = conn.execute(
+            text('''
+                SELECT id FROM social_identities
+                WHERE provider = :provider AND provider_user_id = :provider_user_id
+            '''),
+            {'provider': provider, 'provider_user_id': provider_user_id}
+        ).mappings().first()
+
+        if existing_identity:
+            conn.execute(
+                text('''
+                    UPDATE social_identities
+                    SET user_id = :user_id,
+                        provider_email = :provider_email,
+                        updated_at = :updated_at
+                    WHERE id = :id
+                '''),
+                {
+                    'user_id': user['id'],
+                    'provider_email': email,
+                    'updated_at': now,
+                    'id': existing_identity['id'],
+                }
+            )
+        else:
+            conn.execute(
+                text('''
+                    INSERT INTO social_identities (
+                        user_id, provider, provider_user_id, provider_email, created_at, updated_at
+                    )
+                    VALUES (
+                        :user_id, :provider, :provider_user_id, :provider_email, :created_at, :updated_at
+                    )
+                '''),
+                {
+                    'user_id': user['id'],
+                    'provider': provider,
+                    'provider_user_id': provider_user_id,
+                    'provider_email': email,
+                    'created_at': now,
+                    'updated_at': now,
+                }
+            )
+
+    auth_attempts_total.labels(type=f'{provider}_oauth', result='success').inc()
+    token = create_token({'user_id': user['id'], 'email': user['email'], 'role': user['role']})
+    return jsonify({
+        'access_token': token,
+        'token_type': 'bearer',
+        'created': created,
+        'provider': provider,
+        'user': {'id': user['id'], 'email': user['email'], 'role': user['role']}
+    })
+
+
 def get_current_user():
     auth = request.headers.get('Authorization', '')
     if not auth.startswith('Bearer '):
@@ -774,6 +957,23 @@ def log_tax_event(user_id, event_type, payload, claim_code=None):
                 'created_at': now_iso()
             }
         )
+
+
+def log_session_event(conn, session_id, event_type, actor_user_id, payload_dict=None):
+    payload = json.dumps(payload_dict or {}, ensure_ascii=False)
+    conn.execute(
+        text('''
+            INSERT INTO session_events (session_id, event_type, actor_user_id, payload, created_at)
+            VALUES (:session_id, :event_type, :actor_user_id, :payload, :created_at)
+        '''),
+        {
+            'session_id': session_id,
+            'event_type': event_type,
+            'actor_user_id': actor_user_id,
+            'payload': payload,
+            'created_at': now_iso(),
+        }
+    )
 
 
 def month_window_from_period(period):
@@ -1508,6 +1708,262 @@ def delete_posting(posting_id):
             return jsonify({'error': 'Posting not found or not owned'}), 404
 
     return jsonify({'message': 'Posting deleted'})
+
+
+@app.route('/postings/<int:posting_id>/status', methods=['PATCH'])
+def update_posting_status(posting_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.get_json() or {}
+    new_status = str(data.get('status', '')).strip().lower()
+    allowed_statuses = {'draft', 'open', 'closed', 'assigned'}
+    if new_status not in allowed_statuses:
+        return jsonify({'error': 'Invalid status'}), 400
+
+    with engine.begin() as conn:
+        row = conn.execute(
+            text('SELECT id, owner_id, status FROM postings WHERE id = :id'),
+            {'id': posting_id}
+        ).mappings().first()
+        if not row:
+            return jsonify({'error': 'Posting not found'}), 404
+        if not (has_role(user, 'admin', 'super_admin') or row['owner_id'] == user['user_id']):
+            return jsonify({'error': 'Forbidden'}), 403
+
+        current_status = str(row['status'] or 'open')
+        valid_transitions = {
+            'draft': {'open', 'closed'},
+            'open': {'assigned', 'closed'},
+            'assigned': {'closed', 'open'},
+            'closed': {'open'},
+        }
+        if new_status != current_status and new_status not in valid_transitions.get(current_status, set()):
+            return jsonify({'error': f'Invalid transition from {current_status} to {new_status}'}), 409
+
+        conn.execute(
+            text('UPDATE postings SET status = :status WHERE id = :id'),
+            {'status': new_status, 'id': posting_id}
+        )
+
+    return jsonify({'message': 'Posting status updated', 'id': posting_id, 'status': new_status})
+
+
+@app.route('/postings/templates', methods=['POST'])
+def create_posting_template():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution', 'admin', 'super_admin'):
+        return jsonify({'error': 'Only institutions can create posting templates'}), 403
+
+    data = request.get_json() or {}
+    required = ['name', 'title', 'subject', 'region', 'rate']
+    missing = [key for key in required if not data.get(key)]
+    if missing:
+        return jsonify({'error': f'Missing fields: {", ".join(missing)}'}), 400
+
+    required_fields = data.get('required_fields') or ['title', 'subject', 'region', 'rate']
+    recurrence_days = data.get('recurrence_days') or []
+    now = now_iso()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text('''
+                INSERT INTO posting_templates
+                    (owner_id, name, title, subject, region, rate,
+                     default_deadline_days, required_fields, recurrence_type, recurrence_days,
+                     is_active, created_at, updated_at)
+                VALUES
+                    (:owner_id, :name, :title, :subject, :region, :rate,
+                     :default_deadline_days, :required_fields, :recurrence_type, :recurrence_days,
+                     1, :created_at, :updated_at)
+            '''),
+            {
+                'owner_id': user['user_id'],
+                'name': str(data['name']).strip(),
+                'title': str(data['title']).strip(),
+                'subject': str(data['subject']).strip(),
+                'region': str(data['region']).strip(),
+                'rate': int(data['rate']),
+                'default_deadline_days': int(data.get('default_deadline_days', 14)),
+                'required_fields': json.dumps(required_fields, ensure_ascii=False),
+                'recurrence_type': str(data.get('recurrence_type', 'none')).strip(),
+                'recurrence_days': json.dumps(recurrence_days, ensure_ascii=False),
+                'created_at': now,
+                'updated_at': now,
+            }
+        )
+        template_id = conn.execute(text('SELECT last_insert_rowid() as id')).scalar()
+
+    return jsonify({'message': 'Posting template created', 'id': template_id}), 201
+
+
+@app.route('/postings/templates', methods=['GET'])
+def list_posting_templates():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        if has_role(user, 'admin', 'super_admin'):
+            rows = conn.execute(
+                text('SELECT * FROM posting_templates WHERE is_active = 1 ORDER BY updated_at DESC, id DESC')
+            ).mappings().all()
+        else:
+            rows = conn.execute(
+                text('''
+                    SELECT *
+                    FROM posting_templates
+                    WHERE owner_id = :owner_id AND is_active = 1
+                    ORDER BY updated_at DESC, id DESC
+                '''),
+                {'owner_id': user['user_id']}
+            ).mappings().all()
+
+    items = []
+    for row in rows:
+        item = dict(row)
+        item['required_fields'] = json.loads(item.get('required_fields') or '[]')
+        item['recurrence_days'] = json.loads(item.get('recurrence_days') or '[]')
+        items.append(item)
+
+    return jsonify(items)
+
+
+@app.route('/postings/templates/<int:template_id>/instantiate', methods=['POST'])
+def instantiate_posting_template(template_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution', 'admin', 'super_admin'):
+        return jsonify({'error': 'Only institutions can instantiate posting templates'}), 403
+
+    data = request.get_json() or {}
+    now = now_iso()
+
+    with engine.begin() as conn:
+        template = conn.execute(
+            text('''
+                SELECT *
+                FROM posting_templates
+                WHERE id = :id
+                  AND is_active = 1
+                  AND (:is_admin = 1 OR owner_id = :owner_id)
+            '''),
+            {
+                'id': template_id,
+                'owner_id': user['user_id'],
+                'is_admin': 1 if has_role(user, 'admin', 'super_admin') else 0,
+            }
+        ).mappings().first()
+        if not template:
+            return jsonify({'error': 'Template not found'}), 404
+
+        posting_payload = {
+            'title': str(data.get('title') or template['title']).strip(),
+            'subject': str(data.get('subject') or template['subject']).strip(),
+            'region': str(data.get('region') or template['region']).strip(),
+            'rate': int(data.get('rate') or template['rate'] or 0),
+            'status': str(data.get('status') or 'open').strip(),
+            'deadline': data.get('deadline'),
+            'created_at': now,
+            'owner_id': user['user_id'],
+        }
+
+        conn.execute(
+            text('''
+                INSERT INTO postings (title, subject, region, rate, status, deadline, created_at, owner_id)
+                VALUES (:title, :subject, :region, :rate, :status, :deadline, :created_at, :owner_id)
+            '''),
+            posting_payload
+        )
+        posting_id = conn.execute(text('SELECT last_insert_rowid() as id')).scalar()
+
+    return jsonify({'message': 'Posting instantiated from template', 'id': posting_id, 'template_id': template_id}), 201
+
+
+@app.route('/applications/compare', methods=['GET'])
+def compare_applicants():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+    if not has_role(user, 'institution', 'admin', 'super_admin'):
+        return jsonify({'error': 'Only institutions can compare applicants'}), 403
+
+    posting_id = request.args.get('posting_id', type=int)
+    if not posting_id:
+        return jsonify({'error': 'posting_id is required'}), 400
+
+    with engine.connect() as conn:
+        posting = conn.execute(
+            text('SELECT id, owner_id, title, subject, region FROM postings WHERE id = :id'),
+            {'id': posting_id}
+        ).mappings().first()
+        if not posting:
+            return jsonify({'error': 'Posting not found'}), 404
+        if not (has_role(user, 'admin', 'super_admin') or posting['owner_id'] == user['user_id']):
+            return jsonify({'error': 'Forbidden'}), 403
+
+        rows = conn.execute(
+            text('''
+                SELECT
+                    a.id AS application_id,
+                    a.status AS application_status,
+                    a.created_at AS applied_at,
+                    u.id AS instructor_id,
+                    u.email AS instructor_email,
+                    ip.status AS profile_status,
+                    ip.subjects AS profile_subjects,
+                    ip.regions AS profile_regions,
+                    ip.available_hours,
+                    COALESCE(rs.review_count, 0) AS review_count,
+                    COALESCE(rs.avg_rating, 0) AS avg_rating
+                FROM applications a
+                JOIN users u ON u.id = a.student_id
+                LEFT JOIN instructor_profiles ip ON ip.user_id = u.id
+                LEFT JOIN (
+                    SELECT instructor_id, COUNT(*) AS review_count, ROUND(AVG(rating), 2) AS avg_rating
+                    FROM reviews
+                    GROUP BY instructor_id
+                ) rs ON rs.instructor_id = u.id
+                WHERE a.posting_id = :posting_id
+                ORDER BY
+                    CASE a.status
+                        WHEN 'approved' THEN 0
+                        WHEN 'pending' THEN 1
+                        ELSE 2
+                    END,
+                    COALESCE(rs.avg_rating, 0) DESC,
+                    datetime(a.created_at) ASC
+            '''),
+            {'posting_id': posting_id}
+        ).mappings().all()
+
+    candidates = []
+    for row in rows:
+        item = dict(row)
+        try:
+            item['profile_subjects'] = json.loads(item.get('profile_subjects') or '[]')
+        except json.JSONDecodeError:
+            item['profile_subjects'] = []
+        try:
+            item['profile_regions'] = json.loads(item.get('profile_regions') or '[]')
+        except json.JSONDecodeError:
+            item['profile_regions'] = []
+        candidates.append(item)
+
+    return jsonify({
+        'posting': {
+            'id': posting['id'],
+            'title': posting['title'],
+            'subject': posting['subject'],
+            'region': posting['region'],
+        },
+        'count': len(candidates),
+        'candidates': candidates,
+    })
 
 
 @app.route('/applications', methods=['POST'])
@@ -3487,6 +3943,18 @@ def create_session():
             'updated_at': now,
         })
         row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+        log_session_event(
+            conn,
+            row_id,
+            'session_created',
+            user['user_id'],
+            {
+                'posting_id': data['posting_id'],
+                'instructor_id': data['instructor_id'],
+                'scheduled_at': data['scheduled_at'],
+                'scheduled_duration_minutes': int(data.get('scheduled_duration_minutes', 60)),
+            }
+        )
 
     with engine.connect() as conn:
         row = conn.execute(text('SELECT * FROM sessions WHERE id = :id'), {'id': row_id}).mappings().first()
@@ -3600,6 +4068,13 @@ def session_checkin(session_id):
                 status = 'in_progress', updated_at = :now
             WHERE id = :id
         '''), {'now': now, 'lat': lat, 'lng': lng, 'id': session_id})
+        log_session_event(
+            conn,
+            session_id,
+            'session_checkin',
+            user['user_id'],
+            {'lat': lat, 'lng': lng}
+        )
 
     return jsonify({'message': 'Checked in', 'status': 'in_progress', 'checkin_at': now})
 
@@ -3660,6 +4135,18 @@ def session_complete(session_id):
             'net': net,
             'id': session_id,
         })
+        log_session_event(
+            conn,
+            session_id,
+            'session_completed',
+            user['user_id'],
+            {
+                'actual_duration_minutes': actual_minutes,
+                'gross_amount': actual_gross,
+                'withholding_amount': wh,
+                'net_amount': net,
+            }
+        )
 
     return jsonify({
         'message': 'Session completed',
@@ -3746,6 +4233,19 @@ def adjust_session(session_id):
                 'updated_at': now,
                 'id': session_id,
                 'org_id': user['user_id']
+            }
+        )
+        log_session_event(
+            conn,
+            session_id,
+            'session_adjusted',
+            user['user_id'],
+            {
+                'actual_duration_minutes': actual_minutes,
+                'status': next_status,
+                'gross_amount': adjusted_gross,
+                'withholding_amount': adjusted_wh,
+                'net_amount': adjusted_net,
             }
         )
 
@@ -3881,6 +4381,18 @@ def create_sos():
             'created_at': now,
         })
         row_id = conn.execute(text('SELECT last_insert_rowid() AS id')).mappings().first()['id']
+        log_session_event(
+            conn,
+            None,
+            'sos_created',
+            user['user_id'],
+            {
+                'sos_id': row_id,
+                'subject': str(data['subject']).strip(),
+                'region': str(data['region']).strip(),
+                'scheduled_at': str(data['scheduled_at']).strip(),
+            }
+        )
 
     return jsonify({'message': 'SOS alert created', 'id': row_id}), 201
 
@@ -3941,6 +4453,13 @@ def accept_sos(sos_id):
             UPDATE sos_alerts SET status = 'accepted', accepted_by = :uid, accepted_at = :now
             WHERE id = :id
         '''), {'uid': user['user_id'], 'now': now, 'id': sos_id})
+        log_session_event(
+            conn,
+            None,
+            'sos_accepted',
+            user['user_id'],
+            {'sos_id': sos_id}
+        )
 
     return jsonify({'message': 'SOS accepted', 'id': sos_id})
 
