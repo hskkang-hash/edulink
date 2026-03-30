@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import uuid
 import json
+from urllib import parse, request as urllib_request
+from urllib.error import HTTPError, URLError
 from threading import Lock
 from email_adapter import get_email_adapter
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -22,6 +24,9 @@ app.config['MAX_LOGIN_ATTEMPTS_PER_10_MIN'] = int(os.getenv('MAX_LOGIN_ATTEMPTS_
 app.config['MAX_RESET_ATTEMPTS_PER_30_MIN'] = int(os.getenv('MAX_RESET_ATTEMPTS_PER_30_MIN', '8'))
 app.config['MAX_REGISTER_ATTEMPTS_PER_10_MIN'] = int(os.getenv('MAX_REGISTER_ATTEMPTS_PER_10_MIN', '15'))
 app.config['SOCIAL_LOGIN_DEMO_MODE'] = os.getenv('SOCIAL_LOGIN_DEMO_MODE', 'true').lower() == 'true'
+app.config['SOCIAL_LOGIN_VERIFY_TIMEOUT_SEC'] = int(os.getenv('SOCIAL_LOGIN_VERIFY_TIMEOUT_SEC', '5'))
+app.config['GOOGLE_TOKENINFO_URL'] = os.getenv('GOOGLE_TOKENINFO_URL', 'https://www.googleapis.com/oauth2/v3/tokeninfo')
+app.config['KAKAO_USERINFO_URL'] = os.getenv('KAKAO_USERINFO_URL', 'https://kapi.kakao.com/v2/user/me')
 
 allowed_origins_env = os.getenv(
     'ALLOWED_CORS_ORIGINS',
@@ -527,6 +532,85 @@ def normalize_social_provider(provider):
     return str(provider or '').strip().lower()
 
 
+def verify_google_token(access_token, provider_user_id, email):
+    timeout_sec = int(app.config.get('SOCIAL_LOGIN_VERIFY_TIMEOUT_SEC') or 5)
+    tokeninfo_url = str(app.config.get('GOOGLE_TOKENINFO_URL') or '').strip()
+    if not tokeninfo_url:
+        return False, 'Google token verification URL is not configured', None
+
+    query = parse.urlencode({'access_token': access_token})
+    url = f"{tokeninfo_url}?{query}"
+    try:
+        with urllib_request.urlopen(url, timeout=timeout_sec) as response:
+            raw = response.read().decode('utf-8')
+            payload = json.loads(raw)
+    except (HTTPError, URLError, TimeoutError, ValueError):
+        return False, 'Google token verification failed', None
+
+    token_sub = str(payload.get('sub') or '').strip()
+    token_email = normalize_email(payload.get('email') or '')
+    if not token_sub:
+        return False, 'Google token missing subject', payload
+
+    if provider_user_id and provider_user_id != token_sub:
+        return False, 'Google user id mismatch', payload
+    if email and token_email and token_email != normalize_email(email):
+        return False, 'Google email mismatch', payload
+
+    return True, None, payload
+
+
+def verify_kakao_token(access_token, provider_user_id, email):
+    timeout_sec = int(app.config.get('SOCIAL_LOGIN_VERIFY_TIMEOUT_SEC') or 5)
+    userinfo_url = str(app.config.get('KAKAO_USERINFO_URL') or '').strip()
+    if not userinfo_url:
+        return False, 'Kakao token verification URL is not configured', None
+
+    req = urllib_request.Request(
+        userinfo_url,
+        headers={
+            'Authorization': f'Bearer {access_token}',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+        },
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=timeout_sec) as response:
+            raw = response.read().decode('utf-8')
+            payload = json.loads(raw)
+    except (HTTPError, URLError, TimeoutError, ValueError):
+        return False, 'Kakao token verification failed', None
+
+    kakao_id = str(payload.get('id') or '').strip()
+    account = payload.get('kakao_account') or {}
+    kakao_email = normalize_email(account.get('email') or '')
+    if not kakao_id:
+        return False, 'Kakao token missing id', payload
+
+    if provider_user_id and provider_user_id != kakao_id:
+        return False, 'Kakao user id mismatch', payload
+    if email and kakao_email and kakao_email != normalize_email(email):
+        return False, 'Kakao email mismatch', payload
+
+    return True, None, payload
+
+
+def verify_social_token(provider, access_token, provider_user_id, email):
+    if app.config.get('SOCIAL_LOGIN_DEMO_MODE'):
+        return True, None
+
+    if len(access_token) < 16:
+        return False, 'Invalid social token'
+
+    if provider == 'google':
+        ok, reason, _ = verify_google_token(access_token, provider_user_id, email)
+        return ok, reason
+    if provider == 'kakao':
+        ok, reason, _ = verify_kakao_token(access_token, provider_user_id, email)
+        return ok, reason
+
+    return False, 'Unsupported provider'
+
+
 def mask_email(value):
     email = normalize_email(value)
     if '@' not in email:
@@ -781,8 +865,10 @@ def social_login():
     if role in PRIVILEGED_REGISTER_ROLES:
         return jsonify({'error': 'Privileged role registration is blocked'}), 403
 
-    if not app.config.get('SOCIAL_LOGIN_DEMO_MODE') and len(access_token) < 16:
-        return jsonify({'error': 'Invalid social token'}), 401
+    token_valid, token_error = verify_social_token(provider, access_token, provider_user_id, email)
+    if not token_valid:
+        auth_attempts_total.labels(type=f'{provider}_oauth', result='fail').inc()
+        return jsonify({'error': token_error or 'Invalid social token'}), 401
 
     if not email:
         email = f"{provider}.{provider_user_id[:20]}@social.edulink.local"
@@ -2520,6 +2606,137 @@ def dashboard_stats():
             'pending_count': status_counts['pending'],
             'approved_count': status_counts['approved'],
             'rejected_count': status_counts['rejected']
+        })
+
+
+@app.route('/dashboard/quality-metrics', methods=['GET'])
+def dashboard_quality_metrics():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    with engine.connect() as conn:
+        sessions_available = table_exists(conn, 'sessions')
+        reviews_available = table_exists(conn, 'reviews')
+        if not sessions_available:
+            return jsonify({'error': 'Sessions are not available'}), 400
+
+        owner_filter = ''
+        params = {}
+        if has_role(user, 'institution'):
+            owner_filter = 'WHERE s.org_id = :owner_id'
+            params['owner_id'] = user['user_id']
+        elif not has_role(user, 'admin'):
+            return jsonify({'error': 'Only institution/admin can view quality metrics'}), 403
+
+        summary = conn.execute(
+            text(f'''
+                SELECT
+                    COUNT(*) AS total_sessions,
+                    COALESCE(SUM(CASE WHEN s.status = 'completed' THEN 1 ELSE 0 END), 0) AS completed_sessions,
+                    COALESCE(SUM(CASE WHEN s.status = 'no_show' THEN 1 ELSE 0 END), 0) AS no_show_sessions,
+                    COALESCE(SUM(CASE WHEN s.status IN ('scheduled', 'in_progress') THEN 1 ELSE 0 END), 0) AS active_sessions
+                FROM sessions s
+                {owner_filter}
+            '''),
+            params
+        ).mappings().first() or {}
+
+        avg_rating = 0.0
+        if reviews_available:
+            avg_rating_row = conn.execute(
+                text(f'''
+                    SELECT COALESCE(AVG(r.rating), 0) AS avg_rating
+                    FROM reviews r
+                    JOIN sessions s ON s.id = r.session_id
+                    {owner_filter}
+                '''),
+                params
+            ).mappings().first() or {'avg_rating': 0}
+            avg_rating = float(avg_rating_row.get('avg_rating') or 0)
+
+        response_time_row = conn.execute(
+            text('''
+                SELECT COALESCE(AVG((julianday(a.created_at) - julianday(p.created_at)) * 24 * 60), 0) AS avg_response_minutes
+                FROM applications a
+                JOIN postings p ON p.id = a.posting_id
+                WHERE a.status = 'approved'
+                  AND (:owner_id IS NULL OR p.owner_id = :owner_id)
+            '''),
+            {'owner_id': params.get('owner_id')}
+        ).mappings().first() or {'avg_response_minutes': 0}
+
+        total_sessions = int(summary.get('total_sessions') or 0)
+        completed_sessions = int(summary.get('completed_sessions') or 0)
+        no_show_sessions = int(summary.get('no_show_sessions') or 0)
+
+        completion_rate = round((completed_sessions / total_sessions) * 100, 1) if total_sessions > 0 else 0.0
+        no_show_rate = round((no_show_sessions / total_sessions) * 100, 1) if total_sessions > 0 else 0.0
+
+        return jsonify({
+            'scope': 'institution' if has_role(user, 'institution') else 'platform',
+            'total_sessions': total_sessions,
+            'completed_sessions': completed_sessions,
+            'active_sessions': int(summary.get('active_sessions') or 0),
+            'no_show_sessions': no_show_sessions,
+            'completion_rate': completion_rate,
+            'no_show_rate': no_show_rate,
+            'avg_rating': round(avg_rating, 2),
+            'avg_response_minutes': round(float(response_time_row.get('avg_response_minutes') or 0), 1)
+        })
+
+
+@app.route('/dashboard/monthly-indicators', methods=['GET'])
+def dashboard_monthly_indicators():
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    months = int(request.args.get('months') or 6)
+    if months < 1 or months > 24:
+        return jsonify({'error': 'months must be between 1 and 24'}), 400
+
+    if not (has_role(user, 'institution') or has_role(user, 'admin')):
+        return jsonify({'error': 'Only institution/admin can view monthly indicators'}), 403
+
+    with engine.connect() as conn:
+        sessions_available = table_exists(conn, 'sessions')
+        if not sessions_available:
+            return jsonify({'error': 'Sessions are not available'}), 400
+
+        owner_id = user['user_id'] if has_role(user, 'institution') else None
+
+        rows = conn.execute(
+            text('''
+                SELECT
+                    strftime('%Y-%m', COALESCE(s.completed_at, s.scheduled_at, s.created_at)) AS month,
+                    COUNT(*) AS total_sessions,
+                    COALESCE(SUM(CASE WHEN s.status = 'completed' THEN s.net_amount ELSE 0 END), 0) AS settlement_amount,
+                    COALESCE(AVG(r.rating), 0) AS avg_rating
+                FROM sessions s
+                LEFT JOIN reviews r ON r.session_id = s.id
+                WHERE datetime(COALESCE(s.completed_at, s.scheduled_at, s.created_at)) >= datetime('now', :window)
+                  AND (:owner_id IS NULL OR s.org_id = :owner_id)
+                GROUP BY month
+                ORDER BY month DESC
+            '''),
+            {'window': f'-{months * 31} days', 'owner_id': owner_id}
+        ).mappings().all()
+
+        indicators = [
+            {
+                'month': row['month'],
+                'total_sessions': int(row['total_sessions'] or 0),
+                'settlement_amount': int(row['settlement_amount'] or 0),
+                'avg_rating': round(float(row['avg_rating'] or 0), 2),
+            }
+            for row in rows
+        ]
+
+        return jsonify({
+            'scope': 'institution' if owner_id else 'platform',
+            'months': months,
+            'items': indicators,
         })
 
 

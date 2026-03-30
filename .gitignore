@@ -66,6 +66,12 @@ yarn-error.log
 /e2e/report/
 /playwright-report/
 /test-results/
+/e2e/*.json
+/e2e/*.xml
+/e2e_results_local.txt
+
+### Wrangler local state
+/.wrangler/
 
 ### 시스템 파일
 .DS_Store

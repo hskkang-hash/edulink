@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-import random
+import argparse
 import time
 
 from sqlalchemy import create_engine, text
@@ -15,6 +15,7 @@ SCHOOL_COUNT = 5
 INSTITUTION_COUNT = 5
 ADMIN_COUNT = 2
 STUDENT_COUNT = TOTAL_USERS - INSTRUCTOR_COUNT - SCHOOL_COUNT - INSTITUTION_COUNT - ADMIN_COUNT
+POSTING_COUNT = 100
 
 REGIONS = ["Seoul", "Busan", "Incheon", "Daegu", "Daejeon"]
 SUBJECTS = ["math", "english", "science", "coding", "art"]
@@ -223,12 +224,12 @@ def seed_instructor_profiles(conn, instructor_ids):
 def seed_postings(conn, owner_ids):
     posting_ids = []
     base = datetime.now(timezone.utc)
-    for i in range(1, 41):
-        owner_id = owner_ids[(i - 1) % len(owner_ids)]
+    for i in range(1, POSTING_COUNT + 1):
+        owner_id = owner_ids[((i - 1) // 20) % len(owner_ids)]
         subject = SUBJECTS[(i - 1) % len(SUBJECTS)]
         region = REGIONS[(i - 1) % len(REGIONS)]
         deadline = (base + timedelta(days=14 + (i % 7))).isoformat()
-        created_at = (base - timedelta(days=i % 20)).isoformat()
+        created_at = (base - timedelta(days=i % 28)).isoformat()
         rate = 45000 + ((i % 6) * 5000)
 
         conn.execute(
@@ -253,15 +254,17 @@ def seed_postings(conn, owner_ids):
 
 
 def seed_applications_sessions_reviews(conn, posting_ids, owner_ids, instructor_ids):
-    random.seed(42)
-
-    approved_pairs = []
     for idx, posting_id in enumerate(posting_ids, start=1):
-        sample_size = 3 + (idx % 3)
-        candidates = random.sample(instructor_ids, min(sample_size, len(instructor_ids)))
+        primary_instructor_id = instructor_ids[(idx - 1) % len(instructor_ids)]
+        secondary_instructor_id = instructor_ids[(idx + 1) % len(instructor_ids)]
+        tertiary_instructor_id = instructor_ids[(idx + 3) % len(instructor_ids)]
+        candidates = [
+            (primary_instructor_id, "approved"),
+            (secondary_instructor_id, "pending"),
+            (tertiary_instructor_id, "rejected"),
+        ]
 
-        for i, instructor_id in enumerate(candidates):
-            status = "approved" if i == 0 else ("pending" if i % 2 == 0 else "rejected")
+        for instructor_id, status in candidates:
             conn.execute(
                 text("""
                     INSERT INTO applications (posting_id, student_id, status, created_at)
@@ -271,18 +274,14 @@ def seed_applications_sessions_reviews(conn, posting_ids, owner_ids, instructor_
                     "posting_id": posting_id,
                     "student_id": instructor_id,
                     "status": status,
-                    "created_at": (datetime.now(timezone.utc) - timedelta(days=idx % 15)).isoformat(),
+                    "created_at": (datetime.now(timezone.utc) - timedelta(days=idx % 28)).isoformat(),
                 },
             )
-            if status == "approved":
-                approved_pairs.append((posting_id, instructor_id))
-
-    for idx, (posting_id, instructor_id) in enumerate(approved_pairs, start=1):
         owner_id = owner_ids[(idx - 1) % len(owner_ids)]
-        scheduled = datetime.now(timezone.utc) - timedelta(days=idx % 10)
-        is_completed = idx % 5 != 0
+        scheduled = datetime.now(timezone.utc) - timedelta(days=((idx - 1) % 28), hours=(idx % 6))
+        is_completed = idx % 10 != 0
 
-        gross = 60000 + ((idx % 4) * 5000)
+        gross = 72000 + ((idx % 4) * 6000) + (8000 if idx % 3 == 0 else 0)
         withholding = int(round(gross * 0.033))
         net = gross - withholding
 
@@ -296,22 +295,22 @@ def seed_applications_sessions_reviews(conn, posting_ids, owner_ids, instructor_
                 )
                 VALUES (
                     :posting_id, :instructor_id, :org_id, :scheduled_at,
-                    60, :checkin_at, :completed_at,
+                    90, :checkin_at, :completed_at,
                     :actual_duration_minutes, :status, :journal_content, :student_rating,
                     :gross_amount, :withholding_amount, :net_amount, :created_at, :updated_at
                 )
             """),
             {
                 "posting_id": posting_id,
-                "instructor_id": instructor_id,
+                "instructor_id": primary_instructor_id,
                 "org_id": owner_id,
                 "scheduled_at": scheduled.isoformat(),
-                "checkin_at": (scheduled + timedelta(minutes=2)).isoformat(),
-                "completed_at": (scheduled + timedelta(minutes=60)).isoformat() if is_completed else None,
-                "actual_duration_minutes": 58 if is_completed else None,
+                "checkin_at": (scheduled + timedelta(minutes=3)).isoformat() if is_completed else None,
+                "completed_at": (scheduled + timedelta(minutes=90)).isoformat() if is_completed else None,
+                "actual_duration_minutes": 90 if is_completed else None,
                 "status": "completed" if is_completed else "scheduled",
-                "journal_content": "Demo teaching note" if is_completed else None,
-                "student_rating": 5 if is_completed else None,
+                "journal_content": f"Month-long class log for instructor {(idx - 1) % len(instructor_ids) + 1}" if is_completed else None,
+                "student_rating": 4 + (idx % 2) if is_completed else None,
                 "gross_amount": gross,
                 "withholding_amount": withholding,
                 "net_amount": net,
@@ -334,74 +333,94 @@ def seed_applications_sessions_reviews(conn, posting_ids, owner_ids, instructor_
                 {
                     "session_id": session_id,
                     "reviewer_id": owner_id,
-                    "instructor_id": instructor_id,
+                    "instructor_id": primary_instructor_id,
                     "rating": 4 + (idx % 2),
-                    "comment": "Punctual and well prepared",
+                    "comment": "Punctual, well prepared, and incentive-eligible performance",
                     "created_at": now_iso(),
                 },
             )
 
 
-def run_seed(engine) -> None:
+def run_seed(engine, reset_demo_data: bool, seed_activity: bool) -> None:
     with engine.begin() as conn:
         conn.execute(text("PRAGMA busy_timeout = 30000"))
         ensure_core_tables(conn)
 
-        # Reset only demo namespace data for repeatable runs.
-        conn.execute(text("""
-            DELETE FROM reviews
-            WHERE instructor_id IN (
-                SELECT id FROM users WHERE email LIKE :pattern
-            )
-        """), {"pattern": "%@demo.edulink.local"})
-        conn.execute(text("""
-            DELETE FROM sessions
-            WHERE instructor_id IN (
-                SELECT id FROM users WHERE email LIKE :pattern
-            )
-               OR org_id IN (
-                SELECT id FROM users WHERE email LIKE :pattern
-            )
-        """), {"pattern": "%@demo.edulink.local"})
-        conn.execute(text("""
-            DELETE FROM applications
-            WHERE student_id IN (
-                SELECT id FROM users WHERE email LIKE :pattern
-            )
-               OR posting_id IN (
-                SELECT id FROM postings WHERE owner_id IN (
+        if reset_demo_data:
+            # Reset only demo namespace data for repeatable runs.
+            conn.execute(text("""
+                DELETE FROM reviews
+                WHERE instructor_id IN (
                     SELECT id FROM users WHERE email LIKE :pattern
                 )
-            )
-        """), {"pattern": "%@demo.edulink.local"})
-        conn.execute(text("""
-            DELETE FROM postings
-            WHERE owner_id IN (
-                SELECT id FROM users WHERE email LIKE :pattern
-            )
-        """), {"pattern": "%@demo.edulink.local"})
-        conn.execute(text("""
-            DELETE FROM instructor_profiles
-            WHERE user_id IN (
-                SELECT id FROM users WHERE email LIKE :pattern
-            )
-        """), {"pattern": "%@demo.edulink.local"})
-        conn.execute(text("DELETE FROM users WHERE email LIKE :pattern"), {"pattern": "%@demo.edulink.local"})
+            """), {"pattern": "%@demo.edulink.local"})
+            conn.execute(text("""
+                DELETE FROM sessions
+                WHERE instructor_id IN (
+                    SELECT id FROM users WHERE email LIKE :pattern
+                )
+                   OR org_id IN (
+                    SELECT id FROM users WHERE email LIKE :pattern
+                )
+            """), {"pattern": "%@demo.edulink.local"})
+            conn.execute(text("""
+                DELETE FROM applications
+                WHERE student_id IN (
+                    SELECT id FROM users WHERE email LIKE :pattern
+                )
+                   OR posting_id IN (
+                    SELECT id FROM postings WHERE owner_id IN (
+                        SELECT id FROM users WHERE email LIKE :pattern
+                    )
+                )
+            """), {"pattern": "%@demo.edulink.local"})
+            conn.execute(text("""
+                DELETE FROM postings
+                WHERE owner_id IN (
+                    SELECT id FROM users WHERE email LIKE :pattern
+                )
+            """), {"pattern": "%@demo.edulink.local"})
+            conn.execute(text("""
+                DELETE FROM instructor_profiles
+                WHERE user_id IN (
+                    SELECT id FROM users WHERE email LIKE :pattern
+                )
+            """), {"pattern": "%@demo.edulink.local"})
+            conn.execute(text("DELETE FROM users WHERE email LIKE :pattern"), {"pattern": "%@demo.edulink.local"})
 
         user_groups = seed_users(conn)
         seed_instructor_profiles(conn, user_groups["instructors"])
-        owners = user_groups["schools"] + user_groups["institutions"]
-        posting_ids = seed_postings(conn, owners)
-        seed_applications_sessions_reviews(conn, posting_ids, owners, user_groups["instructors"])
+        if seed_activity:
+            owners = user_groups["schools"] + user_groups["institutions"]
+            posting_ids = seed_postings(conn, owners)
+            seed_applications_sessions_reviews(conn, posting_ids, owners, user_groups["instructors"])
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Seed EduLink v2 demo data safely')
+    parser.add_argument('--db-url', default='sqlite:///./edulinks_demo.db', help='Database URL for demo seed target')
+    parser.add_argument('--allow-prod-db', action='store_true', help='Allow using a non-demo DB URL')
+    parser.add_argument('--reset-demo-data', action='store_true', help='Delete existing demo namespace before seeding')
+    parser.add_argument('--seed-activity', action='store_true', help='Seed postings/applications/sessions/reviews in addition to users')
+    return parser.parse_args()
 
 
 def main() -> None:
-    engine = create_engine("sqlite:///./edulinks.db", echo=False, connect_args={"timeout": 30})
+    args = parse_args()
+    db_url = str(args.db_url or '').strip()
+    if not args.allow_prod_db and 'demo' not in db_url.lower():
+        raise RuntimeError('Refusing to seed non-demo DB. Use --allow-prod-db if you really want this.')
+
+    engine = create_engine(db_url, echo=False, connect_args={"timeout": 30})
 
     last_exc = None
     for attempt in range(1, 6):
         try:
-            run_seed(engine)
+            run_seed(
+                engine,
+                reset_demo_data=bool(args.reset_demo_data),
+                seed_activity=bool(args.seed_activity),
+            )
             last_exc = None
             break
         except OperationalError as exc:
@@ -416,6 +435,9 @@ def main() -> None:
         raise last_exc
 
     print("Demo v2 dataset seeded.")
+    print(f"- Target DB URL: {db_url}")
+    print(f"- Reset demo namespace: {bool(args.reset_demo_data)}")
+    print(f"- Seed activity datasets: {bool(args.seed_activity)}")
     print(f"- Total users: {TOTAL_USERS}")
     print(f"- Instructors: {INSTRUCTOR_COUNT}")
     print(f"- Schools: {SCHOOL_COUNT}")

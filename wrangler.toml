@@ -6,4 +6,6 @@ compatibility_date = "2026-03-23"
 directory = "./dist"
 
 [vars]
-BACKEND_ORIGIN = "https://wild-jeans-burn.loca.lt"
+BACKEND_ORIGIN = "https://rich-memes-bow.loca.lt"
+BACKEND_ORIGIN_FALLBACKS = "https://wild-jeans-burn.loca.lt"
+BACKEND_TIMEOUT_MS = "12000"

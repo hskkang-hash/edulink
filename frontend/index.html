@@ -17,6 +17,8 @@
             --muted: #8a92a8;
             --brand: #a58cff;
             --brand-soft: rgba(165, 140, 255, 0.22);
+            --card-min-col: 220px;
+            --card-min-height: 168px;
             --ok: #5deec0;
             --warn: #ffb199;
             --danger: #ff6f87;
@@ -131,6 +133,11 @@
             border: 1px solid transparent;
             cursor: pointer;
             transition: background 0.18s ease, border-color 0.18s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: keep-all;
+            overflow-wrap: normal;
         }
 
         .rail-link:hover {
@@ -153,6 +160,9 @@
             font-family: 'Space Grotesk', sans-serif;
             background: linear-gradient(90deg, #7352ff 0%, #b89eff 100%);
             color: #100b1d;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .main-pane {
@@ -184,25 +194,47 @@
         .masthead {
             grid-column: 1 / -1;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
+            gap: 18px;
+            padding: 12px 6px 10px;
+        }
+
+        .masthead-left {
+            display: flex;
+            align-items: center;
             gap: 12px;
-            padding: 14px 6px;
+            min-width: 0;
+        }
+
+        .masthead-logo {
+            width: 42px;
+            height: 42px;
+            display: block;
+            flex-shrink: 0;
+        }
+
+        .masthead-title-wrap {
+            display: grid;
+            gap: 1px;
+            min-width: 0;
         }
 
         .masthead-brand {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 34px;
+            font-size: clamp(28px, 3.2vw, 40px);
             letter-spacing: -0.02em;
             color: #b197ff;
             margin: 0;
+            line-height: 1.04;
         }
 
         .masthead-sub {
             color: #99a4bc;
-            letter-spacing: 0.14em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
             font-size: 11px;
+            line-height: 1.2;
         }
 
         .masthead-nav {
@@ -213,15 +245,17 @@
 
         .masthead-right {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
             flex-wrap: wrap;
             justify-content: flex-end;
+            padding-top: 4px;
         }
 
         .quick-controls {
             display: inline-flex;
             gap: 8px;
+            align-items: center;
         }
 
         .quick-toggle {
@@ -278,6 +312,7 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            white-space: nowrap;
             transition: transform 0.14s ease, border-color 0.14s ease, background 0.14s ease;
         }
 
@@ -296,6 +331,13 @@
             border-color: rgba(17, 24, 39, 0.14);
             background: rgba(17, 24, 39, 0.02);
             color: #1b2238;
+        }
+
+        .quickbar-meta {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
         }
 
         .masthead-nav span {
@@ -393,8 +435,9 @@
 
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
+            align-items: stretch;
         }
 
         .menu-card {
@@ -402,6 +445,7 @@
             border-radius: 14px;
             padding: 12px;
             background: rgba(255, 255, 255, 0.03);
+            min-height: var(--card-min-height);
         }
 
         .menu-card h4 {
@@ -443,8 +487,9 @@
 
         .scenario-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
+            align-items: stretch;
         }
 
         .scenario-card {
@@ -452,11 +497,12 @@
             border-radius: 14px;
             padding: 12px;
             background: rgba(255, 255, 255, 0.03);
+            min-height: var(--card-min-height);
         }
 
         .workspace-nav-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
             margin-top: 10px;
         }
@@ -521,8 +567,9 @@
 
         .surface-gallery-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
             gap: 12px;
+            align-items: stretch;
         }
 
         .surface-card {
@@ -532,6 +579,7 @@
             background: linear-gradient(165deg, rgba(25, 28, 40, 0.94), rgba(14, 17, 26, 0.94));
             display: grid;
             gap: 10px;
+            min-height: var(--card-min-height);
         }
 
         .preview-link {
@@ -616,8 +664,9 @@
 
         .portal-kpi-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
+            align-items: stretch;
         }
 
         .portal-kpi-card {
@@ -625,6 +674,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             padding: 14px;
             background: linear-gradient(165deg, rgba(26, 29, 42, 0.95), rgba(15, 17, 26, 0.95));
+            min-height: 140px;
         }
 
         .portal-kpi-label {
@@ -650,8 +700,9 @@
 
         .portal-board-grid {
             display: grid;
-            grid-template-columns: 1.2fr 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
             gap: 10px;
+            align-items: stretch;
         }
 
         .portal-board-card {
@@ -661,6 +712,7 @@
             background: rgba(255, 255, 255, 0.03);
             display: grid;
             gap: 10px;
+            min-height: var(--card-min-height);
         }
 
         .portal-board-card h4 {
@@ -715,8 +767,9 @@
 
         .role-page-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
+            align-items: stretch;
         }
 
         .role-page-card {
@@ -726,6 +779,7 @@
             padding: 14px;
             display: grid;
             gap: 8px;
+            min-height: var(--card-min-height);
         }
 
         .role-page-card h4 {
@@ -743,8 +797,9 @@
 
         .roadmap-grid {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
+            align-items: stretch;
         }
 
         .roadmap-card {
@@ -1192,7 +1247,21 @@
             transition: background 0.15s;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 7px;
+            box-sizing: border-box;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        #loginLangBtn,
+        #preloginLangBtn {
+            width: 52px;
+        }
+
+        #loginThemeBtn,
+        #preloginThemeBtn {
+            width: 74px;
         }
 
         .login-ctrl-btn .ctrl-icon {
@@ -1211,6 +1280,15 @@
 
         .login-ctrl-btn:hover {
             background: rgba(255,255,255,0.15);
+        }
+
+        .login-ctrl-btn:active,
+        .login-ctrl-btn:focus,
+        .login-ctrl-btn:focus-visible,
+        #preloginBar button:active,
+        #preloginBar button:focus,
+        #preloginBar button:focus-visible {
+            transform: none;
         }
 
         :root[data-theme='light'] .login-ctrl-btn {
@@ -1343,9 +1421,10 @@
 
         .tax-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
             margin-top: 8px;
+            align-items: stretch;
         }
 
         .tax-card {
@@ -1353,6 +1432,7 @@
             border-radius: 16px;
             padding: 14px;
             background: linear-gradient(165deg, rgba(23, 27, 40, 0.95), rgba(13, 16, 25, 0.95));
+            min-height: 148px;
         }
 
         .tax-value {
@@ -1417,7 +1497,7 @@
 
         .settlement-detail-head {
             display: grid;
-            grid-template-columns: 1.5fr 0.8fr 0.8fr 1fr 0.8fr;
+            grid-template-columns: 1.4fr 0.7fr 0.7fr 0.9fr 1fr 0.8fr;
             gap: 8px;
             padding: 10px 12px;
             font-size: 12px;
@@ -1428,7 +1508,7 @@
 
         .settlement-detail-row {
             display: grid;
-            grid-template-columns: 1.5fr 0.8fr 0.8fr 1fr 0.8fr;
+            grid-template-columns: 1.4fr 0.7fr 0.7fr 0.9fr 1fr 0.8fr;
             gap: 8px;
             padding: 9px 12px;
             font-size: 12px;
@@ -1782,15 +1862,11 @@
         }
 
         .screen-state-shell {
-            display: grid;
-            grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
-            gap: 14px;
-            align-items: start;
-        }
-
-        .screen-state-meta {
-            display: grid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .screen-state-eyebrow {
@@ -1926,9 +2002,10 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min-col), 100%), 1fr));
             gap: 10px;
             margin-top: 10px;
+            align-items: stretch;
         }
 
         .stat-card {
@@ -1936,6 +2013,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             padding: 16px;
             background: linear-gradient(165deg, rgba(26, 29, 42, 0.95), rgba(15, 17, 26, 0.95));
+            min-height: var(--card-min-height);
         }
 
         .stat-title {
@@ -2242,6 +2320,64 @@
             gap: 8px;
         }
 
+        .policy-modal-content {
+            width: min(760px, 94%);
+            max-height: calc(100vh - 56px);
+            margin: 28px auto;
+            display: grid;
+            gap: 12px;
+        }
+
+        .policy-modal-title {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: -0.01em;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .policy-modal-scroll {
+            overflow: auto;
+            max-height: calc(100vh - 180px);
+            padding-right: 4px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .policy-block {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .policy-block h4 {
+            margin: 0;
+            font-size: 14px;
+            letter-spacing: 0.01em;
+        }
+
+        .policy-block p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .policy-inline-list {
+            margin: 0;
+            padding-left: 16px;
+            color: #d9dfef;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        :root[data-theme='light'] .policy-block {
+            background: rgba(17, 24, 39, 0.03);
+            border-color: rgba(17, 24, 39, 0.1);
+        }
+
         .toast {
             position: fixed;
             right: 18px;
@@ -2311,6 +2447,11 @@
             gap: 12px;
         }
 
+        body.view-webapp .container > .section,
+        body.view-web .container > .section {
+            grid-column: 1 / -1;
+        }
+
         body.view-webapp h1,
         body.view-webapp .hero-logo,
         body.view-webapp .hero-copy,
@@ -2322,13 +2463,28 @@
         body.view-webapp #networkSection,
         body.view-webapp #securitySection,
         body.view-webapp #adminInsightsSection,
-        body.view-webapp #loginSection {
+        body.view-webapp #roleFeatureMatrixSection,
+        body.view-webapp #loginSection,
+        body.view-web #dashboardSection,
+        body.view-web #postingsSection,
+        body.view-web #taxSection,
+        body.view-web #createPostingSection,
+        body.view-web #applicationsSection,
+        body.view-web #networkSection,
+        body.view-web #securitySection,
+        body.view-web #adminInsightsSection,
+        body.view-web #roleFeatureMatrixSection,
+        body.view-web #loginSection {
             grid-column: 1 / -1;
         }
 
+        body.view-web .masthead-nav {
+            display: none;
+        }
+
         body.view-webapp .side-rail {
-            width: 94px;
-            padding: 18px 10px;
+            width: 188px;
+            padding: 18px 12px;
         }
 
         body.view-webapp .side-rail .brand-lockup {
@@ -2342,11 +2498,15 @@
 
         body.view-webapp .side-rail .rail-link,
         body.view-webapp .side-rail .rail-cta {
-            font-size: 10px;
-            letter-spacing: 0.08em;
-            text-align: center;
-            padding: 10px 8px;
+            font-size: 11px;
+            letter-spacing: 0.02em;
+            text-align: left;
+            padding: 10px 10px;
             border-radius: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: keep-all;
         }
 
         body.view-webapp .masthead-nav {
@@ -2430,6 +2590,10 @@
                 grid-template-columns: repeat(8, minmax(0, 1fr));
             }
 
+            .container > .section {
+                grid-column: 1 / -1;
+            }
+
             h1,
             .hero-copy,
             #identityLandingSection,
@@ -2440,6 +2604,7 @@
             #applicationsSection,
             #networkSection,
             #adminInsightsSection,
+            #roleFeatureMatrixSection,
             #loginSection {
                 grid-column: 1 / -1;
             }
@@ -2517,7 +2682,7 @@
             }
 
             body.view-webapp .app-shell {
-                grid-template-columns: 88px 1fr;
+                grid-template-columns: 184px 1fr;
             }
 
             body.view-web .side-rail,
@@ -2531,8 +2696,8 @@
 
             body.view-webapp .side-rail .rail-link,
             body.view-webapp .side-rail .rail-cta {
-                font-size: 9px;
-                padding: 9px 6px;
+                font-size: 10px;
+                padding: 9px 8px;
             }
         }
 
@@ -2835,6 +3000,10 @@
             opacity: 0.7;
             pointer-events: none;
             user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            word-break: keep-all;
         }
         .rail-link.wip {
             opacity: 0.38;
@@ -3001,9 +3170,11 @@
         <main class="main-pane" id="main-content">
             <div class="container">
                 <div class="masthead">
-                    <div>
+                    <div class="masthead-left">
+                        <img class="masthead-logo" src="./assets/edulink-icon.svg" alt="Edulink logo">
+                        <div class="masthead-title-wrap">
                         <p class="masthead-brand">Edulink Premium</p>
-                        <div class="masthead-sub">Instructor Command Center</div>
+                        </div>
                     </div>
                     <div class="masthead-right">
                         <div class="masthead-nav">
@@ -3024,17 +3195,14 @@
                     </div>
                 </div>
 
-                <div class="hero-logo">
-                    <img src="./assets/edulink-logo.svg" alt="Edulink">
-                </div>
-                <h1>Welcome back.</h1>
-                <p class="hero-copy">Manage postings, student applications, and payout activity through one streamlined premium panel.</p>
+                <h1>강사를 연결하고, 운영을 완성하다</h1>
+                <p class="hero-copy">EduLink는 단순한 강사 구인 플랫폼이 아니라 매칭·운영·정산을 통합한 올인원 서비스입니다.</p>
                 <div class="section" id="identityLandingSection">
                     <div class="identity-brand">
                         <img src="./assets/edulink-logo.svg" alt="Edulink logo">
                     </div>
                     <p class="identity-wordmark">EduLink</p>
-                    <p class="identity-slogan" id="identitySlogan">Edulink — Connecting Instructors, Powering Operations</p>
+                    <p class="identity-slogan" id="identitySlogan">강사를 연결하고, 운영을 완성하다</p>
                     <p class="identity-caption" id="identityCaption">EduLink is more than a simple instructor recruitment platform — it is an all-in-one service that integrates matching, operations, and settlement. With a mobile-first app for instructors and dedicated management web portals for institutions and education offices, it supports both on-site execution and administrative control. EduLink is building a new standard operating system for the public and private education markets.</p>
                     <div class="identity-visual">
                         <img src="./assets/edulink-hero.svg" alt="Edulink service concept image">
@@ -3161,22 +3329,19 @@
                         <strong id="userEmail"></strong>
                         <span class="muted" id="userRole"></span>
                     </div>
-                    <button id="logoutBtn" class="btn-danger">Logout</button>
                 </div>
 
                 <div class="section screen-state-section" id="screenStateSection">
                     <div class="screen-state-shell">
-                        <div class="screen-state-meta">
-                            <div class="screen-state-eyebrow" id="activeScreenEyebrow">Current Product Screen</div>
-                            <h2 id="activeScreenTitle">Dashboard</h2>
-                            <p class="muted" id="activeScreenSubtitle">Current page architecture, module focus, and implementation scope.</p>
-                        </div>
+                        <div class="screen-state-eyebrow" id="activeScreenEyebrow">Current Product Screen</div>
                         <div class="screen-status-stack">
                             <span class="status-chip design" id="activeScreenStatus">Design Ready</span>
                             <span class="status-chip current" id="activeScreenRoleStatus">Instructor</span>
                             <span class="status-chip next" id="activeScreenPresetStatus" style="display:none;">Preset Active</span>
                         </div>
                     </div>
+                    <h2 id="activeScreenTitle">Dashboard</h2>
+                    <p class="muted" id="activeScreenSubtitle">Current page architecture, module focus, and implementation scope.</p>
                     <div class="canvas-grid" id="activeScreenCanvasGrid"></div>
                 </div>
 
@@ -3188,6 +3353,7 @@
                     <p class="muted signup-flow-intro">Create your Edulink account and choose your operating role.</p>
                     <input type="email" id="registerEmail" placeholder="Email">
                     <input type="password" id="registerPassword" placeholder="Password">
+                    <input type="password" id="registerPasswordConfirm" placeholder="Confirm Password">
                     <select id="registerRole">
                         <option value="instructor" data-ko="강사" data-en="Instructor">강사</option>
                         <option value="school" data-ko="학교" data-en="School">학교</option>
@@ -3215,11 +3381,11 @@
                     </div>
                     <p id="loginStatus" class="muted"></p>
                     <div class="login-policy-row" id="publicTrustLinksSection">
-                        <a class="login-policy-link" href="/about.html" target="_blank" rel="noopener">About</a>
-                        <a class="login-policy-link" href="/privacy.html" target="_blank" rel="noopener">Privacy</a>
-                        <a class="login-policy-link" href="/terms.html" target="_blank" rel="noopener">Terms</a>
-                        <a class="login-policy-link" href="/contact.html" target="_blank" rel="noopener">Contact</a>
-                        <a class="login-policy-link" href="/adsense-disclosure.html" target="_blank" rel="noopener">Ads & Cookies</a>
+                        <a class="login-policy-link" href="/about.html" data-policy="about">About</a>
+                        <a class="login-policy-link" href="/privacy.html" data-policy="privacy">Privacy</a>
+                        <a class="login-policy-link" href="/terms.html" data-policy="terms">Terms</a>
+                        <a class="login-policy-link" href="/contact.html" data-policy="contact">Contact</a>
+                        <a class="login-policy-link" href="/adsense-disclosure.html" data-policy="ads">Ads & Cookies</a>
                     </div>
                 </div>
 
@@ -3685,6 +3851,76 @@
                     <div class="audit-list" id="adminRuleAuditList"></div>
                 </div>
 
+                <div class="section" id="roleFeatureMatrixSection" style="display: none;">
+                    <h2>Role Feature Comparison</h2>
+                    <p class="muted">역할별 핵심 기능 비교와 실검증용 QA 계정 정보</p>
+                    <div class="posting" style="margin-bottom:10px; overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; min-width:760px; font-size:12px;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.16);">기능</th>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.16);">instructor</th>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.16);">institution</th>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.16);">district</th>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid rgba(255,255,255,0.16);">admin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">대시보드/현황</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">O</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">O</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">O</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">O</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">공고/지원/심사</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">지원/진행</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">등록/심사</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">모니터링</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">감사/운영</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">정산/세무/예산</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">강사 정산</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">기관 정산</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">예산 집행</td>
+                                    <td style="padding:8px; border-bottom:1px solid rgba(255,255,255,0.08);">컴플라이언스</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px;">계정/보안</td>
+                                    <td style="padding:8px;">O</td>
+                                    <td style="padding:8px;">O</td>
+                                    <td style="padding:8px;">O</td>
+                                    <td style="padding:8px;">O (+고급관리)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tax-grid">
+                        <div class="tax-card">
+                            <div class="stat-title">Instructor QA</div>
+                            <p class="tax-value" style="font-size:13px;">qa.instructor@edulink.local</p>
+                            <p class="muted" style="margin:0;">QaPass123!</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Institution QA</div>
+                            <p class="tax-value" style="font-size:13px;">qa.institution@edulink.local</p>
+                            <p class="muted" style="margin:0;">QaPass123!</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">District QA</div>
+                            <p class="tax-value" style="font-size:13px;">qa.district@edulink.local</p>
+                            <p class="muted" style="margin:0;">QaPass123!</p>
+                        </div>
+                        <div class="tax-card">
+                            <div class="stat-title">Admin QA</div>
+                            <p class="tax-value" style="font-size:13px;">qa.admin@edulink.local</p>
+                            <p class="muted" style="margin:0;">QaPass123!</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- ===== Sprint 3-2: 수업 세션 섹션 ===== -->
                 <div class="section" id="sessionsSection" style="display:none;">
                     <h2>수업 세션 관리</h2>
@@ -3961,6 +4197,12 @@
         <button type="button" id="preloginThemeBtn">Light</button>
     </div>
 
+    <div class="global-quickbar" id="globalQuickbar" style="display:none;">
+        <span class="quickbar-meta" id="globalQuickbarMeta">Guest</span>
+        <button type="button" class="quickbar-btn" id="globalDashboardBtn">Dashboard</button>
+        <button type="button" class="quickbar-btn" id="globalLogoutBtn">Logout</button>
+    </div>
+
     <div class="mobile-dock">
         <span class="active">Home</span>
         <span>Postings</span>
@@ -4004,6 +4246,16 @@
                 <span id="applicantRecentVisibleCount" class="muted is-hidden" aria-hidden="true"></span>
             </div>
             <div class="applicant-summary-list" id="applicantRecentList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="policyInfoModal" aria-hidden="true">
+        <div class="modal-content policy-modal-content" role="dialog" aria-modal="true" aria-labelledby="policyModalTitle">
+            <div class="modal-header">
+                <h3 class="policy-modal-title" id="policyModalTitle">About</h3>
+                <button class="close-btn" id="closePolicyModalBtn" type="button">Close</button>
+            </div>
+            <div class="policy-modal-scroll" id="policyModalBody"></div>
         </div>
     </div>
 
@@ -4109,6 +4361,43 @@
         }
 
         const API_BASES = buildApiBases();
+        const QA_DEMO_PASSWORD = 'QaPass123!';
+        const QA_ROLE_BY_EMAIL = {
+            'qa.instructor@edulink.local': 'instructor',
+            'qa.institution@edulink.local': 'institution',
+            'qa.district@edulink.local': 'district',
+            'qa.admin@edulink.local': 'admin'
+        };
+        const OFFLINE_QA_USER_PROFILES = {
+            'qa.instructor@edulink.local': {
+                id: 2001,
+                email: 'qa.instructor@edulink.local',
+                role: 'instructor',
+                organization: 'Demo Instructor Collective 1',
+                full_name: 'QA Instructor 01'
+            },
+            'qa.institution@edulink.local': {
+                id: 3001,
+                email: 'qa.institution@edulink.local',
+                role: 'institution',
+                organization: 'Demo Education Center 1',
+                full_name: 'QA Institution Operator'
+            },
+            'qa.district@edulink.local': {
+                id: 4001,
+                email: 'qa.district@edulink.local',
+                role: 'district',
+                organization: 'Seoul District Office',
+                full_name: 'QA District Lead'
+            },
+            'qa.admin@edulink.local': {
+                id: 5001,
+                email: 'qa.admin@edulink.local',
+                role: 'admin',
+                organization: 'EduLink Platform Ops',
+                full_name: 'QA Platform Admin'
+            }
+        };
         let token = localStorage.getItem('token') || null;
         let currentUser = null;
         const modalCloseTimers = {};
@@ -4123,6 +4412,7 @@
         let applicantRecentExpanded = false;
         let applicantRecentAnimationMode = 'expand';
         let applicantRecentCache = [];
+        let activePolicyKey = 'about';
         let editingPostingId = null;
         let activityPeriod = '7d';
         let activityType = 'all';
@@ -4165,6 +4455,7 @@
             'taxSection',
             'networkSection',
             'adminInsightsSection',
+            'roleFeatureMatrixSection',
             'createPostingSection',
             'sessionsSection',
             'adminWebSection',
@@ -4198,8 +4489,8 @@
             institution: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection', 'createPostingSection', 'sessionsSection', 'sosSection', 'reviewsSection', 'contractsSection', 'escrowSection', 'instantBookingSection', 'compareSection'],
             student: ['dashboardSection', 'postingsSection', 'applicationsSection', 'securitySection', 'taxSection'],
             district: ['dashboardSection', 'applicationsSection', 'taxSection', 'securitySection', 'districtSection', 'coverageMapSection'],
-            admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection', 'mlmGaugeSection', 'fintechSection'],
-            super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'adminWebSection', 'mlmGaugeSection', 'fintechSection']
+            admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'roleFeatureMatrixSection', 'adminWebSection', 'mlmGaugeSection', 'fintechSection'],
+            super_admin: ['dashboardSection', 'applicationsSection', 'securitySection', 'adminInsightsSection', 'roleFeatureMatrixSection', 'adminWebSection', 'mlmGaugeSection', 'fintechSection']
         };
         const ROLE_DEFAULT_SCREEN = {
             instructor: 'dashboardSection',
@@ -4209,6 +4500,416 @@
             admin: 'dashboardSection',
             super_admin: 'dashboardSection'
         };
+        const OFFLINE_DEMO_DATA = buildOfflineDemoData();
+
+        function buildOfflineDemoData() {
+            const month = new Date().toISOString().slice(0, 7);
+            const now = new Date();
+            const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 9, 0, 0));
+            const subjects = ['Math', 'English', 'Science', 'Coding', 'Art'];
+            const regions = ['Seoul', 'Busan', 'Incheon', 'Daegu', 'Daejeon'];
+            const institutionNames = [
+                'Demo Education Center 1',
+                'Demo Education Center 2',
+                'Demo Education Center 3',
+                'Demo Education Center 4',
+                'Demo Education Center 5'
+            ];
+
+            const instructors = Array.from({ length: 10 }, (_, index) => {
+                const nth = index + 1;
+                return {
+                    id: 2001 + index,
+                    email: nth === 1 ? 'qa.instructor@edulink.local' : `instructor${String(nth).padStart(2, '0')}@demo.edulink.local`,
+                    full_name: nth === 1 ? 'QA Instructor 01' : `Demo Instructor ${String(nth).padStart(2, '0')}`,
+                    role: 'instructor',
+                    organization: `Demo Instructor Collective ${((index % 5) + 1)}`,
+                    subjects: [subjects[index % subjects.length], subjects[(index + 1) % subjects.length]],
+                    region: regions[index % regions.length]
+                };
+            });
+
+            const institutions = Array.from({ length: 5 }, (_, index) => ({
+                id: 3001 + index,
+                email: index === 0 ? 'qa.institution@edulink.local' : `institution${String(index + 1).padStart(2, '0')}@demo.edulink.local`,
+                role: 'institution',
+                organization: institutionNames[index],
+                region: regions[index % regions.length]
+            }));
+
+            const postings = [];
+            const applications = [];
+            const sessions = [];
+
+            for (let index = 0; index < 100; index += 1) {
+                const postingId = index + 1;
+                const institution = institutions[Math.floor(index / 20)];
+                const instructor = instructors[index % instructors.length];
+                const subject = subjects[index % subjects.length];
+                const region = regions[index % regions.length];
+                const sessionDate = new Date(monthStart);
+                sessionDate.setUTCDate(Math.min(28, 1 + (index % 28)));
+                sessionDate.setUTCHours(9 + (index % 6), 0, 0, 0);
+
+                const rate = 50000 + ((index % 5) * 5000);
+                const durationMinutes = 90;
+                const basePayment = Math.round(rate * (durationMinutes / 60));
+                const incentiveBonus = 6000 + ((index % 4) * 2000);
+                const totalPayment = basePayment + incentiveBonus;
+                const withholding = Math.round(totalPayment * 0.033);
+                const isCompleted = index % 10 !== 0;
+                const title = `${subject} Intensive ${String(postingId).padStart(3, '0')}`;
+
+                postings.push({
+                    id: postingId,
+                    title,
+                    subject,
+                    region,
+                    rate,
+                    status: isCompleted ? 'assigned' : 'open',
+                    deadline: new Date(sessionDate.getTime() + (5 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10),
+                    created_at: new Date(sessionDate.getTime() - (6 * 24 * 60 * 60 * 1000)).toISOString(),
+                    owner_id: institution.id,
+                    owner_email: institution.email,
+                    owner_name: institution.organization,
+                    urgent: postingId % 11 === 0
+                });
+
+                applications.push({
+                    id: (postingId * 10) + 1,
+                    posting_id: postingId,
+                    posting_title: title,
+                    student_id: instructor.id,
+                    student_email: instructor.email,
+                    student_organization: instructor.organization,
+                    status: 'approved',
+                    created_at: new Date(sessionDate.getTime() - (4 * 24 * 60 * 60 * 1000)).toISOString()
+                });
+                applications.push({
+                    id: (postingId * 10) + 2,
+                    posting_id: postingId,
+                    posting_title: title,
+                    student_id: instructors[(index + 2) % instructors.length].id,
+                    student_email: instructors[(index + 2) % instructors.length].email,
+                    student_organization: instructors[(index + 2) % instructors.length].organization,
+                    status: 'pending',
+                    created_at: new Date(sessionDate.getTime() - (3 * 24 * 60 * 60 * 1000)).toISOString()
+                });
+                applications.push({
+                    id: (postingId * 10) + 3,
+                    posting_id: postingId,
+                    posting_title: title,
+                    student_id: instructors[(index + 4) % instructors.length].id,
+                    student_email: instructors[(index + 4) % instructors.length].email,
+                    student_organization: instructors[(index + 4) % instructors.length].organization,
+                    status: 'rejected',
+                    created_at: new Date(sessionDate.getTime() - (2 * 24 * 60 * 60 * 1000)).toISOString()
+                });
+
+                sessions.push({
+                    id: postingId,
+                    posting_id: postingId,
+                    title,
+                    subject,
+                    organization: institution.organization,
+                    instructor_id: instructor.id,
+                    instructor_name: instructor.full_name,
+                    instructor_email: instructor.email,
+                    org_id: institution.id,
+                    scheduled_at: sessionDate.toISOString(),
+                    completed_at: isCompleted ? new Date(sessionDate.getTime() + (durationMinutes * 60 * 1000)).toISOString() : null,
+                    checkin_at: isCompleted ? new Date(sessionDate.getTime() + (5 * 60 * 1000)).toISOString() : null,
+                    scheduled_duration_minutes: durationMinutes,
+                    actual_duration_minutes: isCompleted ? durationMinutes : null,
+                    status: isCompleted ? 'completed' : 'scheduled',
+                    journal_content: isCompleted ? `${subject} monthly class log for instructor ${instructor.full_name}.` : '',
+                    student_rating: isCompleted ? 4 + (index % 2) : null,
+                    gross_amount: totalPayment,
+                    incentive_bonus: incentiveBonus,
+                    withholding_amount: withholding,
+                    net_amount: totalPayment - withholding,
+                    created_at: sessionDate.toISOString(),
+                    updated_at: new Date(sessionDate.getTime() + (2 * 60 * 60 * 1000)).toISOString()
+                });
+            }
+
+            const adminMembers = [
+                ...instructors,
+                ...institutions,
+                OFFLINE_QA_USER_PROFILES['qa.district@edulink.local'],
+                OFFLINE_QA_USER_PROFILES['qa.admin@edulink.local']
+            ];
+
+            const districtInstitutions = institutions.map((institution, index) => {
+                const ownedSessions = sessions.filter((item) => item.org_id === institution.id);
+                return {
+                    id: institution.id,
+                    posting_title: institution.organization,
+                    status: index % 2 === 0 ? 'approved' : 'pending',
+                    student_id: institution.id,
+                    student_email: institution.email,
+                    student_organization: institution.region,
+                    created_at: monthStart.toISOString(),
+                    postings_count: postings.filter((item) => item.owner_id === institution.id).length,
+                    approved_count: ownedSessions.filter((item) => item.status === 'completed').length,
+                    total_revenue: ownedSessions.reduce((sum, item) => sum + Number(item.net_amount || 0), 0)
+                };
+            });
+
+            const monthlyIndicators = Array.from({ length: 6 }, (_, index) => {
+                const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (5 - index), 1));
+                const itemMonth = date.toISOString().slice(0, 7);
+                const scale = index + 1;
+                return {
+                    month: itemMonth,
+                    total_sessions: 40 + (scale * 10),
+                    settlement_amount: 3200000 + (scale * 540000),
+                    avg_rating: 4.4 + (scale * 0.05)
+                };
+            });
+
+            return {
+                month,
+                instructors,
+                institutions,
+                postings,
+                applications,
+                sessions,
+                adminMembers,
+                districtInstitutions,
+                monthlyIndicators
+            };
+        }
+
+        function isOfflineDemoMode() {
+            return !!(currentUser && token && String(token).startsWith('offline-demo-'));
+        }
+
+        function getOfflineDashboardPayload(role) {
+            const normalizedRole = role || normalizeRole(getCurrentAccessRole());
+            const month = OFFLINE_DEMO_DATA.month;
+            const completedSessions = OFFLINE_DEMO_DATA.sessions.filter((item) => item.status === 'completed' && String(item.completed_at || '').slice(0, 7) === month);
+
+            if (normalizedRole === 'instructor') {
+                const mySessions = OFFLINE_DEMO_DATA.sessions.filter((item) => item.instructor_id === currentUser.id);
+                const myCompleted = mySessions.filter((item) => item.status === 'completed');
+                const myUpcoming = mySessions.filter((item) => item.status !== 'completed').slice(0, 4);
+                const myApplications = OFFLINE_DEMO_DATA.applications.filter((item) => item.student_id === currentUser.id);
+                return {
+                    stats: {
+                        income_summary: {
+                            gross_amount: myCompleted.reduce((sum, item) => sum + Number(item.gross_amount || 0), 0),
+                            withholding_amount: myCompleted.reduce((sum, item) => sum + Number(item.withholding_amount || 0), 0),
+                            net_amount: myCompleted.reduce((sum, item) => sum + Number(item.net_amount || 0), 0)
+                        },
+                        upcoming_sessions_count: myUpcoming.length,
+                        upcoming_sessions: myUpcoming,
+                        approved_count: myApplications.filter((item) => item.status === 'approved').length,
+                        pending_count: myApplications.filter((item) => item.status === 'pending').length,
+                        rejected_count: myApplications.filter((item) => item.status === 'rejected').length,
+                        profile_status: 'approved'
+                    }
+                };
+            }
+
+            if (normalizedRole === 'institution') {
+                const orgSessions = OFFLINE_DEMO_DATA.sessions.filter((item) => item.org_id === currentUser.id);
+                const orgApplications = OFFLINE_DEMO_DATA.applications.filter((item) => {
+                    const posting = OFFLINE_DEMO_DATA.postings.find((candidate) => candidate.id === item.posting_id);
+                    return posting && posting.owner_id === currentUser.id;
+                });
+                return {
+                    stats: {
+                        today_sessions_count: orgSessions.filter((item) => item.status === 'scheduled').length,
+                        new_postings_count: OFFLINE_DEMO_DATA.postings.filter((item) => item.owner_id === currentUser.id).length,
+                        settlement_pending_count: orgSessions.filter((item) => item.status !== 'completed').length,
+                        review_pending_count: orgApplications.filter((item) => item.status === 'pending').length,
+                        month_total_sessions: orgSessions.filter((item) => item.status === 'completed').length,
+                        month_avg_instructor_rating: 4.8,
+                        month_settlement_amount: orgSessions.reduce((sum, item) => sum + Number(item.net_amount || 0), 0)
+                    },
+                    qualityMetrics: {
+                        completion_rate: 95,
+                        no_show_rate: 2,
+                        avg_response_minutes: 18,
+                        avg_rating: 4.8
+                    },
+                    monthlyIndicators: {
+                        items: OFFLINE_DEMO_DATA.monthlyIndicators
+                    }
+                };
+            }
+
+            if (normalizedRole === 'admin') {
+                return {
+                    qualityMetrics: {
+                        completion_rate: 96,
+                        no_show_rate: 1.6,
+                        avg_rating: 4.82,
+                        avg_response_minutes: 14
+                    },
+                    monthlyIndicators: {
+                        items: OFFLINE_DEMO_DATA.monthlyIndicators
+                    }
+                };
+            }
+
+            return {
+                stats: {
+                    postings_count: OFFLINE_DEMO_DATA.institutions.length,
+                    applications_total: OFFLINE_DEMO_DATA.instructors.length,
+                    approved_count: completedSessions.length,
+                    pending_count: 84
+                }
+            };
+        }
+
+        function getOfflinePostingsForRole(role) {
+            const normalizedRole = role || normalizeRole(getCurrentAccessRole());
+            let postings = OFFLINE_DEMO_DATA.postings.slice();
+
+            if (normalizedRole === 'institution') {
+                postings = postings.filter((item) => item.owner_id === currentUser.id);
+            }
+            if (postingFilters.subject) {
+                postings = postings.filter((item) => String(item.subject || '').toLowerCase() === String(postingFilters.subject || '').toLowerCase());
+            }
+            if (postingFilters.region) {
+                postings = postings.filter((item) => String(item.region || '').toLowerCase().includes(String(postingFilters.region || '').toLowerCase()));
+            }
+            if (postingFilters.minRate) {
+                postings = postings.filter((item) => Number(item.rate || 0) >= Number(postingFilters.minRate || 0));
+            }
+
+            return postings.sort((left, right) => Number(right.id || 0) - Number(left.id || 0));
+        }
+
+        function getOfflineApplicationsForRole(role) {
+            const normalizedRole = role || normalizeRole(getCurrentAccessRole());
+            if (normalizedRole === 'instructor') {
+                return OFFLINE_DEMO_DATA.applications.filter((item) => item.student_id === currentUser.id);
+            }
+            if (normalizedRole === 'institution') {
+                return OFFLINE_DEMO_DATA.applications.filter((item) => {
+                    const posting = OFFLINE_DEMO_DATA.postings.find((candidate) => candidate.id === item.posting_id);
+                    return posting && posting.owner_id === currentUser.id;
+                });
+            }
+            if (normalizedRole === 'district') {
+                return OFFLINE_DEMO_DATA.districtInstitutions;
+            }
+            if (normalizedRole === 'admin') {
+                return OFFLINE_DEMO_DATA.adminMembers.map((member, index) => ({
+                    id: 90000 + index,
+                    posting_id: 0,
+                    posting_title: member.full_name || member.organization || member.email,
+                    student_id: member.id,
+                    student_email: member.email,
+                    student_organization: member.organization,
+                    status: member.role === 'admin' ? 'approved' : index % 3 === 0 ? 'pending' : 'approved',
+                    created_at: new Date().toISOString()
+                }));
+            }
+            return [];
+        }
+
+        function getOfflineSessionsForRole(role) {
+            const normalizedRole = role || normalizeRole(getCurrentAccessRole());
+            if (normalizedRole === 'instructor') {
+                return OFFLINE_DEMO_DATA.sessions.filter((item) => item.instructor_id === currentUser.id);
+            }
+            if (normalizedRole === 'institution') {
+                return OFFLINE_DEMO_DATA.sessions.filter((item) => item.org_id === currentUser.id);
+            }
+            return OFFLINE_DEMO_DATA.sessions.slice(0, 20);
+        }
+
+        function getOfflineInstitutionSettlementItems(month) {
+            const scopedSessions = OFFLINE_DEMO_DATA.sessions.filter((item) => item.org_id === currentUser.id && String(item.scheduled_at || '').slice(0, 7) === month);
+            return OFFLINE_DEMO_DATA.instructors.map((instructor) => {
+                const instructorSessions = scopedSessions.filter((item) => item.instructor_id === instructor.id);
+                return {
+                    instructor_email: instructor.email,
+                    approved_sessions: instructorSessions.filter((item) => item.status === 'completed').length,
+                    pending_sessions: instructorSessions.filter((item) => item.status !== 'completed').length,
+                    incentive_bonus_total: instructorSessions.reduce((sum, item) => sum + Number(item.incentive_bonus || 0), 0),
+                    total_payment: instructorSessions.reduce((sum, item) => sum + Number(item.net_amount || 0), 0),
+                    payout_status: instructorSessions.some((item) => item.status !== 'completed') ? 'pending' : 'paid'
+                };
+            }).filter((item) => item.approved_sessions || item.pending_sessions);
+        }
+
+        function getOfflineInstructorSettlementItems(month) {
+            return OFFLINE_DEMO_DATA.sessions.filter((item) => item.instructor_id === currentUser.id && item.status === 'completed' && String(item.completed_at || '').slice(0, 7) === month);
+        }
+
+        function renderOfflineDistrictDashboardSections() {
+            const container = document.querySelector('#statsGrid').parentElement;
+            if (!container) {
+                return;
+            }
+
+            const regionSection = document.createElement('div');
+            regionSection.id = 'districtRegionalGrid';
+            regionSection.style.display = 'grid';
+            regionSection.style.gridTemplateColumns = 'repeat(auto-fit, minmax(170px, 1fr))';
+            regionSection.style.gap = '12px';
+            regionSection.style.marginTop = '20px';
+            regionSection.innerHTML = OFFLINE_DEMO_DATA.institutions.map((institution) => {
+                const ownedPostings = OFFLINE_DEMO_DATA.postings.filter((item) => item.owner_id === institution.id).length;
+                const ownedSessions = OFFLINE_DEMO_DATA.sessions.filter((item) => item.org_id === institution.id && item.status === 'completed').length;
+                return `
+                    <div class="stat-card">
+                        <div class="stat-title">🏫 ${escapeHtml(institution.organization)}</div>
+                        <div style="font-size:12px;color:var(--muted);margin:4px 0;">${institution.region}</div>
+                        <div style="font-size:12px;color:var(--muted);">${ownedPostings} ${lt('postings', '공고')} · ${ownedSessions} ${lt('sessions', '수업')}</div>
+                    </div>
+                `;
+            }).join('');
+            container.appendChild(regionSection);
+        }
+
+        function renderOfflineAdminPlatformSummary() {
+            const container = document.querySelector('#statsGrid').parentElement;
+            if (!container) {
+                return;
+            }
+
+            const summarySection = document.createElement('div');
+            summarySection.id = 'adminPlatformSummaryGrid';
+            summarySection.style.display = 'grid';
+            summarySection.style.gridTemplateColumns = 'repeat(auto-fit, minmax(170px, 1fr))';
+            summarySection.style.gap = '12px';
+            summarySection.style.marginTop = '20px';
+            summarySection.innerHTML = `
+                <div class="stat-card"><div class="stat-title">👥 ${lt('Members', '회원')}</div><div class="stat-value">${OFFLINE_DEMO_DATA.adminMembers.length}</div></div>
+                <div class="stat-card"><div class="stat-title">🏫 ${lt('Institutions', '기관')}</div><div class="stat-value">${OFFLINE_DEMO_DATA.institutions.length}</div></div>
+                <div class="stat-card"><div class="stat-title">👨‍🏫 ${lt('Instructors', '강사')}</div><div class="stat-value">${OFFLINE_DEMO_DATA.instructors.length}</div></div>
+                <div class="stat-card"><div class="stat-title">📚 ${lt('Lectures', '강의')}</div><div class="stat-value">${OFFLINE_DEMO_DATA.postings.length}</div></div>
+            `;
+            container.appendChild(summarySection);
+        }
+
+        function refreshGlobalQuickbar() {
+            const quickbar = document.getElementById('globalQuickbar');
+            const meta = document.getElementById('globalQuickbarMeta');
+            const dashboardBtn = document.getElementById('globalDashboardBtn');
+            const logoutBtn = document.getElementById('globalLogoutBtn');
+            if (!quickbar || !meta || !dashboardBtn || !logoutBtn) {
+                return;
+            }
+
+            if (!currentUser) {
+                quickbar.style.display = 'none';
+                meta.textContent = 'Guest';
+                return;
+            }
+
+            quickbar.style.display = 'inline-flex';
+            meta.textContent = currentUser.email;
+            dashboardBtn.textContent = lt('Dashboard', '대시보드');
+            logoutBtn.textContent = lt('Logout', '로그아웃');
+        }
         const postingFilters = {
             subject: '',
             region: '',
@@ -4218,9 +4919,9 @@
 
         const I18N = {
             en: {
-                heroTitle: 'Unified operations for education staffing.',
-                heroCopy: 'Design the full product surface first for instructors, institutions, districts, and platform operators, then connect each workflow in order.',
-                identitySlogan: 'Edulink — Connecting Instructors, Powering Operations',
+                heroTitle: 'Connect instructors. Complete operations.',
+                heroCopy: 'EduLink is not just a recruitment platform. It is an all-in-one service that integrates matching, operations, and settlement.',
+                identitySlogan: 'Connect instructors. Complete operations.',
                 identityCaption: 'EduLink is more than a simple instructor recruitment platform — it is an all-in-one service that integrates matching, operations, and settlement. With a mobile-first app for instructors and dedicated management web portals for institutions and education offices, it supports both on-site execution and administrative control. EduLink is building a new standard operating system for the public and private education markets.',
                 mastheadSub: 'Unified Operations Platform',
                 navDashboard: 'Role Views',
@@ -4263,6 +4964,7 @@
                 resetBtn: 'Reset',
                 placeholderEmail: 'Email',
                 placeholderPassword: 'Password',
+                placeholderPasswordConfirm: 'Confirm password',
                 placeholderCurrentPassword: 'Current password',
                 placeholderNewPassword: 'New password',
                 placeholderResetEmail: 'Reset account email',
@@ -4307,12 +5009,13 @@
                 emailAlreadyRegistered: 'This email is already registered.',
                 resetTokenSent: 'Reset token has been sent. Enter the token below to set a new password.',
                 resetTokenRequired: 'Token and new password are required.',
-                weakPassword: 'Password must be at least 8 characters.'
+                weakPassword: 'Password must be at least 8 characters.',
+                passwordMismatch: 'Password confirmation does not match.'
             },
             ko: {
-                heroTitle: '교육 인력 운영을 위한 통합 화면 설계.',
-                heroCopy: '강사, 학교·기관, 교육청, 운영자 관점의 전체 제품 화면을 먼저 설계하고 그 위에 기능을 순차적으로 연결합니다.',
-                identitySlogan: 'EduLink 강사를 연결하고, 운영을 완성하다',
+                heroTitle: '강사를 연결하고, 운영을 완성하다',
+                heroCopy: 'EduLink는 단순한 강사 구인 플랫폼이 아니라 매칭·운영·정산을 통합한 올인원 서비스입니다.',
+                identitySlogan: '강사를 연결하고, 운영을 완성하다',
                 identityCaption: 'EduLink는 단순한 강사 구인 플랫폼이 아니라 매칭·운영·정산을 통합한 올인원 서비스입니다. 모바일 중심의 강사용 앱과 기관·교육청용 관리 웹으로 현장과 행정을 동시에 지원합니다. 공공교육과 사교육 시장의 새로운 표준 운영 체계를 만들어갑니다.',
                 mastheadSub: '통합 운영 플랫폼',
                 navDashboard: '역할 화면',
@@ -4355,6 +5058,7 @@
                 resetBtn: '초기화',
                 placeholderEmail: '이메일',
                 placeholderPassword: '비밀번호',
+                placeholderPasswordConfirm: '비밀번호 확인',
                 placeholderCurrentPassword: '현재 비밀번호',
                 placeholderNewPassword: '새 비밀번호',
                 placeholderResetEmail: '재설정 계정 이메일',
@@ -4399,7 +5103,8 @@
                 emailAlreadyRegistered: '이미 등록된 이메일입니다.',
                 resetTokenSent: '재설정 토큰이 발급되었습니다. 아래에서 토큰을 입력하고 새 비밀번호를 설정하세요.',
                 resetTokenRequired: '토큰과 새 비밀번호를 입력해 주세요.',
-                weakPassword: '비밀번호는 8자 이상이어야 합니다.'
+                weakPassword: '비밀번호는 8자 이상이어야 합니다.',
+                passwordMismatch: '비밀번호 확인이 일치하지 않습니다.'
             }
         };
 
@@ -5876,7 +6581,6 @@
                 ['.hero-copy', 'heroCopy'],
                 ['#identitySlogan', 'identitySlogan'],
                 ['#identityCaption', 'identityCaption'],
-                ['.masthead-sub', 'mastheadSub'],
                 ['.masthead-nav span:nth-child(1)', 'navDashboard'],
                 ['.masthead-nav span:nth-child(2)', 'navApplicants'],
                 ['.masthead-nav span:nth-child(3)', 'navSettlements'],
@@ -5905,6 +6609,7 @@
                 ['#loginBtn', 'loginBtn'],
                 ['#openSignupFlowBtn', 'signupFlowBtn'],
                 ['#closeSignupFlowBtn', 'closeSignup'],
+                ['#closePolicyModalBtn', 'closeSignup'],
                 ['#createPostingBtn', 'createBtn'],
                 ['#changePasswordBtn', 'changePassword'],
                 ['#applyFiltersBtn', 'searchBtn'],
@@ -5945,6 +6650,7 @@
             const placeholders = [
                 ['registerEmail', 'placeholderEmail'],
                 ['registerPassword', 'placeholderPassword'],
+                ['registerPasswordConfirm', 'placeholderPasswordConfirm'],
                 ['loginEmail', 'placeholderEmail'],
                 ['loginPassword', 'placeholderPassword'],
                 ['resetEmail', 'placeholderResetEmail'],
@@ -6032,6 +6738,10 @@
                 quickLangBtn.textContent = currentLang === 'ko' ? 'EN' : '한';
             }
 
+            if (activeModalId === 'policyInfoModal') {
+                openPolicyModal(activePolicyKey);
+            }
+
             renderRolePresentation();
         }
 
@@ -6060,15 +6770,11 @@
             const blueprint = DEMO_BLUEPRINT[role] || DEMO_BLUEPRINT.instructor;
 
             const brandEl = document.querySelector('.masthead-brand');
-            const subEl = document.querySelector('.masthead-sub');
             const heroEl = document.querySelector('.hero-copy');
             const ctaEl = document.querySelector('.side-rail .rail-cta');
 
             if (brandEl) {
                 brandEl.textContent = getDemoText(presentation.brand, presentation.brandKo);
-            }
-            if (subEl) {
-                subEl.textContent = getDemoText(presentation.sub, presentation.subKo);
             }
             if (heroEl) {
                 heroEl.textContent = getDemoText(presentation.hero, presentation.heroKo);
@@ -6957,6 +7663,8 @@
                     closePostingModal();
                 } else if (activeModalId === 'applicantModal') {
                     closeApplicantModal();
+                } else if (activeModalId === 'policyInfoModal') {
+                    closePolicyModal();
                 }
                 return;
             }
@@ -7217,6 +7925,101 @@
             document.getElementById('applicantRecentVisibleCount').classList.add('is-hidden');
             document.getElementById('applicantRecentVisibleCount').setAttribute('aria-hidden', 'true');
             document.getElementById('applicantRecentVisibleCount').textContent = '';
+        }
+
+        function getPolicyModalContent(policyKey) {
+            const key = String(policyKey || '').toLowerCase();
+            const content = {
+                about: {
+                    title: lt('About EduLink', 'EduLink 소개'),
+                    html: `
+                        <div class="policy-block">
+                            <h4>${lt('Service Mission', '서비스 미션')}</h4>
+                            <p>${lt('EduLink connects instructors and education organizations in one operating system for matching, session operations, and settlement.', 'EduLink는 강사와 교육기관을 하나의 운영 체계로 연결해 매칭, 수업 운영, 정산을 통합 지원합니다.')}</p>
+                        </div>
+                        <div class="policy-block">
+                            <h4>${lt('Core Product', '핵심 제품')}</h4>
+                            <ul class="policy-inline-list">
+                                <li>${lt('Instructor mobile-first workflow', '강사 모바일 중심 업무 흐름')}</li>
+                                <li>${lt('Institution and district management web', '기관/교육청 관리 웹')}</li>
+                                <li>${lt('Operational evidence and compliance visibility', '운영 증적 및 컴플라이언스 가시화')}</li>
+                            </ul>
+                        </div>
+                    `
+                },
+                privacy: {
+                    title: lt('Privacy Policy', '개인정보 처리방침'),
+                    html: `
+                        <div class="policy-block">
+                            <h4>${lt('Data We Process', '수집/처리 항목')}</h4>
+                            <p>${lt('Account identifiers, role/profile data, session operation records, and settlement-related logs are processed to provide the service.', '서비스 제공을 위해 계정 식별 정보, 역할/프로필 정보, 수업 운영 기록, 정산 관련 로그를 처리합니다.')}</p>
+                        </div>
+                        <div class="policy-block">
+                            <h4>${lt('Purpose and Retention', '처리 목적 및 보관')}</h4>
+                            <p>${lt('Data is used for authentication, matching operations, support, and legal compliance. Retention follows applicable legal and contractual requirements.', '인증, 매칭 운영, 고객지원, 법적 의무 준수를 목적으로 처리하며 보관 기간은 관련 법령 및 계약 기준을 따릅니다.')}</p>
+                        </div>
+                    `
+                },
+                terms: {
+                    title: lt('Terms of Service', '이용약관'),
+                    html: `
+                        <div class="policy-block">
+                            <h4>${lt('Account Responsibilities', '계정 이용 책임')}</h4>
+                            <p>${lt('Users are responsible for account security and for the accuracy of submitted profile and operational data.', '이용자는 계정 보안 유지와 제출 정보(프로필/운영 데이터)의 정확성에 책임을 집니다.')}</p>
+                        </div>
+                        <div class="policy-block">
+                            <h4>${lt('Service Usage Rules', '서비스 이용 기준')}</h4>
+                            <p>${lt('The platform may restrict abusive behavior, unauthorized access attempts, and policy-violating financial operations.', '플랫폼은 악용 행위, 비인가 접근 시도, 정책 위반 정산 행위를 제한할 수 있습니다.')}</p>
+                        </div>
+                    `
+                },
+                contact: {
+                    title: lt('Contact', '문의하기'),
+                    html: `
+                        <div class="policy-block">
+                            <h4>${lt('Support Channel', '지원 채널')}</h4>
+                            <p>${lt('For account, operation, or policy inquiries, contact the EduLink support desk during business hours.', '계정/운영/정책 문의는 운영시간 내 EduLink 지원 채널로 접수해 주세요.')}</p>
+                        </div>
+                        <div class="policy-block">
+                            <h4>${lt('Response Scope', '응답 범위')}</h4>
+                            <p>${lt('Priority is given to login issues, settlement-impacting incidents, and service disruptions.', '로그인 장애, 정산 영향 이슈, 서비스 중단 건을 우선 대응합니다.')}</p>
+                        </div>
+                    `
+                },
+                ads: {
+                    title: lt('Ads & Cookies', '광고 및 쿠키 안내'),
+                    html: `
+                        <div class="policy-block">
+                            <h4>${lt('Cookie Usage', '쿠키 사용')}</h4>
+                            <p>${lt('Cookies may be used for session continuity, basic analytics, and service quality improvements.', '쿠키는 세션 유지, 기본 분석, 서비스 품질 개선을 위해 사용될 수 있습니다.')}</p>
+                        </div>
+                        <div class="policy-block">
+                            <h4>${lt('Advertising Disclosure', '광고 고지')}</h4>
+                            <p>${lt('Advertising components, when enabled, follow applicable disclosure and consent requirements.', '광고 기능이 활성화되는 경우 관련 고지 및 동의 기준을 준수합니다.')}</p>
+                        </div>
+                    `
+                }
+            };
+
+            return content[key] || content.about;
+        }
+
+        function openPolicyModal(policyKey) {
+            activePolicyKey = String(policyKey || 'about').toLowerCase();
+            const titleEl = document.getElementById('policyModalTitle');
+            const bodyEl = document.getElementById('policyModalBody');
+            if (!titleEl || !bodyEl) {
+                return;
+            }
+
+            const content = getPolicyModalContent(activePolicyKey);
+            titleEl.textContent = content.title;
+            bodyEl.innerHTML = content.html;
+            openModalById('policyInfoModal');
+        }
+
+        function closePolicyModal() {
+            closeModalById('policyInfoModal');
         }
 
         function setTaxStatus(message) {
@@ -7838,6 +8641,7 @@
                 dashboardSection:    { en: 'Platform Overview', ko: '\ud50c\ub7ab\ud3fc \ud604\ud669' },
                 applicationsSection: { en: 'Members',           ko: '\ud68c\uc6d0 \uad00\ub9ac' },
                 adminInsightsSection:{ en: 'Compliance',        ko: '\ucf58\ud50c\ub77c\uc774\uc5b8\uc2a4' },
+                roleFeatureMatrixSection: { en: 'Role Matrix', ko: '\uc720\uc800\ubcc4 \uae30\ub2a5\ube44\uad50' },
                 securitySection:     { en: 'My Page',           ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             }
         };
@@ -8129,12 +8933,13 @@
             }
             document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('topbar').style.display = 'flex';
+            document.getElementById('topbar').style.display = 'none';
             const preloginBarEl = document.getElementById('preloginBar');
             if (preloginBarEl) preloginBarEl.style.display = 'none';
             document.body.classList.remove('view-prelogin');
             document.getElementById('userEmail').textContent = currentUser ? currentUser.email : '';
             document.getElementById('userRole').textContent = currentUser ? `(${currentUser.role})` : '';
+            refreshGlobalQuickbar();
             document.getElementById('myPostingsToggleWrap').style.display =
                 currentUser && currentUser.role === 'instructor' ? 'inline-flex' : 'none';
             activeScreenId = getAllowedScreens().includes(activeScreenId) ? activeScreenId : getDefaultScreen();
@@ -8177,6 +8982,7 @@
             const preloginBar = document.getElementById('preloginBar');
             if (preloginBar) preloginBar.style.display = 'none';
             document.body.classList.add('view-prelogin');
+            refreshGlobalQuickbar();
             updatePrimaryNavigation();
             markAppReady('prelogin');
         }
@@ -8211,12 +9017,85 @@
             return rawError || lt('Login failed. Please retry.', '로그인에 실패했습니다. 다시 시도해 주세요.');
         }
 
+        function resolveQaDemoRole(email) {
+            return QA_ROLE_BY_EMAIL[String(email || '').trim().toLowerCase()] || '';
+        }
+
+        function isBackendUnavailableError(data, message) {
+            const errorCode = String((data && data.errorCode) || '').toUpperCase();
+            const raw = `${String((data && data.error) || '')} ${String(message || '')}`;
+            return errorCode === 'BACKEND_UNAVAILABLE' || /503|temporarily unavailable|service unavailable|tunnel unavailable|backend unavailable/i.test(raw);
+        }
+
+        function tryOfflineDemoLogin(email, password) {
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            const role = resolveQaDemoRole(normalizedEmail);
+            if (!role || password !== QA_DEMO_PASSWORD) {
+                return false;
+            }
+
+            const profile = OFFLINE_QA_USER_PROFILES[normalizedEmail] || {};
+
+            token = `offline-demo-${Date.now()}`;
+            currentUser = {
+                ...profile,
+                email: normalizedEmail,
+                role,
+                organization: profile.organization || 'Offline Demo Mode',
+                created_at: new Date().toISOString()
+            };
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('edulink_offline_user', JSON.stringify(currentUser));
+            localStorage.setItem('edulink_offline_mode', '1');
+
+            updateMyPageProfile();
+            showSections();
+            updateActivityTypeControls();
+            setStatus('loginStatus', lt('Backend is unavailable. Signed in with offline demo mode.', '백엔드가 불안정하여 오프라인 데모 모드로 로그인했습니다.'));
+            return true;
+        }
+
         function setSignupFlowVisible(visible) {
             const signupSection = document.getElementById('registerSection');
+            const loginSection = document.getElementById('loginSection');
             if (!signupSection) {
                 return;
             }
             signupSection.style.display = visible ? 'grid' : 'none';
+            if (loginSection) {
+                loginSection.style.visibility = visible ? 'hidden' : 'visible';
+                loginSection.style.pointerEvents = visible ? 'none' : '';
+            }
+        }
+
+        function setSocialButtonsBusy(busy, provider = '') {
+            const googleBtn = document.getElementById('socialGoogleBtn');
+            const kakaoBtn = document.getElementById('socialKakaoBtn');
+            if (!googleBtn || !kakaoBtn) {
+                return;
+            }
+
+            const providerName = provider === 'google' ? 'Google' : provider === 'kakao' ? 'Kakao' : '';
+            const busyLabel = providerName
+                ? lt(`${providerName} login in progress...`, `${providerName} 로그인 처리 중...`)
+                : lt('Social login in progress...', '소셜 로그인 처리 중...');
+
+            googleBtn.disabled = !!busy;
+            kakaoBtn.disabled = !!busy;
+
+            if (busy) {
+                if (provider === 'google') {
+                    googleBtn.textContent = busyLabel;
+                }
+                if (provider === 'kakao') {
+                    kakaoBtn.textContent = busyLabel;
+                }
+                return;
+            }
+
+            googleBtn.textContent = 'Google Login';
+            kakaoBtn.textContent = 'Kakao Login';
         }
 
         function logout() {
@@ -8239,6 +9118,8 @@
             lastPolledTaxStatus = null;
             stopTaxPolling();
             localStorage.removeItem('token');
+            localStorage.removeItem('edulink_offline_user');
+            localStorage.removeItem('edulink_offline_mode');
             document.getElementById('myPostingsToggle').checked = false;
             const profileCard = document.getElementById('myProfileCard');
             if (profileCard) profileCard.style.display = 'none';
@@ -8610,6 +9491,7 @@
                     <div>${escapeHtml(item.instructor_email || '#')}</div>
                     <div>${item.approved_sessions || 0}</div>
                     <div>${item.pending_sessions || 0}</div>
+                    <div>${formatWon(item.incentive_bonus_total || 0)}</div>
                     <div>${formatWon(item.total_payment || 0)}</div>
                     <div><span class="settlement-badge ${item.payout_status === 'paid' ? 'paid' : 'pending'}">${escapeHtml(item.payout_status || 'pending')}</span></div>
                 </div>
@@ -8620,6 +9502,7 @@
                         <div>${lt('Instructor', '강사')}</div>
                         <div>${lt('Done', '완료')}</div>
                         <div>${lt('Pending', '대기')}</div>
+                        <div>${lt('Bonus', '인센티브')}</div>
                         <div>${lt('Payment', '지급액')}</div>
                         <div>${lt('Status', '상태')}</div>
                     </div>
@@ -8640,6 +9523,7 @@
                     <div>#${s.id} ${escapeHtml(s.title || s.subject || lt('Session', '수업'))}</div>
                     <div>1</div>
                     <div>0</div>
+                    <div>${formatWon(s.incentive_bonus || 0)}</div>
                     <div>${formatWon(s.net_amount || 0)}</div>
                     <div><span class="settlement-badge paid">${lt('paid', '지급')}</span></div>
                 </div>
@@ -8650,6 +9534,7 @@
                         <div>${lt('Session', '수업')}</div>
                         <div>${lt('Done', '완료')}</div>
                         <div>${lt('Pending', '대기')}</div>
+                        <div>${lt('Bonus', '인센티브')}</div>
                         <div>${lt('Net', '순수령')}</div>
                         <div>${lt('Status', '상태')}</div>
                     </div>
@@ -8664,6 +9549,18 @@
             }
 
             const month = getSelectedSettlementMonth();
+            if (isOfflineDemoMode()) {
+                const items = getOfflineInstitutionSettlementItems(month);
+                setTaxValues({
+                    gross_income: items.reduce((sum, item) => sum + Number(item.total_payment || 0), 0),
+                    withholding_amount: items.reduce((sum, item) => sum + Number(item.incentive_bonus_total || 0), 0),
+                    estimated_refund: items.filter((item) => item.payout_status === 'paid').length,
+                    service_fee_amount: items.filter((item) => item.payout_status !== 'paid').length
+                });
+                renderInstitutionSettlementDetail(items);
+                setTaxStatus(lt(`Loaded 10 instructors / 20 lectures settlement pack for ${month}.`, `${month} 기준 강사 10명 / 강의 20건 정산 패키지를 불러왔습니다.`));
+                return;
+            }
             const response = await apiFetch(`/postings/settlement-summary?month=${encodeURIComponent(month)}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -8690,6 +9587,22 @@
             }
 
             const month = getSelectedSettlementMonth();
+            if (isOfflineDemoMode()) {
+                const completed = getOfflineInstructorSettlementItems(month);
+                const totalGross = completed.reduce((sum, item) => sum + Number(item.gross_amount || 0), 0);
+                const totalWithholding = completed.reduce((sum, item) => sum + Number(item.withholding_amount || 0), 0);
+                const totalNet = completed.reduce((sum, item) => sum + Number(item.net_amount || 0), 0);
+                const totalBonus = completed.reduce((sum, item) => sum + Number(item.incentive_bonus || 0), 0);
+                setTaxValues({
+                    gross_income: totalGross,
+                    withholding_amount: totalWithholding,
+                    estimated_refund: totalNet,
+                    service_fee_amount: completed.length
+                });
+                renderInstructorSettlementDetail(completed);
+                setTaxStatus(lt(`Loaded 1-month settlement: 10 lectures, incentive ${formatWon(totalBonus)}.`, `1개월 정산 데이터를 불러왔습니다. 강의 10건, 인센티브 ${formatWon(totalBonus)}.`));
+                return;
+            }
             const response = await apiFetch('/sessions', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -9532,6 +10445,78 @@
                 detailPanels.innerHTML = '';
             }
 
+            if (isOfflineDemoMode()) {
+                const role = normalizeRole(getCurrentAccessRole());
+                const payload = getOfflineDashboardPayload(role);
+                let cards;
+
+                if (role === 'instructor') {
+                    const income = payload.stats.income_summary || {};
+                    cards = [
+                        { title: lt('Gross Income', '총수익'), value: formatWon(income.gross_amount || 0), icon: '💸' },
+                        { title: lt('Withholding', '원천징수'), value: formatWon(income.withholding_amount || 0), icon: '🧾' },
+                        { title: lt('Net Income', '순수령액'), value: formatWon(income.net_amount || 0), icon: '💰' },
+                        { title: lt('Upcoming Sessions', '예정 수업'), value: payload.stats.upcoming_sessions_count || 0, icon: '📅' },
+                        { title: lt('Monthly Lectures', '월간 강의 수'), value: getOfflineInstructorSettlementItems(OFFLINE_DEMO_DATA.month).length, icon: '🎓' },
+                        { title: lt('Profile Status', '프로필 상태'), value: 'APPROVED', icon: '🪪' }
+                    ];
+                } else if (role === 'institution') {
+                    cards = [
+                        { title: lt('Today Classes', '당일 수업'), value: payload.stats.today_sessions_count || 0, icon: '📚' },
+                        { title: lt('Live Postings', '운영 공고'), value: payload.stats.new_postings_count || 0, icon: '📢' },
+                        { title: lt('Settlement Pending', '정산대기'), value: payload.stats.settlement_pending_count || 0, icon: '💰' },
+                        { title: lt('Review Pending', '심사대기'), value: payload.stats.review_pending_count || 0, icon: '📝' }
+                    ];
+                } else if (role === 'district') {
+                    cards = [
+                        { title: lt('Institutions', '기관 수'), value: OFFLINE_DEMO_DATA.institutions.length, icon: '🏫' },
+                        { title: lt('Instructors', '강사 수'), value: OFFLINE_DEMO_DATA.instructors.length, icon: '👨‍🏫' },
+                        { title: lt('Monthly Lectures', '월간 강의'), value: OFFLINE_DEMO_DATA.postings.length, icon: '📅' },
+                        { title: lt('Coverage Regions', '커버 지역'), value: 5, icon: '🗺️' }
+                    ];
+                } else {
+                    cards = [
+                        { title: lt('Total Members', '전체 회원'), value: OFFLINE_DEMO_DATA.adminMembers.length, icon: '👤' },
+                        { title: lt('Institutions', '기관'), value: OFFLINE_DEMO_DATA.institutions.length, icon: '🏫' },
+                        { title: lt('Instructors', '강사'), value: OFFLINE_DEMO_DATA.instructors.length, icon: '👨‍🏫' },
+                        { title: lt('Lectures', '강의'), value: OFFLINE_DEMO_DATA.postings.length, icon: '📚' }
+                    ];
+                }
+
+                statsGrid.innerHTML = cards.map((card) => `
+                    <div class="stat-card">
+                        <div class="stat-title">${card.icon ? `${card.icon} ` : ''}${card.title}</div>
+                        <div class="stat-value">${card.value}</div>
+                    </div>
+                `).join('');
+
+                if (role === 'instructor' && detailPanels) {
+                    renderInstructorDashboardPanels(payload.stats);
+                }
+                if (role === 'institution' && detailPanels) {
+                    renderInstitutionDashboardPanels(payload.stats, payload.qualityMetrics, payload.monthlyIndicators);
+                }
+                if (role === 'admin' && detailPanels) {
+                    renderAdminDashboardPanels(payload.qualityMetrics, payload.monthlyIndicators);
+                    renderOfflineAdminPlatformSummary();
+                }
+                if (role === 'district') {
+                    renderOfflineDistrictDashboardSections();
+                }
+
+                const dashTitle = document.querySelector('#dashboardSection h2');
+                if (dashTitle) {
+                    const titles = {
+                        instructor: lt('My Dashboard', '내 대시보드'),
+                        institution: lt('Institution Dashboard', '기관 대시보드'),
+                        district: lt('Region Overview', '지역 현황'),
+                        admin: lt('Platform Overview', '플랫폼 현황')
+                    };
+                    dashTitle.textContent = titles[role] || titles.instructor;
+                }
+                return;
+            }
+
             const response = await apiFetch('/dashboard/stats', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -9542,6 +10527,30 @@
             }
 
             const role = normalizeRole(getCurrentAccessRole());
+            let qualityMetrics = null;
+            let monthlyIndicators = null;
+
+            if (role === 'institution' || role === 'admin') {
+                const [qualityRes, monthlyRes] = await Promise.all([
+                    apiFetch('/dashboard/quality-metrics', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    apiFetch('/dashboard/monthly-indicators?months=6', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+
+                const qualityData = await parseJsonSafe(qualityRes);
+                const monthlyData = await parseJsonSafe(monthlyRes);
+
+                if (qualityRes.ok) {
+                    qualityMetrics = qualityData;
+                }
+                if (monthlyRes.ok) {
+                    monthlyIndicators = monthlyData;
+                }
+            }
+
             let cards;
 
             if (role === 'instructor') {
@@ -9588,7 +10597,10 @@
                 renderInstructorDashboardPanels(stats);
             }
             if (role === 'institution' && detailPanels) {
-                renderInstitutionDashboardPanels(stats);
+                renderInstitutionDashboardPanels(stats, qualityMetrics, monthlyIndicators);
+            }
+            if (role === 'admin' && detailPanels) {
+                renderAdminDashboardPanels(qualityMetrics, monthlyIndicators);
             }
 
             const dashTitle = document.querySelector('#dashboardSection h2');
@@ -9702,7 +10714,7 @@
             }
         }
 
-        function renderInstitutionDashboardPanels(stats) {
+        function renderInstitutionDashboardPanels(stats, qualityMetrics, monthlyIndicators) {
             const detailPanels = document.getElementById('dashboardDetailPanels');
             if (!detailPanels) return;
 
@@ -9710,6 +10722,33 @@
             const monthRating = Number(stats.month_avg_instructor_rating || 0);
             const monthSettlement = Number(stats.month_settlement_amount || 0);
             const ratingPct = Math.round(monthRating / 5 * 100);
+            const completionRate = Number((qualityMetrics && qualityMetrics.completion_rate) || 0);
+            const noShowRate = Number((qualityMetrics && qualityMetrics.no_show_rate) || 0);
+            const avgResponseMinutes = Number((qualityMetrics && qualityMetrics.avg_response_minutes) || 0);
+            const avgQualityRating = Number((qualityMetrics && qualityMetrics.avg_rating) || monthRating || 0);
+            const completionScore = Math.max(0, Math.min(100, completionRate));
+            const noShowScore = Math.max(0, Math.min(100, 100 - noShowRate));
+            const ratingScore = Math.max(0, Math.min(100, (avgQualityRating / 5) * 100));
+            const responseScore = Math.max(0, Math.min(100, 100 - (avgResponseMinutes / 2)));
+            const integratedQualityScore = Math.round(
+                (completionScore * 0.35)
+                + (noShowScore * 0.2)
+                + (ratingScore * 0.3)
+                + (responseScore * 0.15)
+            );
+
+            const monthlyItems = (monthlyIndicators && Array.isArray(monthlyIndicators.items))
+                ? monthlyIndicators.items.slice(0, 6)
+                : [];
+            const monthlyRows = monthlyItems.length
+                ? monthlyItems.map((item) => `
+                    <div style="display:grid;grid-template-columns:90px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+                        <span class="muted" style="font-size:12px;">${escapeHtml(item.month || '-')}</span>
+                        <span style="font-size:12px;">${lt('Sessions','수업')} ${Number(item.total_sessions || 0)}</span>
+                        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#5deec0;">${formatWon(item.settlement_amount || 0)}</span>
+                    </div>
+                `).join('')
+                : `<div class="empty-state muted">${lt('No monthly indicators yet.', '월간 지표 데이터가 없습니다.')}</div>`;
 
             detailPanels.innerHTML = `
                 <div class="stat-card" style="grid-column: span 2;">
@@ -9744,6 +10783,28 @@
                     </div>
                     <div id="institutionSessionList" class="muted">${lt('Loading session performance...', '수업 실적을 불러오는 중...')}</div>
                 </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">🏅 ${lt('Quality Composite', '품질 통합 점수')}</div>
+                    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px;">
+                        <div>
+                            <div style="font-size:30px;font-family:'Space Grotesk',sans-serif;font-weight:700;">${integratedQualityScore}</div>
+                            <div class="muted" style="font-size:11px;">${lt('Composite score (0-100)', '통합 점수 (0-100)')}</div>
+                        </div>
+                        <div style="text-align:right;font-size:12px;line-height:1.7;">
+                            <div>✅ ${lt('Completion','완료율')}: ${completionRate.toFixed(1)}%</div>
+                            <div>🚫 ${lt('No-show','노쇼율')}: ${noShowRate.toFixed(1)}%</div>
+                            <div>⭐ ${lt('Rating','평점')}: ${avgQualityRating.toFixed(2)}</div>
+                            <div>⚡ ${lt('Response','응답')}: ${avgResponseMinutes.toFixed(1)}m</div>
+                        </div>
+                    </div>
+                    <div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.07);overflow:hidden;margin-top:10px;">
+                        <div style="height:100%;width:${integratedQualityScore}%;background:linear-gradient(90deg,#5deec0,#63d6ff);border-radius:4px;"></div>
+                    </div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">📆 ${lt('Monthly Settlement Trend', '월간 정산 추이')}</div>
+                    <div style="margin-top:8px;">${monthlyRows}</div>
+                </div>
             `;
 
             loadInstitutionSessionPerformance();
@@ -9762,6 +10823,57 @@
             }
         }
 
+        function renderAdminDashboardPanels(qualityMetrics, monthlyIndicators) {
+            const detailPanels = document.getElementById('dashboardDetailPanels');
+            if (!detailPanels) return;
+
+            const completionRate = Number((qualityMetrics && qualityMetrics.completion_rate) || 0);
+            const noShowRate = Number((qualityMetrics && qualityMetrics.no_show_rate) || 0);
+            const avgRating = Number((qualityMetrics && qualityMetrics.avg_rating) || 0);
+            const avgResponseMinutes = Number((qualityMetrics && qualityMetrics.avg_response_minutes) || 0);
+
+            const monthlyItems = (monthlyIndicators && Array.isArray(monthlyIndicators.items))
+                ? monthlyIndicators.items.slice(0, 6)
+                : [];
+            const monthlyRows = monthlyItems.length
+                ? monthlyItems.map((item) => `
+                    <div style="display:grid;grid-template-columns:100px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+                        <span class="muted" style="font-size:12px;">${escapeHtml(item.month || '-')}</span>
+                        <span style="font-size:12px;">${lt('Sessions','수업')} ${Number(item.total_sessions || 0)} | ${lt('Rating','평점')} ${Number(item.avg_rating || 0).toFixed(2)}</span>
+                        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;color:#63d6ff;">${formatWon(item.settlement_amount || 0)}</span>
+                    </div>
+                `).join('')
+                : `<div class="empty-state muted">${lt('No monthly indicators yet.', '월간 지표 데이터가 없습니다.')}</div>`;
+
+            detailPanels.innerHTML = `
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">🛡 ${lt('Platform Quality Guardrail', '플랫폼 품질 가드레일')}</div>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px;">
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(93,238,192,0.1);border:1px solid rgba(93,238,192,0.2);">
+                            <div style="font-size:22px;font-family:'Space Grotesk',sans-serif;font-weight:700;">${completionRate.toFixed(1)}%</div>
+                            <div class="muted" style="font-size:11px;">${lt('Completion','완료율')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(255,111,135,0.1);border:1px solid rgba(255,111,135,0.2);">
+                            <div style="font-size:22px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#ff6f87;">${noShowRate.toFixed(1)}%</div>
+                            <div class="muted" style="font-size:11px;">${lt('No-show','노쇼율')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2);">
+                            <div style="font-size:22px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#fbbf24;">${avgRating.toFixed(2)}</div>
+                            <div class="muted" style="font-size:11px;">${lt('Rating','평점')}</div>
+                        </div>
+                        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.25);">
+                            <div style="font-size:22px;font-family:'Space Grotesk',sans-serif;font-weight:700;color:#93c5fd;">${avgResponseMinutes.toFixed(1)}m</div>
+                            <div class="muted" style="font-size:11px;">${lt('Response','응답')}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card" style="grid-column: span 2;">
+                    <div class="stat-title">💼 ${lt('Monthly Finance Snapshot', '월간 재무 스냅샷')}</div>
+                    <div style="margin-top:8px;">${monthlyRows}</div>
+                </div>
+            `;
+        }
+
         async function loadInstitutionSessionPerformance() {
             if (!token || !isRole('institution')) {
                 return;
@@ -9769,6 +10881,21 @@
 
             const container = document.getElementById('institutionSessionList');
             if (!container) {
+                return;
+            }
+
+            if (isOfflineDemoMode()) {
+                const sessions = getOfflineSessionsForRole('institution').slice(0, 8);
+                container.innerHTML = sessions.map((session) => {
+                    const actual = session.actual_duration_minutes || session.scheduled_duration_minutes || 0;
+                    return `
+                        <div class="posting" style="margin-bottom:8px;">
+                            <strong>${lt('Session', '수업')} #${session.id}</strong> ${statusBadge(session.status || 'scheduled')}
+                            <div class="muted">${lt('Subject', '과목')}: ${escapeHtml(session.subject || '-')} | ${lt('Instructor', '강사')}: ${escapeHtml(session.instructor_name || '-')}</div>
+                            <div class="muted">${lt('Duration', '시간')}: ${session.scheduled_duration_minutes || 0}m → ${actual}m | ${lt('Bonus', '인센티브')}: ${formatWon(session.incentive_bonus || 0)} | ${lt('Net', '실수령')}: ${formatWon(session.net_amount || 0)}</div>
+                        </div>
+                    `;
+                }).join('');
                 return;
             }
 
@@ -9903,6 +11030,15 @@
         async function loadSessions() {
             const role = currentUser && currentUser.role;
             document.getElementById('sessionsStatus').textContent = '세션 로딩 중...';
+            if (isOfflineDemoMode()) {
+                const sessions = getOfflineSessionsForRole(role);
+                const list = document.getElementById('sessionsList');
+                list.innerHTML = sessions.length ? sessions.map(renderSessionItem).join('') : '<p class="muted">수업 세션이 없습니다.</p>';
+                document.getElementById('sessionsStatus').textContent = `오프라인 데모 기준 총 ${sessions.length}개 세션.`;
+                document.getElementById('sessionsCheckinBtn').style.display = role === 'instructor' ? '' : 'none';
+                document.getElementById('sessionsCompleteBtn').style.display = role === 'instructor' ? '' : 'none';
+                return;
+            }
             try {
                 const res = await apiFetch('/sessions');
                 if (!res.ok) throw new Error((await res.json()).error || await res.text());
@@ -11066,6 +12202,21 @@
                 return;
             }
 
+            if (isOfflineDemoMode()) {
+                const role = normalizeRole(getCurrentAccessRole());
+                const sessions = getOfflineSessionsForRole(role).slice(0, 4);
+                const items = sessions.map((session) => ({
+                    type: session.status === 'completed' ? 'session_completed' : 'session_scheduled',
+                    title: session.title,
+                    posting_id: session.posting_id,
+                    status: session.status,
+                    created_at: session.completed_at || session.scheduled_at
+                }));
+                activityCacheByPeriod[activityPeriod] = items;
+                renderDashboardActivity(items);
+                return;
+            }
+
             list.innerHTML = Array.from({ length: 3 }).map(() => `
                 <div class="posting skeleton">
                     <div class="skeleton-text" style="width:70%;"></div>
@@ -11146,10 +12297,16 @@
         async function register() {
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
             const role = document.getElementById('registerRole').value;
 
-            if (!email || !password) {
+            if (!email || !password || !passwordConfirm) {
                 setStatus('registerStatus', t('requiredEmailPassword'));
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                setStatus('registerStatus', t('passwordMismatch'));
                 return;
             }
 
@@ -11175,10 +12332,40 @@
                 setStatus('registerStatus', t('registerSuccess'));
                 document.getElementById('registerEmail').value = '';
                 document.getElementById('registerPassword').value = '';
+                document.getElementById('registerPasswordConfirm').value = '';
                 setSignupFlowVisible(false);
             } catch (error) {
                 setStatus('registerStatus', `Error: ${error.message}`);
             }
+        }
+
+        function tryOfflineDemoSocialLogin(email, provider, requestedRole) {
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            if (!normalizedEmail) {
+                return false;
+            }
+
+            const resolvedRole = resolveQaDemoRole(normalizedEmail) || normalizeRole(requestedRole || 'instructor');
+            const profile = OFFLINE_QA_USER_PROFILES[normalizedEmail] || {};
+
+            token = `offline-demo-social-${provider}-${Date.now()}`;
+            currentUser = {
+                ...profile,
+                email: normalizedEmail,
+                role: resolvedRole,
+                organization: profile.organization || 'Offline Demo Mode',
+                created_at: new Date().toISOString()
+            };
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('edulink_offline_user', JSON.stringify(currentUser));
+            localStorage.setItem('edulink_offline_mode', '1');
+
+            updateMyPageProfile();
+            showSections();
+            updateActivityTypeControls();
+            setStatus('loginStatus', lt('Social login completed in offline demo mode.', '오프라인 데모 모드에서 소셜 로그인이 완료되었습니다.'));
+            return true;
         }
 
         async function login() {
@@ -11200,6 +12387,9 @@
 
                 if (!response.ok || !data.access_token) {
                     const normalized = normalizeLoginError(response, data);
+                    if (isBackendUnavailableError(data, normalized) && tryOfflineDemoLogin(email, password)) {
+                        return;
+                    }
                     setStatus('loginStatus', normalized);
                     return;
                 }
@@ -11209,6 +12399,9 @@
                 await loadUserInfo();
                 setStatus('loginStatus', t('loginSuccess'));
             } catch (error) {
+                if (tryOfflineDemoLogin(email, password)) {
+                    return;
+                }
                 setStatus('loginStatus', `Error: ${error.message}`);
             }
         }
@@ -11228,6 +12421,9 @@
             const pseudoToken = `${normalizedProvider}-demo-token-${Date.now()}`;
 
             try {
+                const providerName = normalizedProvider === 'google' ? 'Google' : 'Kakao';
+                setStatus('loginStatus', lt(`Connecting to ${providerName}...`, `${providerName} 로그인 연결 중입니다...`));
+                setSocialButtonsBusy(true, normalizedProvider);
                 const response = await apiFetch('/auth/social-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -11242,6 +12438,14 @@
                 const data = await parseJsonSafe(response);
 
                 if (!response.ok || !data.access_token) {
+                    const responseStatus = Number((response && response.status) || 0);
+                    const err = String((data && data.error) || '');
+                    const likelyBackendIssue = responseStatus >= 500 || /temporarily unavailable|service unavailable|tunnel unavailable|backend unavailable/i.test(err);
+                    const tokenValidationIssue = /token|oauth|provider|invalid/i.test(err);
+                    const isQaDemoAccount = !!resolveQaDemoRole(email);
+                    if (isBackendUnavailableError(data, err) && isQaDemoAccount && tryOfflineDemoSocialLogin(email, normalizedProvider, role)) {
+                        return;
+                    }
                     setStatus('loginStatus', (data && data.error) || lt('Social login failed.', '소셜 로그인에 실패했습니다.'));
                     return;
                 }
@@ -11254,7 +12458,14 @@
                     : lt(`Logged in via ${normalizedProvider}.`, `${normalizedProvider} 계정으로 로그인되었습니다.`);
                 setStatus('loginStatus', msg);
             } catch (error) {
-                setStatus('loginStatus', `Error: ${error.message}`);
+                const isQaDemoAccount = !!resolveQaDemoRole(email);
+                if (isQaDemoAccount && tryOfflineDemoSocialLogin(email, normalizedProvider, role)) {
+                    return;
+                }
+                const providerLabel = normalizedProvider === 'google' ? 'Google' : 'Kakao';
+                setStatus('loginStatus', lt(`${providerLabel} social login requires a live backend connection. Please use email and password login.`, `${providerLabel} 소셜 로그인은 백엔드 연결이 필요합니다. 이메일/비밀번호 로그인을 이용해 주세요.`));
+            } finally {
+                setSocialButtonsBusy(false);
             }
         }
 
@@ -11394,14 +12605,20 @@
                 myPostingsWrap.style.display = role === 'instructor' ? 'inline-flex' : 'none';
             }
 
-            const query = params.toString() ? `/postings?${params.toString()}` : '/postings';
-            const response = await apiFetch(query);
-            const postings = await parseJsonSafe(response);
             const list = document.getElementById('postingsList');
+            let postings = [];
 
-            if (!response.ok) {
-                list.innerHTML = `<div class="empty-state muted">${postings.error || lt('Failed to load postings.', '\uacf5\uace0 \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.')}</div>`;
-                return;
+            if (isOfflineDemoMode()) {
+                postings = getOfflinePostingsForRole(role);
+            } else {
+                const query = params.toString() ? `/postings?${params.toString()}` : '/postings';
+                const response = await apiFetch(query);
+                postings = await parseJsonSafe(response);
+
+                if (!response.ok) {
+                    list.innerHTML = `<div class="empty-state muted">${postings.error || lt('Failed to load postings.', '\uacf5\uace0 \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.')}</div>`;
+                    return;
+                }
             }
 
             if (!Array.isArray(postings) || postings.length === 0) {
@@ -11623,17 +12840,22 @@
                 params.set('posting_id', String(applicationsPostingFilterId));
             }
 
-            const query = params.toString() ? `/applications?${params.toString()}` : '/applications';
+            let applications = [];
+            if (isOfflineDemoMode()) {
+                applications = getOfflineApplicationsForRole(role);
+            } else {
+                const query = params.toString() ? `/applications?${params.toString()}` : '/applications';
 
-            const response = await apiFetch(query, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const applications = await parseJsonSafe(response);
+                const response = await apiFetch(query, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                applications = await parseJsonSafe(response);
 
-            if (!response.ok) {
-                const list = document.getElementById('applicationsList');
-                list.innerHTML = `<p>${applications.error || lt('Failed to load applications.', '\uc9c0\uc6d0 \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.')}</p>`;
-                return;
+                if (!response.ok) {
+                    const list = document.getElementById('applicationsList');
+                    list.innerHTML = `<p>${applications.error || lt('Failed to load applications.', '\uc9c0\uc6d0 \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.')}</p>`;
+                    return;
+                }
             }
 
             applicationsCache = Array.isArray(applications) ? applications : [];
@@ -12189,14 +13411,20 @@
         document.getElementById('loginBtn').addEventListener('click', login);
         document.getElementById('socialGoogleBtn').addEventListener('click', () => loginWithSocial('google'));
         document.getElementById('socialKakaoBtn').addEventListener('click', () => loginWithSocial('kakao'));
+        document.getElementById('globalDashboardBtn').addEventListener('click', () => {
+            if (currentUser) {
+                activateScreen(getDefaultScreen());
+            }
+        });
+        document.getElementById('globalLogoutBtn').addEventListener('click', logout);
         document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
         document.getElementById('resetRequestBtn').addEventListener('click', requestResetToken);
         document.getElementById('resetConfirmBtn').addEventListener('click', confirmResetPassword);
         document.getElementById('createPostingBtn').addEventListener('click', createPosting);
-        document.getElementById('logoutBtn').addEventListener('click', logout);
         document.getElementById('closeModalBtn').addEventListener('click', closePostingModal);
         document.getElementById('modalBackApplicantBtn').addEventListener('click', backToApplicantFromPosting);
         document.getElementById('closeApplicantModalBtn').addEventListener('click', closeApplicantModal);
+        document.getElementById('closePolicyModalBtn').addEventListener('click', closePolicyModal);
         document.getElementById('applicantRecentToggleBtn').addEventListener('click', toggleApplicantRecentExpanded);
         document.addEventListener('keydown', handleGlobalModalKeydown);
         document.getElementById('postingModal').addEventListener('click', (event) => {
@@ -12207,6 +13435,11 @@
         document.getElementById('applicantModal').addEventListener('click', (event) => {
             if (event.target.id === 'applicantModal') {
                 closeApplicantModal();
+            }
+        });
+        document.getElementById('policyInfoModal').addEventListener('click', (event) => {
+            if (event.target.id === 'policyInfoModal') {
+                closePolicyModal();
             }
         });
         document.getElementById('modalApplyBtn').addEventListener('click', applyFromModal);
@@ -12319,6 +13552,17 @@
         document.getElementById('registerPassword').addEventListener('keydown', (event) => {
             if (event.key === 'Enter') register();
         });
+        document.getElementById('registerPasswordConfirm').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') register();
+        });
+
+        document.querySelectorAll('#publicTrustLinksSection [data-policy]').forEach((node) => {
+            node.addEventListener('click', (event) => {
+                event.preventDefault();
+                const policyKey = node.getAttribute('data-policy') || 'about';
+                openPolicyModal(policyKey);
+            });
+        });
         document.getElementById('loginEmail').addEventListener('keydown', (event) => {
             if (event.key === 'Enter') login();
         });
@@ -12348,7 +13592,28 @@
         renderBuildRoadmap();
         renderActiveScreenState();
 
-        if (token) {
+        if (token && String(token).startsWith('offline-demo-')) {
+            const offlineRaw = localStorage.getItem('edulink_offline_user');
+            if (offlineRaw) {
+                try {
+                    currentUser = JSON.parse(offlineRaw);
+                } catch (_error) {
+                    currentUser = null;
+                }
+            }
+            if (currentUser && currentUser.email && currentUser.role) {
+                updateMyPageProfile();
+                showSections();
+                updateActivityTypeControls();
+                setStatus('loginStatus', lt('Offline demo mode active.', '오프라인 데모 모드가 활성화되었습니다.'));
+            } else {
+                localStorage.removeItem('token');
+                localStorage.removeItem('edulink_offline_user');
+                localStorage.removeItem('edulink_offline_mode');
+                token = null;
+                hideSections();
+            }
+        } else if (token) {
             loadUserInfo().catch((error) => {
                 setStatus('loginStatus', error.message);
                 hideSections();
@@ -12509,6 +13774,7 @@
                     group: { en: '👥 Members', ko: '👥 회원 관리' },
                     items: [
                         { screen: 'applicationsSection',en: '👥 Member List',          ko: '👥 회원 목록',           done: true  },
+                        { screen: 'roleFeatureMatrixSection', en: '📋 Role Matrix',    ko: '📋 유저별 기능비교',     done: true  },
                         { screen: 'adminInsightsSection',en:'⚖️ Compliance',           ko: '⚖️ 컴플라이언스',        done: true  },
                         { screen: 'adminWebSection',   en: '⚙️ Admin Panel',           ko: '⚙️ 고급 관리',           done: true  },
                     ]

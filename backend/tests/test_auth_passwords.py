@@ -33,11 +33,13 @@ class AuthPasswordFlowTest(unittest.TestCase):
             '''))
 
         self.original_engine = app_jwt.engine
+        self.original_social_demo_mode = app_jwt.app.config.get('SOCIAL_LOGIN_DEMO_MODE')
         app_jwt.engine = self.engine
         self.client = app_jwt.app.test_client()
 
     def tearDown(self):
         app_jwt.engine = self.original_engine
+        app_jwt.app.config['SOCIAL_LOGIN_DEMO_MODE'] = self.original_social_demo_mode
 
     def test_register_hashes_password(self):
         response = self.client.post('/auth/register', json={
@@ -202,6 +204,17 @@ class AuthPasswordFlowTest(unittest.TestCase):
             'role': 'admin'
         })
         self.assertEqual(response.status_code, 403)
+
+    def test_social_login_rejects_short_token_when_not_demo_mode(self):
+        app_jwt.app.config['SOCIAL_LOGIN_DEMO_MODE'] = False
+        response = self.client.post('/auth/social-login', json={
+            'provider': 'google',
+            'access_token': 'short-token',
+            'provider_user_id': 'g-1100',
+            'email': 'strict.social@test.com',
+            'role': 'instructor'
+        })
+        self.assertEqual(response.status_code, 401)
 
 
 if __name__ == '__main__':

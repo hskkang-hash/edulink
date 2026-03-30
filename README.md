@@ -52,8 +52,11 @@ http://localhost:8000
 ### 4) Seed v2 demo data (1000 users)
 ```bash
 cd backend
-python seed_demo_v2.py
+python seed_demo_v2.py --reset-demo-data --seed-activity
 ```
+
+Default target DB is `sqlite:///./edulinks_demo.db` (isolated demo DB).
+If you need a custom DB URL, pass `--db-url` explicitly.
 
 Seeded demo roles:
 - instructor: 10

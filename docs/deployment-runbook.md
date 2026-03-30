@@ -21,6 +21,21 @@
 4. Confirm health and metrics smoke checks passed
 5. Confirm Slack deploy success notification
 
+## 2.5) Release Candidate Lock (v2 demo)
+1. Run RC preflight and lock artifact generation:
+  - `npm run rc:lock`
+2. Verify lock artifact exists:
+  - `release/rc-lock.json`
+3. Confirm lock artifact includes:
+  - target RC version
+  - current git SHA
+  - pass status for backend regression checks
+4. After RC deploy is complete, execute one-shot E2E on real URL exactly once:
+  - `powershell -ExecutionPolicy Bypass -File scripts/run-one-shot-e2e.ps1 -BaseUrl https://your-real-demo-url`
+5. Archive artifacts:
+  - `e2e/report/index.html`
+  - one-shot JSON result file in `e2e/`
+
 ## 3) Post-Deployment Validation
 - API health check (`/health`) returns 200
 - Metrics endpoint (`/metrics`) returns 200

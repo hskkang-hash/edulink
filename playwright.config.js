@@ -1,6 +1,11 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test');
 
+const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000';
+const useRemoteServer = /^https?:\/\//.test(baseURL) && !/localhost|127\.0\.0\.1/.test(new URL(baseURL).hostname);
+const actionTimeout = Number(process.env.E2E_ACTION_TIMEOUT || (useRemoteServer ? 30000 : 10000));
+const navigationTimeout = Number(process.env.E2E_NAV_TIMEOUT || (useRemoteServer ? 45000 : 15000));
+
 /**
  * EduLink Playwright E2E 설정
  * 백엔드 서버(Flask, port 8000)가 실행 중이어야 합니다.
@@ -17,11 +22,12 @@ module.exports = defineConfig({
     ['html', { outputFolder: 'e2e/report', open: 'never' }],
   ],
   use: {
-    baseURL: 'http://localhost:8000',
+    baseURL,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 10_000,
+    actionTimeout,
+    navigationTimeout,
   },
 
   projects: [
@@ -36,12 +42,14 @@ module.exports = defineConfig({
   ],
 
   // Flask 서버 자동 기동 (이미 실행 중이면 재사용)
-  webServer: {
-    command: 'python backend/run.py',
-    url: 'http://localhost:8000/health',
-    reuseExistingServer: true,
-    timeout: 15_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  webServer: useRemoteServer
+    ? undefined
+    : {
+        command: 'python backend/run.py',
+        url: 'http://localhost:8000/health',
+        reuseExistingServer: true,
+        timeout: 15_000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
 });

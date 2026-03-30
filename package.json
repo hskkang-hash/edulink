@@ -9,6 +9,8 @@
     "validate:public:strict": "node scripts/validate-public-site.mjs --strict",
     "build:release": "npm run build && npm run validate:public:strict",
     "release:public": "npm run build:release && npm run cf:deploy",
+    "rc:lock": "powershell -ExecutionPolicy Bypass -File scripts/prepare-rc-lock.ps1 -RcVersion v2.0.0-rc1",
+    "e2e:archive": "powershell -ExecutionPolicy Bypass -File scripts/archive-one-shot-evidence.ps1",
     "cf:deploy": "npm run build && npx wrangler deploy",
     "cf:deploy:dry": "npm run build && npx wrangler deploy --dry-run",
     "test:e2e": "playwright test",
