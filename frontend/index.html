@@ -246,11 +246,11 @@
 
         .masthead-right {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 10px;
             flex-wrap: wrap;
             justify-content: flex-end;
-            padding-top: 4px;
+            padding-top: 0;
         }
 
         .quick-controls {
@@ -2442,6 +2442,7 @@
             text-transform: uppercase;
             letter-spacing: 0.12em;
             font-size: 10px;
+            cursor: pointer;
         }
 
         .mobile-dock .active {
@@ -2513,6 +2514,32 @@
         body.view-webapp .side-rail .brand-lockup img {
             width: 42px;
             height: 42px;
+        }
+
+        body[data-role-ui='instructor'] .side-rail .brand-lockup img {
+            width: 132px;
+            height: auto;
+        }
+
+        body[data-role-ui='instructor'] .side-rail .brand-lockup img.stitch-logo {
+            width: 132px;
+            height: 34px;
+        }
+
+        body[data-role-ui='instructor'] .side-rail .rail-link,
+        body[data-role-ui='institution'] .side-rail .rail-link,
+        body[data-role-ui='instructor'] .side-rail .rail-cta,
+        body[data-role-ui='institution'] .side-rail .rail-cta {
+            font-size: 11px;
+            padding: 10px 10px;
+            border-radius: 10px;
+        }
+
+        body[data-role-ui='instructor'] .side-rail .rail-group-header,
+        body[data-role-ui='institution'] .side-rail .rail-group-header {
+            font-size: 12px;
+            font-weight: 800;
+            opacity: 0.9;
         }
 
         body.view-webapp .side-rail .rail-link,
@@ -3046,6 +3073,15 @@
         }
         .rail-link.wip { display: flex !important; align-items: center; justify-content: space-between; }
         :root[data-theme='light'] .rail-link.wip::after { background: rgba(96,69,215,0.12); color: #6045d7; }
+
+        #taxSettlementDetailBtn,
+        #taxPollingBtn {
+            min-height: 44px;
+            width: 100%;
+            justify-content: center;
+            text-transform: none;
+            letter-spacing: 0.02em;
+        }
 
         /* ===== SPRINT TRACKER WIDGET ===== */
         .sprint-tracker-panel {
@@ -4220,10 +4256,10 @@
     </div>
 
     <div class="mobile-dock">
-        <span class="active">Home</span>
-        <span>Postings</span>
-        <span>Finance</span>
-        <span>Profile</span>
+        <span class="active" data-screen="dashboardSection">Home</span>
+        <span data-screen="postingsSection">Postings</span>
+        <span data-screen="taxSection">Finance</span>
+        <span data-screen="securitySection">Profile</span>
     </div>
 
     <div class="toast" id="toast"></div>
@@ -8696,6 +8732,17 @@
                     node.textContent = currentLang === 'ko' ? label.ko : label.en;
                 }
             });
+
+            Array.from(document.querySelectorAll('.mobile-dock [data-screen]')).forEach((node) => {
+                const screenId = node.getAttribute('data-screen');
+                const isAllowed = allowed.includes(screenId);
+                node.classList.toggle('active', activeScreenId === screenId && isAllowed);
+                node.style.display = isAllowed ? 'block' : 'none';
+                const label = navLabels[screenId];
+                if (label) {
+                    node.textContent = currentLang === 'ko' ? label.ko : label.en;
+                }
+            });
         }
 
         function activateScreen(sectionId, options = {}) {
@@ -8754,7 +8801,7 @@
         }
 
         function bindPrimaryNavigation() {
-            Array.from(document.querySelectorAll('.side-rail [data-screen], .masthead-nav [data-screen]')).forEach((node) => {
+            Array.from(document.querySelectorAll('.side-rail [data-screen], .masthead-nav [data-screen], .mobile-dock [data-screen]')).forEach((node) => {
                 node.addEventListener('click', (event) => {
                     event.preventDefault();
                     const screenId = node.getAttribute('data-screen');
@@ -9290,8 +9337,16 @@
             updateMyPageProfile();
             showSections();
             updateActivityTypeControls();
-            await Promise.all([loadPostings(), loadApplications(), loadDashboardStats(), loadDashboardActivity()]);
             const role = normalizeRole(currentUser && currentUser.role);
+            activityPeriod = role === 'instructor' ? 'today' : '7d';
+            Array.from(document.querySelectorAll('#activityToolbar button')).forEach((button) => {
+                if (button.getAttribute('data-period') === activityPeriod) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+            await Promise.all([loadPostings(), loadApplications(), loadDashboardStats(), loadDashboardActivity()]);
             if (role === 'instructor') {
                 await loadTaxEstimate();
                 await loadNetworkCompliance();
@@ -13754,8 +13809,6 @@
                     group: { en: '💰 Finance', ko: '💰 정산/세무' },
                     items: [
                         { screen: 'taxSection',        en: '💴 Income & Tax',    ko: '💴 수입/세무',          done: true  },
-                        { screen: 'taxSection', en: '📊 Settlement Detail',ko:'📊 정산 명세',          done: true  },
-                        { screen: 'taxSection', en: '🔄 Tax Refund',      ko: '🔄 환급 신청',          done: true  },
                         { screen: 'contractsSection',  en: '📜 Contracts',        ko: '📜 계약',               done: true  },
                         { screen: 'networkSection',    en: '🌐 Network / MLM',    ko: '🌐 네트워크/MLM',        done: true  },
                     ]
@@ -13806,7 +13859,6 @@
                     group: { en: '💰 Finance', ko: '💰 정산' },
                     items: [
                         { screen: 'taxSection',        en: '💴 Settlement',         ko: '💴 정산 현황',           done: true  },
-                        { screen: 'taxSection', en: '📊 Settlement Detail',  ko: '📊 정산 명세',           done: true  },
                         { screen: 'reviewsSection',    en: '⭐ Instructor Reviews',   ko: '⭐ 강사 리뷰',           done: true  },
                     ]
                 },
