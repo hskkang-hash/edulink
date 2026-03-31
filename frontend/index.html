@@ -8800,6 +8800,9 @@
             const navLabels = ROLE_NAV_LABELS[roleRaw] || ROLE_NAV_LABELS[role] || ROLE_NAV_LABELS.instructor;
 
             Array.from(document.querySelectorAll('.side-rail [data-screen]')).forEach((node) => {
+                if (node.closest('#railNavContainer')) {
+                    return;
+                }
                 const screenId = node.getAttribute('data-screen');
                 const isAllowed = allowed.includes(screenId);
                 if (node.classList.contains('rail-link')) {
@@ -8860,6 +8863,10 @@
 
             if (nextScreen === 'instructorOnboardingSection') {
                 loadInstructorOnboarding().catch(() => {});
+            }
+
+            if (nextScreen === 'dashboardSection' && normalizeRole(getCurrentAccessRole()) === 'instructor' && activityPeriod !== 'today') {
+                setActivityPeriod('today');
             }
 
             updatePrimaryNavigation();
@@ -9229,28 +9236,14 @@
                 return false;
             }
 
-            const resolvedRole = normalizeRole(resolveQaDemoRole(normalizedEmail) || role || 'instructor');
-            const profile = OFFLINE_QA_USER_PROFILES[normalizedEmail] || {};
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('edulink_offline_user');
+            localStorage.removeItem('edulink_offline_mode');
 
-            token = `offline-signup-${Date.now()}`;
-            currentUser = {
-                ...profile,
-                id: profile.id || Date.now(),
-                email: normalizedEmail,
-                role: resolvedRole,
-                full_name: profile.full_name || getDisplayUserName(normalizedEmail),
-                organization: profile.organization || 'Offline Demo Mode',
-                created_at: new Date().toISOString()
-            };
-
-            localStorage.setItem('token', token);
-            localStorage.setItem('edulink_offline_user', JSON.stringify(currentUser));
-            localStorage.setItem('edulink_offline_mode', '1');
-
-            updateMyPageProfile();
-            showSections();
-            updateActivityTypeControls();
-            setStatus('registerStatus', lt('Backend is unavailable. Account created in offline demo mode.', '백엔드가 불안정하여 오프라인 데모 모드로 계정을 생성했습니다.'));
+            setStatus('registerStatus', lt('Backend is unavailable. Demo signup completed. Please sign in from the login screen.', '백엔드가 불안정하여 데모 회원가입으로 처리했습니다. 로그인 화면에서 다시 로그인해 주세요.'));
+            document.getElementById('loginEmail').value = normalizedEmail;
             setSignupFlowVisible(false);
             return true;
         }
@@ -13972,7 +13965,7 @@
                     ]
                 },
                 {
-                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    group: { en: '🔧 My Page', ko: '🔧 마이페이지' },
                     items: [
                         { screen: 'securitySection',   en: '🔒 My Page',          ko: '🔒 마이페이지',          done: true  },
                     ]
@@ -14013,7 +14006,7 @@
                     ]
                 },
                 {
-                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    group: { en: '🔧 My Page', ko: '🔧 마이페이지' },
                     items: [
                         { screen: 'securitySection',   en: '🔒 My Page',             ko: '🔒 마이페이지',          done: true  },
                     ]
@@ -14043,7 +14036,7 @@
                     ]
                 },
                 {
-                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    group: { en: '🔧 My Page', ko: '🔧 마이페이지' },
                     items: [
                         { screen: 'securitySection',   en: '🔒 My Page',              ko: '🔒 마이페이지',          done: true  },
                     ]
@@ -14075,7 +14068,7 @@
                     ]
                 },
                 {
-                    group: { en: '🔧 Account', ko: '🔧 계정' },
+                    group: { en: '🔧 My Page', ko: '🔧 마이페이지' },
                     items: [
                         { screen: 'securitySection',   en: '🔒 My Page',               ko: '🔒 마이페이지',          done: true  },
                     ]
