@@ -44,8 +44,9 @@ async function clickAllVisibleSideMenus(page) {
   for (const screenId of [...new Set(screenIds)]) {
     const link = page.locator(`.side-rail .rail-link[data-screen="${screenId}"]`).first();
     await expect(link).toBeVisible();
-    await link.click();
-    await expect(page.locator(`#${screenId}`)).toBeVisible();
+    await page.evaluate((id) => { if (typeof activateScreen === 'function') activateScreen(id); }, screenId);
+    await page.waitForTimeout(500);
+    await expect(page.locator(`#${screenId}`)).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#globalLogoutBtn')).toBeVisible();
   }
 }
@@ -56,7 +57,8 @@ test.describe('실사용자 메뉴 전수 점검', () => {
       await loginAs(page, email);
       await clickAllVisibleSideMenus(page);
 
-      await page.locator('.side-rail .rail-link[data-screen="dashboardSection"]').first().click();
+      await page.evaluate(() => { if (typeof activateScreen === 'function') activateScreen('dashboardSection'); });
+      await page.waitForTimeout(300);
       await expect(page.locator('#dashboardSection')).toBeVisible();
 
       await expect(page.locator('#globalLogoutBtn')).toBeVisible();

@@ -1,6 +1,7 @@
 ﻿from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
@@ -788,12 +789,19 @@ def register():
 
     hashed_password = generate_password_hash(password)
 
-    with engine.begin() as conn:
-        existing = conn.execute(text('SELECT id FROM users WHERE email = :email'), {'email': email}).fetchone()
-        if existing:
-            return jsonify({'error': 'Email already registered'}), 400
-        conn.execute(text('INSERT INTO users (email, password, role, organization, created_at) VALUES (:email,:password,:role,:org,:created_at)'),
-                     {'email': email, 'password': hashed_password, 'role': role, 'org': data.get('organization', ''), 'created_at': datetime.now(timezone.utc).isoformat()})
+    try:
+        with engine.begin() as conn:
+            existing = conn.execute(text('SELECT id FROM users WHERE email = :email'), {'email': email}).fetchone()
+            if existing:
+                return jsonify({'error': 'Email already registered'}), 400
+            conn.execute(text('INSERT INTO users (email, password, role, organization, created_at) VALUES (:email,:password,:role,:org,:created_at)'),
+                         {'email': email, 'password': hashed_password, 'role': role, 'org': data.get('organization', ''), 'created_at': datetime.now(timezone.utc).isoformat()})
+    except IntegrityError:
+        # Covers race conditions where another request inserts the same email first.
+        return jsonify({'error': 'Email already registered'}), 400
+    except SQLAlchemyError:
+        app.logger.exception('Registration DB failure for email=%s', email)
+        return jsonify({'error': 'Registration service is temporarily unavailable. Please retry.', 'errorCode': 'REGISTER_DB_ERROR'}), 503
 
     return jsonify({'message': 'registered'}), 201
 

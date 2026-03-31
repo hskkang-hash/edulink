@@ -31,6 +31,7 @@
             --motion-applicant-stagger-limit-default: 8;
             --motion-applicant-stagger-limit-fast: 6;
             --motion-ui-fade: 0.14s;
+            --ops-title-size: clamp(24px, 3vw, 36px);
         }
 
         * {
@@ -358,10 +359,10 @@
         h1 {
             grid-column: 1 / 9;
             margin: 0;
-            font-size: clamp(40px, 7vw, 72px);
-            line-height: 0.95;
+            font-size: var(--ops-title-size);
+            line-height: 1.06;
             font-family: 'Space Grotesk', sans-serif;
-            letter-spacing: -0.04em;
+            letter-spacing: -0.03em;
         }
 
         .hero-copy {
@@ -936,9 +937,9 @@
 
         .identity-slogan {
             margin: 0;
-            font-size: clamp(18px, 2.1vw, 28px);
-            line-height: 1.25;
-            letter-spacing: -0.01em;
+            font-size: var(--ops-title-size);
+            line-height: 1.06;
+            letter-spacing: -0.03em;
             font-family: 'Space Grotesk', sans-serif;
         }
 
@@ -1781,10 +1782,26 @@
 
         h2 {
             margin: 0 0 14px;
-            font-size: clamp(24px, 3vw, 36px);
+            font-size: var(--ops-title-size);
             line-height: 1.06;
             letter-spacing: -0.03em;
             font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .my-postings-toggle-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .my-postings-toggle-checkbox {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            padding: 0;
+            flex-shrink: 0;
         }
 
         h3 {
@@ -1875,6 +1892,7 @@
             text-transform: uppercase;
             color: var(--muted);
             font-weight: 800;
+            display: none;
         }
 
         .screen-status-stack {
@@ -3034,6 +3052,7 @@
             padding: 10px 10px 14px;
             border-top: 1px solid rgba(255,255,255,0.07);
             flex-shrink: 0;
+            display: none !important;
         }
         :root[data-theme='light'] .sprint-tracker-panel { border-top-color: rgba(0,0,0,0.07); }
         .sprint-tracker-title {
@@ -3164,7 +3183,6 @@
                 <img src="./assets/edulink-logo.svg" alt="Edulink logo">
             </div>
             <nav id="railNavContainer" aria-label="Main navigation" style="flex:1;overflow-y:auto;overflow-x:hidden;"></nav>
-            <div id="sprintTrackerWidget" class="sprint-tracker-panel"></div>
         </aside>
 
         <main class="main-pane" id="main-content">
@@ -3331,20 +3349,6 @@
                     </div>
                 </div>
 
-                <div class="section screen-state-section" id="screenStateSection">
-                    <div class="screen-state-shell">
-                        <div class="screen-state-eyebrow" id="activeScreenEyebrow">Current Product Screen</div>
-                        <div class="screen-status-stack">
-                            <span class="status-chip design" id="activeScreenStatus">Design Ready</span>
-                            <span class="status-chip current" id="activeScreenRoleStatus">Instructor</span>
-                            <span class="status-chip next" id="activeScreenPresetStatus" style="display:none;">Preset Active</span>
-                        </div>
-                    </div>
-                    <h2 id="activeScreenTitle">Dashboard</h2>
-                    <p class="muted" id="activeScreenSubtitle">Current page architecture, module focus, and implementation scope.</p>
-                    <div class="canvas-grid" id="activeScreenCanvasGrid"></div>
-                </div>
-
                 <div class="section signup-flow-section" id="registerSection">
                     <div class="signup-flow-header">
                         <h2 class="signup-flow-title">Register</h2>
@@ -3438,8 +3442,9 @@
                 <div class="section" id="postingsSection" style="display: none;">
                     <div class="postings-header">
                         <h2>Available Postings</h2>
-                        <label id="myPostingsToggleWrap" style="display:none;">
-                            <input type="checkbox" id="myPostingsToggle"> My postings only
+                        <label id="myPostingsToggleWrap" class="my-postings-toggle-label" style="display:none;">
+                            <input type="checkbox" id="myPostingsToggle" class="my-postings-toggle-checkbox">
+                            <span id="myPostingsToggleText">My postings only</span>
                         </label>
                     </div>
                     <div class="filter-chips" id="subjectFilterChips">
@@ -3630,7 +3635,18 @@
                         <div id="onboardingStep1">
                             <h3 style="margin-bottom:16px;">1단계: 기본 정보</h3>
                             <input type="text" id="obFullName" placeholder="이름 *">
-                            <input type="date" id="obBirthDate" style="margin-top:8px;">
+                            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px;">
+                                <select id="obBirthYear">
+                                    <option value="">출생년도</option>
+                                </select>
+                                <select id="obBirthMonth">
+                                    <option value="">월</option>
+                                </select>
+                                <select id="obBirthDay">
+                                    <option value="">일</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="obBirthDate">
                             <input type="tel" id="obPhone" placeholder="전화번호 * (예: 010-1234-5678)" style="margin-top:8px;">
                         </div>
 
@@ -3677,6 +3693,11 @@
                         <div id="onboardingStep4" style="display:none;">
                             <h3 style="margin-bottom:12px;">4단계: 신원 확인 및 동의</h3>
                             <p class="muted" style="font-size:13px;margin-bottom:16px;">아래 동의 항목은 플랫폼 이용 및 매칭을 위한 필수 동의입니다. 모두 동의해야 제출할 수 있습니다.</p>
+                            <div style="display:grid;gap:10px;margin-bottom:14px;padding:12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
+                                <div style="font-size:13px;"><strong>확인 항목 1.</strong> 입력한 기본정보와 정산정보가 실제 정보와 일치함을 확인합니다.</div>
+                                <div style="font-size:13px;"><strong>확인 항목 2.</strong> 매칭 배정 시 기관 요청에 따라 추가 신원증빙이 필요할 수 있습니다.</div>
+                                <div style="font-size:13px;"><strong>확인 항목 3.</strong> 허위 정보 등록 시 계정 이용 제한 및 배정 취소가 발생할 수 있습니다.</div>
+                            </div>
                             <div style="display:flex;flex-direction:column;gap:12px;padding:16px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
                                 <label style="display:flex;align-items:flex-start;gap:12px;cursor:pointer;">
                                     <input type="checkbox" id="obWithholdingConsent" style="margin-top:3px;flex-shrink:0;">
@@ -3691,6 +3712,7 @@
                                     <span><strong>아동학대 전력 조회 동의</strong><br><span class="muted" style="font-size:12px;">아동학대관련범죄전력 조회에 동의합니다. (아동복지법 제29조의3)</span></span>
                                 </label>
                             </div>
+                            <p class="muted" style="font-size:12px;margin:10px 2px 0;">모든 동의 항목은 제출 즉시 감사 로그에 기록되며, 철회 시 담당자 확인 절차가 필요합니다.</p>
                         </div>
 
                         <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
@@ -6673,9 +6695,9 @@
 
             const myPostingsLabel = document.getElementById('myPostingsToggleWrap');
             if (myPostingsLabel) {
-                const textNode = Array.from(myPostingsLabel.childNodes).find((n) => n.nodeType === Node.TEXT_NODE);
-                if (textNode) {
-                    textNode.textContent = ` ${t('myPostingsOnly')}`;
+                const labelText = document.getElementById('myPostingsToggleText');
+                if (labelText) {
+                    labelText.textContent = t('myPostingsOnly');
                 }
             }
 
@@ -7433,7 +7455,8 @@
             section.style.display = 'grid';
 
             if (eyebrow) {
-                eyebrow.textContent = getDemoText('Current Product Screen', '현재 제품 화면');
+                eyebrow.textContent = '';
+                eyebrow.style.display = 'none';
             }
             if (titleEl) {
                 titleEl.textContent = getDemoText(blueprint.title, blueprint.titleKo);
@@ -8933,7 +8956,7 @@
             }
             document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('topbar').style.display = 'none';
+            document.getElementById('topbar').style.display = 'flex';
             const preloginBarEl = document.getElementById('preloginBar');
             if (preloginBarEl) preloginBarEl.style.display = 'none';
             document.body.classList.remove('view-prelogin');
@@ -9066,6 +9089,9 @@
             if (loginSection) {
                 loginSection.style.visibility = visible ? 'hidden' : 'visible';
                 loginSection.style.pointerEvents = visible ? 'none' : '';
+                if (!visible) {
+                    loginSection.style.display = 'block';
+                }
             }
         }
 
@@ -12299,6 +12325,7 @@
             const password = document.getElementById('registerPassword').value;
             const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
             const role = document.getElementById('registerRole').value;
+            const registerBtn = document.getElementById('registerBtn');
 
             if (!email || !password || !passwordConfirm) {
                 setStatus('registerStatus', t('requiredEmailPassword'));
@@ -12311,6 +12338,9 @@
             }
 
             try {
+                if (registerBtn) {
+                    registerBtn.disabled = true;
+                }
                 const response = await apiFetch('/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -12320,11 +12350,13 @@
 
                 if (!response.ok) {
                     const errMsg = data.error || '';
-                    const normalized = /already|exist|registered|duplicate/i.test(errMsg)
-                        ? t('emailAlreadyRegistered')
-                        : /password.*8|too short|weak/i.test(errMsg)
-                            ? t('weakPassword')
-                            : errMsg || lt('Registration failed. Please retry.', '회원가입에 실패했습니다. 다시 시도해 주세요.');
+                    const normalized = isBackendUnavailableError(data, errMsg)
+                        ? getServiceUnavailableMessage(response.status || 503)
+                        : /already|exist|registered|duplicate/i.test(errMsg)
+                            ? t('emailAlreadyRegistered')
+                            : /password.*8|too short|weak/i.test(errMsg)
+                                ? t('weakPassword')
+                                : errMsg || lt('Registration failed. Please retry.', '회원가입에 실패했습니다. 다시 시도해 주세요.');
                     setStatus('registerStatus', normalized);
                     return;
                 }
@@ -12333,9 +12365,14 @@
                 document.getElementById('registerEmail').value = '';
                 document.getElementById('registerPassword').value = '';
                 document.getElementById('registerPasswordConfirm').value = '';
+                document.getElementById('loginEmail').value = email;
                 setSignupFlowVisible(false);
             } catch (error) {
-                setStatus('registerStatus', `Error: ${error.message}`);
+                setStatus('registerStatus', getServiceUnavailableMessage(503));
+            } finally {
+                if (registerBtn) {
+                    registerBtn.disabled = false;
+                }
             }
         }
 
@@ -13200,6 +13237,50 @@
             if (statusEl) statusEl.textContent = '';
         }
 
+        function syncOnboardingBirthDateValue() {
+            const yearEl = document.getElementById('obBirthYear');
+            const monthEl = document.getElementById('obBirthMonth');
+            const dayEl = document.getElementById('obBirthDay');
+            const hiddenBirthDate = document.getElementById('obBirthDate');
+            if (!yearEl || !monthEl || !dayEl || !hiddenBirthDate) {
+                return;
+            }
+
+            const year = yearEl.value;
+            const month = monthEl.value;
+            const day = dayEl.value;
+            hiddenBirthDate.value = year && month && day ? `${year}-${month}-${day}` : '';
+        }
+
+        function initOnboardingBirthDateSelectors() {
+            const yearEl = document.getElementById('obBirthYear');
+            const monthEl = document.getElementById('obBirthMonth');
+            const dayEl = document.getElementById('obBirthDay');
+            if (!yearEl || !monthEl || !dayEl) {
+                return;
+            }
+
+            const currentYear = new Date().getFullYear();
+            const startYear = currentYear - 80;
+            const endYear = currentYear - 14;
+
+            for (let year = endYear; year >= startYear; year -= 1) {
+                yearEl.insertAdjacentHTML('beforeend', `<option value="${year}">${year}</option>`);
+            }
+            for (let month = 1; month <= 12; month += 1) {
+                const paddedMonth = String(month).padStart(2, '0');
+                monthEl.insertAdjacentHTML('beforeend', `<option value="${paddedMonth}">${month}</option>`);
+            }
+            for (let day = 1; day <= 31; day += 1) {
+                const paddedDay = String(day).padStart(2, '0');
+                dayEl.insertAdjacentHTML('beforeend', `<option value="${paddedDay}">${day}</option>`);
+            }
+
+            [yearEl, monthEl, dayEl].forEach((el) => {
+                el.addEventListener('change', syncOnboardingBirthDateValue);
+            });
+        }
+
         function onboardingNextStep() {
             const statusEl = document.getElementById('onboardingFormStatus');
             if (currentOnboardingStep === 1) {
@@ -13246,7 +13327,19 @@
         function prefillOnboardingForm(data) {
             if (!data) return;
             if (data.full_name) document.getElementById('obFullName').value = data.full_name;
-            if (data.birth_date) document.getElementById('obBirthDate').value = data.birth_date;
+            if (data.birth_date) {
+                const birthDateString = String(data.birth_date).slice(0, 10);
+                const match = birthDateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (match) {
+                    const birthYear = document.getElementById('obBirthYear');
+                    const birthMonth = document.getElementById('obBirthMonth');
+                    const birthDay = document.getElementById('obBirthDay');
+                    if (birthYear) birthYear.value = match[1];
+                    if (birthMonth) birthMonth.value = match[2];
+                    if (birthDay) birthDay.value = match[3];
+                    syncOnboardingBirthDateValue();
+                }
+            }
             if (data.phone) document.getElementById('obPhone').value = data.phone;
             if (data.subjects) {
                 const subjects = data.subjects.split(',').map(s => s.trim());
@@ -13579,6 +13672,7 @@
         document.getElementById('adminTopLimitInput').value = '10';
         document.getElementById('adminAuditLimitInput').value = '20';
         bindPrimaryNavigation();
+        initOnboardingBirthDateSelectors();
         applyTheme();
         applyLanguage();
         renderRolePresentation();
@@ -13855,7 +13949,6 @@
                 });
             });
 
-            renderSprintTracker();
         }
 
         function updateSidebarActiveState() {
@@ -13868,25 +13961,10 @@
 
         function renderSprintTracker() {
             const widget = document.getElementById('sprintTrackerWidget');
-            if (!widget) return;
-
-            const doneCount = PHASE2_SPRINTS.filter(s => s.status === 'done').length;
-            const pct = Math.round(doneCount / PHASE2_SPRINTS.length * 100);
-
-            const pillsHtml = PHASE2_SPRINTS.map(s => {
-                const icon = s.status === 'done' ? '✅' : s.status === 'next' ? '▶' : '○';
-                const label = lt(s.id, s.id);
-                return `<div class="sprint-pill ${s.status}" title="${lt(s.en, s.ko)}">${icon} ${label}</div>`;
-            }).join('');
-
-            widget.innerHTML = `
-                <div class="sprint-tracker-title">📋 ${lt('Dev Progress (Phase 2)', '개발 현황 (Phase 2)')}</div>
-                <div class="sprint-grid">${pillsHtml}</div>
-                <div class="sprint-progress-bar-wrap">
-                    <div class="sprint-progress-bar-fill" style="width:${pct}%;"></div>
-                </div>
-                <div class="sprint-progress-label">${doneCount}/${PHASE2_SPRINTS.length} ${lt('sprints done', '스프린트 완료')} (${pct}%)</div>
-            `;
+            if (widget) {
+                widget.innerHTML = '';
+            }
+            document.querySelectorAll('.sprint-tracker-panel').forEach((panel) => panel.remove());
         }
 
         // ===== SPRINTS 1-10: ENHANCED FEATURE IMPLEMENTATIONS =====

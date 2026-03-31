@@ -47,7 +47,12 @@ module.exports = defineConfig({
     : {
         command: 'python backend/run.py',
         url: 'http://localhost:8000/health',
-        reuseExistingServer: true,
+        reuseExistingServer: !process.env.CI,
+        env: {
+          MAX_LOGIN_ATTEMPTS_PER_10_MIN: '9999',
+          MAX_REGISTER_ATTEMPTS_PER_10_MIN: '9999',
+          MAX_RESET_ATTEMPTS_PER_30_MIN: '9999',
+        },
         timeout: 15_000,
         stdout: 'pipe',
         stderr: 'pipe',
