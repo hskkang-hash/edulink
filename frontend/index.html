@@ -286,11 +286,12 @@
 
         .global-quickbar {
             position: fixed;
-            top: 14px;
-            right: 16px;
+            top: 16px;
+            right: 20px;
             z-index: 80;
             display: inline-flex;
             align-items: center;
+            justify-content: flex-end;
             gap: 8px;
             padding: 8px 10px;
             border-radius: 12px;
@@ -3340,13 +3341,6 @@
                     <h2 id="buildRoadmapTitle">Design-First Build Roadmap</h2>
                     <p class="muted" id="buildRoadmapSubtitle">Lock the screen system first, then wire workflows and backend functions.</p>
                     <div class="roadmap-grid" id="buildRoadmapGrid"></div>
-                </div>
-
-                <div class="topbar" id="topbar">
-                    <div>
-                        <strong id="userEmail"></strong>
-                        <span class="muted" id="userRole"></span>
-                    </div>
                 </div>
 
                 <div class="section signup-flow-section" id="registerSection">
@@ -8956,16 +8950,13 @@
             }
             document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('topbar').style.display = 'flex';
             const preloginBarEl = document.getElementById('preloginBar');
             if (preloginBarEl) preloginBarEl.style.display = 'none';
             document.body.classList.remove('view-prelogin');
-            document.getElementById('userEmail').textContent = currentUser ? currentUser.email : '';
-            document.getElementById('userRole').textContent = currentUser ? `(${currentUser.role})` : '';
             refreshGlobalQuickbar();
             document.getElementById('myPostingsToggleWrap').style.display =
                 currentUser && currentUser.role === 'instructor' ? 'inline-flex' : 'none';
-            activeScreenId = getAllowedScreens().includes(activeScreenId) ? activeScreenId : getDefaultScreen();
+            activeScreenId = getDefaultScreen();
             activateScreen(activeScreenId, { scroll: false, silentUnauthorized: true });
             updateApplicationsViewMeta();
             markAppReady('webapp');
@@ -9000,7 +8991,6 @@
             document.getElementById('identityLandingSection').style.display = 'grid';
             document.getElementById('registerSection').style.display = 'none';
             document.getElementById('loginSection').style.display = 'block';
-            document.getElementById('topbar').style.display = 'none';
             document.getElementById('myPostingsToggleWrap').style.display = 'none';
             const preloginBar = document.getElementById('preloginBar');
             if (preloginBar) preloginBar.style.display = 'none';

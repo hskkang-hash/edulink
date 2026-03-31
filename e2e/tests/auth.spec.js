@@ -67,7 +67,7 @@ test.describe('인증 - 로그아웃', () => {
     await expect(page.locator('body')).toHaveClass(/view-web(app)?/, { timeout: 8_000 });
 
     // 로그아웃
-    await page.locator('#logoutBtn').click();
+    await page.locator('#globalLogoutBtn').click();
 
     // 로그인 섹션이 다시 보여야 함
     await expect(page.locator('#loginSection')).toBeVisible({ timeout: 5_000 });
@@ -99,6 +99,7 @@ test.describe('인증 - 회원가입', () => {
 
     await page.locator('#registerEmail').fill(email);
     await page.locator('#registerPassword').fill('SecurePass1!');
+    await page.locator('#registerPasswordConfirm').fill('SecurePass1!');
     await page.locator('#registerRole').selectOption('instructor');
     await page.locator('#registerBtn').click();
 
@@ -113,6 +114,7 @@ test.describe('인증 - 회원가입', () => {
 
     await page.locator('#registerEmail').fill(email);
     await page.locator('#registerPassword').fill('SecurePass1!');
+    await page.locator('#registerPasswordConfirm').fill('SecurePass1!');
     await page.locator('#registerRole').selectOption('institution');
     await page.locator('#registerBtn').click();
 
@@ -161,12 +163,18 @@ test.describe('메인페이지 인증 통합', () => {
 
     await page.locator('#registerEmail').fill(email);
     await page.locator('#registerPassword').fill(password);
+    await page.locator('#registerPasswordConfirm').fill(password);
     await page.locator('#registerRole').selectOption('instructor');
     await page.locator('#registerBtn').click();
 
-    // 성공 시 로그인 섹션이 활성 상태여야 함 (패널 표시 상태는 배포 스타일에 따라 달라질 수 있음)
-    await expect(page.locator('#loginSection')).toBeVisible();
-    await expect(page.locator('#registerStatus')).not.toContainText(/error|fail|실패/i);
+    // 성공 메시지가 표시될 때까지 대기 (회원가입 완료 대기)
+    // registerStatus가 나타나고 에러가 없을 때까지 대기
+    await expect(page.locator('#registerStatus')).not.toBeEmpty({ timeout: 8_000 });
+    await expect(page.locator('#registerStatus')).not.toContainText(/error|fail|실패/i, { timeout: 1_000 });
+    
+    // 회원가입 성공 후 registerSection은 숨겨지고 loginSection이 다시 표시됨
+    await expect(page.locator('#registerSection')).not.toBeVisible({ timeout: 3_000 });
+    await expect(page.locator('#loginSection')).toBeVisible({ timeout: 3_000 });
 
     // 2) 로그인 수행
     await page.locator('#loginEmail').fill(email);
