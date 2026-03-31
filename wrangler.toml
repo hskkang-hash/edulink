@@ -1,11 +1,35 @@
 main = "worker.js"
 name = "edulink"
 compatibility_date = "2026-03-23"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
 
+# ---------------------------------------------------------------------------
+# Cloudflare Containers – Flask backend
+# Run `npx wrangler deploy` (requires Docker) to build & push the image.
+# Secrets (SECRET_KEY etc.) are set via `npx wrangler secret put <NAME>`.
+# ---------------------------------------------------------------------------
+# [[containers]]
+# class_name = "EduLinkBackend"
+# image = "./backend/Dockerfile"
+# max_instances = 3
+
+# [[durable_objects.bindings]]
+# name = "EDULINK_BACKEND"
+# class_name = "EduLinkBackend"
+
+# [[migrations]]
+# tag = "v1"
+# new_sqlite_classes = ["EduLinkBackend"]
+
+# ---------------------------------------------------------------------------
+# Fallback vars – used by worker.js when the container binding is absent
+# (e.g. `wrangler dev --local` without a container engine running).
+# Remove or leave empty once CF Containers are the primary backend.
+# ---------------------------------------------------------------------------
 [vars]
-BACKEND_ORIGIN = "https://rich-memes-bow.loca.lt"
-BACKEND_ORIGIN_FALLBACKS = "https://wild-jeans-burn.loca.lt"
+BACKEND_ORIGIN = ""
+BACKEND_ORIGIN_FALLBACKS = ""
 BACKEND_TIMEOUT_MS = "12000"
