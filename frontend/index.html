@@ -2457,8 +2457,8 @@
         }
 
         body.view-webapp .main-pane::before {
-            background-image: url('./assets/stitch/_1.png');
-            opacity: 0.08;
+            background-image: none;
+            opacity: 0;
         }
 
         body.view-webapp .container {
@@ -2569,14 +2569,14 @@
         }
 
         body.view-web .main-pane::before {
-            background-image: url('./assets/stitch/_4.png');
-            opacity: 0.06;
+            background-image: none;
+            opacity: 0;
         }
 
         body[data-role-ui='admin'] .main-pane::before,
         body[data-role-ui='super_admin'] .main-pane::before {
-            background-image: url('./assets/stitch/_10.png');
-            opacity: 0.07;
+            background-image: none;
+            opacity: 0;
         }
 
         body.view-web .mobile-dock {
@@ -3036,8 +3036,8 @@
 
         /* ===== DYNAMIC SIDEBAR: PRD Feature Nav ===== */
         .rail-group-header {
-            font-size: 10px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             color: var(--muted);
@@ -3050,6 +3050,17 @@
             overflow: hidden;
             text-overflow: ellipsis;
             word-break: keep-all;
+        }
+
+        body[data-role-ui='district'] .side-rail .rail-link,
+        body[data-role-ui='admin'] .side-rail .rail-link,
+        body[data-role-ui='super_admin'] .side-rail .rail-link,
+        body[data-role-ui='district'] .side-rail .rail-cta,
+        body[data-role-ui='admin'] .side-rail .rail-cta,
+        body[data-role-ui='super_admin'] .side-rail .rail-cta {
+            font-size: 11px;
+            padding: 10px 10px;
+            border-radius: 10px;
         }
         .rail-link.wip {
             opacity: 0.38;
@@ -3076,6 +3087,15 @@
 
         #taxSettlementDetailBtn,
         #taxPollingBtn {
+            min-height: 44px;
+            width: 100%;
+            justify-content: center;
+            text-transform: none;
+            letter-spacing: 0.02em;
+        }
+
+        #adminRefreshTrendBtn,
+        #adminPreviewRulesBtn {
             min-height: 44px;
             width: 100%;
             justify-content: center;
@@ -8693,7 +8713,7 @@
             admin: {
                 dashboardSection:    { en: 'Platform Overview', ko: '\ud50c\ub7ab\ud3fc \ud604\ud669' },
                 applicationsSection: { en: 'Members',           ko: '\ud68c\uc6d0 \uad00\ub9ac' },
-                adminInsightsSection:{ en: 'Compliance',        ko: '\ucf58\ud50c\ub77c\uc774\uc5b8\uc2a4' },
+                adminInsightsSection:{ en: 'Compliance',        ko: '\ucee8\ud50c\ub77c\uc774\uc5b8\uc2a4' },
                 roleFeatureMatrixSection: { en: 'Role Matrix', ko: '\uc720\uc800\ubcc4 \uae30\ub2a5\ube44\uad50' },
                 securitySection:     { en: 'My Page',           ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             }
@@ -9338,7 +9358,7 @@
             showSections();
             updateActivityTypeControls();
             const role = normalizeRole(currentUser && currentUser.role);
-            activityPeriod = role === 'instructor' ? 'today' : '7d';
+            activityPeriod = ['instructor', 'district', 'admin', 'super_admin'].includes(role) ? 'today' : '7d';
             Array.from(document.querySelectorAll('#activityToolbar button')).forEach((button) => {
                 if (button.getAttribute('data-period') === activityPeriod) {
                     button.classList.add('active');
