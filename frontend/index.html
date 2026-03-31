@@ -8757,7 +8757,7 @@
                 dashboardSection:            { en: 'Dashboard',     ko: '\ub300\uc2dc\ubcf4\ub4dc' },
                 postingsSection:             { en: 'Find Postings', ko: '\uacf5\uace0 \ud0d0\uc0c9' },
                 applicationsSection:         { en: 'My Applications', ko: '\ub0b4 \uc9c0\uc6d0' },
-                instructorOnboardingSection: { en: 'My Profile',    ko: '\ub0b4 \ud504\ub85c\ud544' },
+                instructorOnboardingSection: { en: 'Profile Setup', ko: '\ud504\ub85c\ud544 \ub4f1\ub85d' },
                 taxSection:                  { en: 'Income & Tax',   ko: '\uc218\uc785/\uc138\ubb34' },
                 networkSection:              { en: 'Network',        ko: '\ub124\ud2b8\uc6cc\ud06c' },
                 createPostingSection:        { en: 'Post Job',       ko: '\uacf5\uace0 \ub4f1\ub85d' },
@@ -13932,10 +13932,15 @@
         const PRD_NAV_SPEC = {
             instructor: [
                 {
-                    group: { en: '📊 Home', ko: '📊 홈' },
+                    group: { en: '📊 Dashboard', ko: '📊 대시보드' },
                     items: [
                         { screen: 'dashboardSection',            en: '🏠 Dashboard',        ko: '🏠 대시보드',          done: true  },
-                        { screen: 'instructorOnboardingSection', en: '👤 My Profile',        ko: '👤 내 프로필',          done: true  },
+                    ]
+                },
+                {
+                    group: { en: '👤 Profile Setup', ko: '👤 프로필 등록' },
+                    items: [
+                        { screen: 'instructorOnboardingSection', en: '🪪 Profile Setup',      ko: '🪪 프로필 등록',        done: true  },
                     ]
                 },
                 {
@@ -14016,10 +14021,10 @@
             ],
             district: [
                 {
-                    group: { en: '📊 Region', ko: '📊 지역 현황' },
+                    group: { en: '📊 Dashboard', ko: '📊 대시보드' },
                     items: [
-                        { screen: 'dashboardSection',  en: '🏠 Region Dashboard',    ko: '🏠 지역 대시보드',       done: true  },
-                        { screen: 'districtSection',   en: '📊 District Stats',       ko: '📊 교육청 통계',         done: true  },
+                        { screen: 'dashboardSection',  en: '🏫 Class Dashboard',     ko: '🏫 수업 대시보드',       done: true  },
+                        { screen: 'districtSection',   en: '📊 District Dashboard',  ko: '📊 교육청 대시보드',     done: true  },
                     ]
                 },
                 {
@@ -14046,7 +14051,7 @@
             ],
             admin: [
                 {
-                    group: { en: '📊 Platform', ko: '📊 플랫폼' },
+                    group: { en: '📊 Dashboard', ko: '📊 대시보드' },
                     items: [
                         { screen: 'dashboardSection',  en: '🏠 Platform Dashboard',   ko: '🏠 플랫폼 현황',         done: true  },
                     ]
