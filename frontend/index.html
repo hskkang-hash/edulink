@@ -134,6 +134,10 @@
             border: 1px solid transparent;
             cursor: pointer;
             transition: background 0.18s ease, border-color 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            max-width: 100%;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -3052,6 +3056,57 @@
             word-break: keep-all;
         }
 
+        .rail-group-shell {
+            display: grid;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .rail-group-main {
+            width: fit-content;
+            max-width: 100%;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.03);
+            color: #dfe4f3;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .rail-group-main:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .rail-group-main.is-active {
+            border-color: rgba(165, 140, 255, 0.45);
+            background: linear-gradient(135deg, rgba(136, 118, 255, 0.2), rgba(96, 212, 255, 0.08));
+        }
+
+        .rail-group-caret {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        .rail-submenu {
+            display: grid;
+            gap: 4px;
+            padding-left: 14px;
+        }
+
+        .rail-submenu .rail-link {
+            font-size: 11px;
+            letter-spacing: 0.06em;
+        }
+
         body[data-role-ui='district'] .side-rail .rail-link,
         body[data-role-ui='admin'] .side-rail .rail-link,
         body[data-role-ui='super_admin'] .side-rail .rail-link,
@@ -4514,6 +4569,7 @@
         let simImpactMinDelta = 0;
         let demoRole = 'instructor';
         let activeScreenId = 'dashboardSection';
+        let activeSidebarGroupKey = '';
         let activeDesignPresetId = '';
         let lastPresetAutoRun = { presetId: '', timestamp: 0 };
         let currentLang = localStorage.getItem('ui_lang') || 'en';
@@ -4978,7 +5034,8 @@
             }
 
             quickbar.style.display = 'inline-flex';
-            meta.textContent = currentUser.email;
+            const email = String(currentUser.email || '');
+            meta.textContent = email.includes('@') ? email.split('@')[0] : email;
             dashboardBtn.textContent = lt('Dashboard', '대시보드');
             logoutBtn.textContent = lt('Logout', '로그아웃');
         }
@@ -8730,9 +8787,9 @@
                 const isAllowed = allowed.includes(screenId);
                 if (node.classList.contains('rail-link')) {
                     node.classList.toggle('is-active', activeScreenId === screenId && isAllowed);
-                    node.style.display = isAllowed ? 'block' : 'none';
+                    node.style.display = isAllowed ? 'inline-flex' : 'none';
                 } else {
-                    node.style.display = isAllowed ? 'block' : 'none';
+                    node.style.display = isAllowed ? 'inline-flex' : 'none';
                 }
                 const label = navLabels[screenId];
                 if (label && node.tagName !== 'BUTTON') {
@@ -9358,7 +9415,7 @@
             showSections();
             updateActivityTypeControls();
             const role = normalizeRole(currentUser && currentUser.role);
-            activityPeriod = ['instructor', 'district', 'admin', 'super_admin'].includes(role) ? 'today' : '7d';
+            activityPeriod = 'today';
             Array.from(document.querySelectorAll('#activityToolbar button')).forEach((button) => {
                 if (button.getAttribute('data-period') === activityPeriod) {
                     button.classList.add('active');
@@ -13965,19 +14022,34 @@
             const allowed = getAllowedScreens();
 
             let html = '';
-            spec.forEach(group => {
-                html += `<div class="rail-group-header">${lt(group.group.en, group.group.ko)}</div>`;
-                group.items.forEach(item => {
-                    if (item.done && item.screen) {
-                        const isActive = activeScreenId === item.screen;
-                        const isAllowed = allowed.includes(item.screen);
-                        if (!isAllowed) return; // skip screens not allowed for this role
-                        html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${lt(item.en, item.ko)}</a>`;
-                    } else if (!item.done) {
-                        const sprintLabel = item.sprint || '';
-                        html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${lt(item.en, item.ko)}</a>`;
-                    }
+            spec.forEach((group, groupIndex) => {
+                const groupKey = `${role}-${groupIndex}`;
+                const doneItems = group.items.filter((item) => item.done && item.screen && allowed.includes(item.screen));
+                const mainItem = doneItems[0] || null;
+                if (!mainItem) return;
+
+                const isGroupActive = doneItems.some((item) => item.screen === activeScreenId);
+                const isExpanded = activeSidebarGroupKey === groupKey;
+
+                html += `<div class="rail-group-shell">`;
+                html += `<button class="rail-group-main${isGroupActive ? ' is-active' : ''}" type="button" data-group-key="${groupKey}" data-main-screen="${mainItem.screen}">`;
+                html += `<span>${lt(group.group.en, group.group.ko)}</span>`;
+                html += `<span class="rail-group-caret">${isExpanded ? '^' : 'v'}</span>`;
+                html += `</button>`;
+                html += `<div class="rail-submenu" style="display:${isExpanded ? 'grid' : 'none'};">`;
+
+                doneItems.forEach((item) => {
+                    const isActive = activeScreenId === item.screen;
+                    html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${lt(item.en, item.ko)}</a>`;
                 });
+
+                group.items.filter((item) => !item.done).forEach((item) => {
+                    const sprintLabel = item.sprint || '';
+                    html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${lt(item.en, item.ko)}</a>`;
+                });
+
+                html += `</div>`;
+                html += `</div>`;
             });
 
             // CTA button for institution role
@@ -13989,6 +14061,18 @@
             container.innerHTML = html;
 
             // Bind click events to newly generated links
+            container.querySelectorAll('.rail-group-main').forEach(node => {
+                node.addEventListener('click', () => {
+                    const groupKey = node.getAttribute('data-group-key') || '';
+                    const mainScreen = node.getAttribute('data-main-screen') || '';
+                    activeSidebarGroupKey = activeSidebarGroupKey === groupKey ? '' : groupKey;
+                    if (mainScreen && currentUser) {
+                        activateScreen(mainScreen, { scroll: false });
+                    }
+                    renderDynamicSidebar();
+                });
+            });
+
             container.querySelectorAll('.rail-link:not(.wip)').forEach(node => {
                 node.addEventListener('click', e => {
                     e.preventDefault();
