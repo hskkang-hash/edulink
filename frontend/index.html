@@ -3091,11 +3091,6 @@
             background: linear-gradient(135deg, rgba(136, 118, 255, 0.2), rgba(96, 212, 255, 0.08));
         }
 
-        .rail-group-caret {
-            font-size: 11px;
-            opacity: 0.8;
-        }
-
         .rail-submenu {
             display: grid;
             gap: 4px;
@@ -3156,9 +3151,29 @@
         #adminPreviewRulesBtn {
             min-height: 44px;
             width: 100%;
+            margin: 8px 0;
+            padding: 12px 14px;
+            border-radius: 12px;
             justify-content: center;
             text-transform: none;
             letter-spacing: 0.02em;
+        }
+
+        :root[data-theme='light'] .rail-group-main {
+            color: #223045;
+            border-color: rgba(15, 23, 42, 0.16);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        :root[data-theme='light'] .rail-group-main:hover {
+            border-color: rgba(15, 23, 42, 0.24);
+            background: rgba(241, 245, 255, 0.95);
+        }
+
+        :root[data-theme='light'] .rail-group-main.is-active {
+            color: #1a2540;
+            border-color: rgba(96, 69, 215, 0.34);
+            background: linear-gradient(135deg, rgba(96, 69, 215, 0.12), rgba(56, 189, 248, 0.12));
         }
 
         /* ===== SPRINT TRACKER WIDGET ===== */
@@ -5037,8 +5052,7 @@
             }
 
             quickbar.style.display = 'inline-flex';
-            const email = String(currentUser.email || '');
-            meta.textContent = email.includes('@') ? email.split('@')[0] : email;
+            meta.textContent = getDisplayUserName(currentUser.email || '');
             dashboardBtn.textContent = lt('Dashboard', '대시보드');
             logoutBtn.textContent = lt('Logout', '로그아웃');
         }
@@ -8750,11 +8764,11 @@
                 securitySection:             { en: 'My Page',        ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             },
             student: {
-                dashboardSection:    { en: 'Home',           ko: '\ud648' },
+                dashboardSection:    { en: 'Dashboard',      ko: '\ub300\uc2dc\ubcf4\ub4dc' },
                 postingsSection:     { en: 'Class Feed',     ko: '\uc218\uc5c5 \ud53c\ub4dc' },
                 applicationsSection: { en: 'My Requests',    ko: '\ub0b4 \uc694\uccad' },
                 taxSection:          { en: 'Payments',       ko: '\uacb0\uc81c/\uc815\uc0b0' },
-                securitySection:     { en: 'Profile',        ko: '\ud504\ub85c\ud544' }
+                securitySection:     { en: 'My Page',        ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             },
             institution: {
                 dashboardSection:     { en: 'Dashboard',       ko: '\ub300\uc2dc\ubcf4\ub4dc' },
@@ -8765,13 +8779,13 @@
                 securitySection:      { en: 'My Page',         ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             },
             district: {
-                dashboardSection:    { en: 'Region Overview', ko: '\uc9c0\uc5ed \ud604\ud669' },
+                dashboardSection:    { en: 'Dashboard',       ko: '\ub300\uc2dc\ubcf4\ub4dc' },
                 applicationsSection: { en: 'Institutions',    ko: '\uad00\ud560 \uae30\uad00' },
                 taxSection:          { en: 'Budget',          ko: '\uc608\uc0b0 \ud604\ud669' },
                 securitySection:     { en: 'My Page',         ko: '\ub9c8\uc774\ud398\uc774\uc9c0' }
             },
             admin: {
-                dashboardSection:    { en: 'Platform Overview', ko: '\ud50c\ub7ab\ud3fc \ud604\ud669' },
+                dashboardSection:    { en: 'Dashboard',         ko: '\ub300\uc2dc\ubcf4\ub4dc' },
                 applicationsSection: { en: 'Members',           ko: '\ud68c\uc6d0 \uad00\ub9ac' },
                 adminInsightsSection:{ en: 'Compliance',        ko: '\ucee8\ud50c\ub77c\uc774\uc5b8\uc2a4' },
                 roleFeatureMatrixSection: { en: 'Role Matrix', ko: '\uc720\uc800\ubcc4 \uae30\ub2a5\ube44\uad50' },
@@ -9161,6 +9175,19 @@
             return QA_ROLE_BY_EMAIL[String(email || '').trim().toLowerCase()] || '';
         }
 
+        function getEmailId(email) {
+            const normalized = String(email || '').trim();
+            if (!normalized) {
+                return '';
+            }
+            return normalized.includes('@') ? normalized.split('@')[0] : normalized;
+        }
+
+        function getDisplayUserName(email) {
+            const emailId = getEmailId(email);
+            return emailId ? `${emailId}님` : '사용자님';
+        }
+
         function isBackendUnavailableError(data, message) {
             const errorCode = String((data && data.errorCode) || '').toUpperCase();
             const raw = `${String((data && data.error) || '')} ${String(message || '')}`;
@@ -9193,6 +9220,38 @@
             showSections();
             updateActivityTypeControls();
             setStatus('loginStatus', lt('Backend is unavailable. Signed in with offline demo mode.', '백엔드가 불안정하여 오프라인 데모 모드로 로그인했습니다.'));
+            return true;
+        }
+
+        function tryOfflineSignup(email, role) {
+            const normalizedEmail = String(email || '').trim().toLowerCase();
+            if (!normalizedEmail) {
+                return false;
+            }
+
+            const resolvedRole = normalizeRole(resolveQaDemoRole(normalizedEmail) || role || 'instructor');
+            const profile = OFFLINE_QA_USER_PROFILES[normalizedEmail] || {};
+
+            token = `offline-signup-${Date.now()}`;
+            currentUser = {
+                ...profile,
+                id: profile.id || Date.now(),
+                email: normalizedEmail,
+                role: resolvedRole,
+                full_name: profile.full_name || getDisplayUserName(normalizedEmail),
+                organization: profile.organization || 'Offline Demo Mode',
+                created_at: new Date().toISOString()
+            };
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('edulink_offline_user', JSON.stringify(currentUser));
+            localStorage.setItem('edulink_offline_mode', '1');
+
+            updateMyPageProfile();
+            showSections();
+            updateActivityTypeControls();
+            setStatus('registerStatus', lt('Backend is unavailable. Account created in offline demo mode.', '백엔드가 불안정하여 오프라인 데모 모드로 계정을 생성했습니다.'));
+            setSignupFlowVisible(false);
             return true;
         }
 
@@ -9373,7 +9432,7 @@
             const email = currentUser.email || '';
             const initial = email.charAt(0).toUpperCase() || '?';
             document.getElementById('myProfileAvatar').textContent = initial;
-            document.getElementById('myProfileEmail').textContent = email;
+            document.getElementById('myProfileEmail').textContent = getDisplayUserName(email);
             const roleLabelMap = {
                 instructor: lt('Instructor', '\uac15\uc0ac'),
                 institution: lt('Institution', '\uae30\uad00 \uc6b4\uc601\uc790'),
@@ -12475,6 +12534,9 @@
 
                 if (!response.ok) {
                     const errMsg = data.error || '';
+                    if (isBackendUnavailableError(data, errMsg) && tryOfflineSignup(email, role)) {
+                        return;
+                    }
                     const normalized = isBackendUnavailableError(data, errMsg)
                         ? getServiceUnavailableMessage(response.status || 503)
                         : /already|exist|registered|duplicate/i.test(errMsg)
@@ -12493,6 +12555,9 @@
                 document.getElementById('loginEmail').value = email;
                 setSignupFlowVisible(false);
             } catch (error) {
+                if (tryOfflineSignup(email, role)) {
+                    return;
+                }
                 setStatus('registerStatus', getServiceUnavailableMessage(503));
             } finally {
                 if (registerBtn) {
@@ -14035,23 +14100,25 @@
 
                 const isGroupActive = doneItems.some((item) => item.screen === activeScreenId);
                 const isExpanded = activeSidebarGroupKey === groupKey;
+                const hasMultiSubmenu = doneItems.length > 1;
 
                 html += `<div class="rail-group-shell">`;
-                html += `<button class="rail-group-main${isGroupActive ? ' is-active' : ''}" type="button" data-group-key="${groupKey}" data-main-screen="${mainItem.screen}">`;
+                html += `<button class="rail-group-main${isGroupActive ? ' is-active' : ''}" type="button" data-group-key="${groupKey}" data-main-screen="${mainItem.screen}" data-has-submenu="${hasMultiSubmenu ? '1' : '0'}">`;
                 html += `<span>${lt(group.group.en, group.group.ko)}</span>`;
-                html += `<span class="rail-group-caret">${isExpanded ? '^' : 'v'}</span>`;
                 html += `</button>`;
-                html += `<div class="rail-submenu" style="display:${isExpanded ? 'grid' : 'none'};">`;
+                html += `<div class="rail-submenu" style="display:${hasMultiSubmenu && isExpanded ? 'grid' : 'none'};">`;
 
-                doneItems.forEach((item) => {
-                    const isActive = activeScreenId === item.screen;
-                    html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${stripMenuIcon(lt(item.en, item.ko))}</a>`;
-                });
+                if (hasMultiSubmenu) {
+                    doneItems.forEach((item) => {
+                        const isActive = activeScreenId === item.screen;
+                        html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${stripMenuIcon(lt(item.en, item.ko))}</a>`;
+                    });
 
-                group.items.filter((item) => !item.done).forEach((item) => {
-                    const sprintLabel = item.sprint || '';
-                    html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${stripMenuIcon(lt(item.en, item.ko))}</a>`;
-                });
+                    group.items.filter((item) => !item.done).forEach((item) => {
+                        const sprintLabel = item.sprint || '';
+                        html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${stripMenuIcon(lt(item.en, item.ko))}</a>`;
+                    });
+                }
 
                 html += `</div>`;
                 html += `</div>`;
@@ -14070,7 +14137,12 @@
                 node.addEventListener('click', () => {
                     const groupKey = node.getAttribute('data-group-key') || '';
                     const mainScreen = node.getAttribute('data-main-screen') || '';
-                    activeSidebarGroupKey = activeSidebarGroupKey === groupKey ? '' : groupKey;
+                    const hasSubmenu = node.getAttribute('data-has-submenu') === '1';
+                    if (hasSubmenu) {
+                        activeSidebarGroupKey = activeSidebarGroupKey === groupKey ? '' : groupKey;
+                    } else {
+                        activeSidebarGroupKey = '';
+                    }
                     if (mainScreen && currentUser) {
                         activateScreen(mainScreen, { scroll: false });
                     }
