@@ -199,7 +199,7 @@
         .masthead {
             grid-column: 1 / -1;
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 18px;
             padding: 12px 6px 10px;
@@ -3144,6 +3144,9 @@
         #taxPollingBtn {
             min-height: 44px;
             width: 100%;
+            margin: 8px 0;
+            padding: 12px 14px;
+            border-radius: 12px;
             justify-content: center;
             text-transform: none;
             letter-spacing: 0.02em;
@@ -3593,8 +3596,8 @@
                     <div class="stats-grid" id="dashboardDetailPanels" style="margin-top:16px;"></div>
                     <h3 style="margin-top:14px;">Recent Activity</h3>
                     <div class="activity-toolbar" id="activityToolbar">
-                        <button id="activityTodayBtn" data-period="today">Today</button>
-                        <button id="activity7dBtn" data-period="7d" class="active">7 Days</button>
+                        <button id="activityTodayBtn" data-period="today" class="active">Today</button>
+                        <button id="activity7dBtn" data-period="7d">7 Days</button>
                         <button id="activity30dBtn" data-period="30d">30 Days</button>
                     </div>
                     <div class="activity-type-toolbar" id="activityTypeToolbar">
@@ -4541,7 +4544,7 @@
         let applicantRecentCache = [];
         let activePolicyKey = 'about';
         let editingPostingId = null;
-        let activityPeriod = '7d';
+        let activityPeriod = 'today';
         let activityType = 'all';
         let activityCacheByPeriod = {};
         let applicationsFilter = 'all';
@@ -9243,7 +9246,7 @@
             currentUser = null;
             showOnlyMine = false;
             activityType = 'all';
-            activityPeriod = '7d';
+            activityPeriod = 'today';
             activityCacheByPeriod = {};
             applicationsFilter = 'all';
             applicationsCache = [];
@@ -14017,6 +14020,8 @@
             const container = document.getElementById('railNavContainer');
             if (!container) return;
 
+            const stripMenuIcon = (label) => String(label || '').replace(/^[^A-Za-z0-9\u3131-\u318E\uAC00-\uD7A3]+\s*/, '');
+
             const role = normalizeRole(getCurrentAccessRole());
             const spec = PRD_NAV_SPEC[role] || PRD_NAV_SPEC.instructor;
             const allowed = getAllowedScreens();
@@ -14040,12 +14045,12 @@
 
                 doneItems.forEach((item) => {
                     const isActive = activeScreenId === item.screen;
-                    html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${lt(item.en, item.ko)}</a>`;
+                    html += `<a class="rail-link${isActive ? ' is-active' : ''}" href="#" data-screen="${item.screen}">${stripMenuIcon(lt(item.en, item.ko))}</a>`;
                 });
 
                 group.items.filter((item) => !item.done).forEach((item) => {
                     const sprintLabel = item.sprint || '';
-                    html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${lt(item.en, item.ko)}</a>`;
+                    html += `<a class="rail-link wip" href="#" data-sprint="${escapeHtml(sprintLabel)}" aria-disabled="true" tabindex="-1">${stripMenuIcon(lt(item.en, item.ko))}</a>`;
                 });
 
                 html += `</div>`;
